@@ -1,0 +1,53 @@
+graph TB
+    %% Client & Network Layers (Simplified for application context)
+    subgraph Client ["Client Layer"]
+        UI[React 18 + TS Web App]
+    end
+
+    subgraph Network ["Network Layer"]
+        Gateway[Traefik / Nginx API Gateway]
+    end
+
+    %% Application Layer - Microservices
+    subgraph AppLayer ["Application Layer (FastAPI Microservices)"]
+        
+        TicketService[Ticket Management Service<br/>(Ingestion, Routing, Assignments)]
+        
+        PIIService[PII Scrubbing Service<br/>(Wraps MS Presidio)]
+        
+        ClassifierService[AI Classifier & RAG Service<br/>(ML Pipeline Logic)]
+        
+        InferenceEngine[Ollama Runtime<br/>(LLM Inference: Mistral/Phi-3)]
+
+        TrainService[ML Training & Ops Service]
+    end
+
+    %% Data Layer
+    subgraph DataLayer ["Data Layer"]
+        Postgres[(PostgreSQL 14+<br/>+ pgvector)]
+        VectorDB[(Qdrant / ChromaDB<br/>Vector Store)]
+        ModelReg[(MLflow Model Registry<br/>& Tracking)]
+    end
+
+    %% Application and Data Flow
+    UI -- "HTTPS" --> Gateway
+    Gateway -- "REST/gRPC + mTLS" --> TicketService
+    Gateway -- "REST" --> TrainService
+    
+    TicketService -- "Scrub Text" --> PIIService
+    TicketService -- "Classify & Resolve" --> ClassifierService
+    TicketService -- "Store Ticket Data<br/>(Structured)" --> Postgres
+    
+    ClassifierService -- "Generate Embeddings /<br/>Generate Completion" --> InferenceEngine
+    ClassifierService -- "Store/Search Embeddings" --> VectorDB
+    ClassifierService -- "Get Similar Tickets" --> Postgres
+    
+    TrainService -- "Track Experiments" --> ModelReg
+    TrainService -- "Deploy Models" --> ClassifierService
+    
+    %% Style definitions
+    style AppLayer fill:#f0f4c3,stroke:#333;
+    style DataLayer fill:#d1c4e9,stroke:#333;
+    style TicketService fill:#e1f5fe,stroke:#0277bd;
+    style ClassifierService fill:#e1f5fe,stroke:#0277bd;
+    style InferenceEngine fill:#e1f5fe,stroke:#0277bd;

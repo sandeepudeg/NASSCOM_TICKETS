@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    participant TS as TicketService
+    participant PII as PIIService
+    participant CL as ClassifierService
+    participant O as Ollama (LLM)
+    participant DB as Postgres/VectorDB
+
+    Note over TS: Ticket Ingested (Plain Text)
+    
+    TS->>+PII: Cleanse Ticket (Microsoft Presidio)
+    PII->>PII: Remove Names, Emails, IPs, Aadhaar
+    PII-->>-TS: PII-Scrubbed Text
+
+    TS->>+CL: Process Ticket (Classify + RAG)
+    
+    Note over CL: STEP 3: Classification
+    CL->>O: Identify Category + Confidence (Mistral)
+    O-->>CL: {Category: "Hardware", Confidence: 0.88}
+    
+    Note over CL: STEP 4: RAG Resolution
+    CL->>DB: Search Top-5 Similar Tickets (pgvector/VectorDB)
+    DB-->>CL: List of similar historical tickets
+    
+    alt Confidence < 0.65
+        Note over CL: STEP 5: Escalation (Confidence too low)
+        CL-->>TS: Result: Escalation Required
+        TS->>TS: Assign to Human Review Queue
+    else Confidence >= 0.65
+        CL->>O: Generate Resolution from context (Phi-3)
+        O-->>CL: Step 1, Step 2, Step 3
+        CL-->>-TS: Result: Classification + Resolution Steps
+        TS->>TS: Assign and Route Ticket
+    end

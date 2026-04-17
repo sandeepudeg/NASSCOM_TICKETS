@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Classification Test - Tickets Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-robot"></i> Classification Test
+        </h1>
+        <p class="lead text-muted">
+            Test the ML classification model without creating a ticket. 
+            This helps you understand how tickets will be categorized.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Test Form -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-flask"></i> Test Classification
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               required maxlength="200" 
+                               placeholder="Enter a sample ticket title"
+                               value="{{ request.form.get('title', '') }}">
+                        <div class="invalid-feedback">
+                            Please provide a valid title (1-200 characters).
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="5" required maxlength="2000" 
+                                  placeholder="Describe the issue or request to test classification">{{ request.form.get('description', '') }}</textarea>
+                        <div class="invalid-feedback">
+                            Please provide a description (1-2000 characters).
+                        </div>
+                        <div class="form-text">Maximum 2000 characters</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Test Classification
+                    </button>
+                    <button type="button" class="btn btn-secondary ms-2" onclick="clearForm()">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Sample Tests -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb"></i> Sample Test Cases
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-2">
+                        <button class="btn btn-sm btn-outline-info w-100" 
+                                onclick="loadSample('Login Issue', 'I cannot log into my account. The password reset is not working.')">
+                            Login Issue
+                        </button>
+                    </div>
+                    <div class="col-12 mb-2">
+                        <button class="btn btn-sm btn-outline-info w-100" 
+                                onclick="loadSample('Feature Request', 'Please add dark mode to the application interface.')">
+                            Feature Request
+                        </button>
+                    </div>
+                    <div class="col-12 mb-2">
+                        <button class="btn btn-sm btn-outline-info w-100" 
+                                onclick="loadSample('Bug Report', 'The application crashes when I upload large files.')">
+                            Bug Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Classification Results -->
+    <div class="col-md-6">
+        {% if classification_results %}
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> Classification Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6>Predicted Category:</h6>
+                        <span class="badge bg-primary fs-6">
+                            {{ classification_results.category or 'Unclassified' }}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>Confidence Score:</h6>
+                        <div class="progress mb-2" style="height: 25px;">
+                            {% set confidence = (classification_results.confidence_score * 100)|round(1) if classification_results.confidence_score is not none else 0 %}
+                            <div class="progress-bar 
+                                        {% if confidence >= 80 %}bg-success
+                                        {% elif confidence >= 60 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                 role="progressbar" style="width: {{ confidence }}%">
+                                {{ confidence }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {% if confidence >= 80 %}
+                                High confidence - Classification is very reliable
+                            {% elif confidence >= 60 %}
+                                Medium confidence - Classification is moderately reliable
+                            {% else %}
+                                Low confidence - Manual review recommended
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    {% if classification_results.evaluation_matrix %}
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">
+                                <i class="fas fa-list-check"></i> Evaluation Matrix
+                            </h6>
+                            
+                            <div class="row g-3">
+                                <!-- Model Metrics -->
+                                <div class="col-6">
+                                    <div class="small fw-bold text-muted">Accuracy (Model)</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 progress me-2" style="height: 10px;">
+                                            <div class="progress-bar bg-info" style="width: {{ (classification_results.evaluation_matrix.accuracy * 100)|round if classification_results.evaluation_matrix.accuracy else 0 }}%"></div>
+                                        </div>
+                                        <span class="small">{{ (classification_results.evaluation_matrix.accuracy * 100)|round if classification_results.evaluation_matrix.accuracy else 'N/A' }}%</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small fw-bold text-muted">F1 Score (Model)</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 progress me-2" style="height: 10px;">
+                                            <div class="progress-bar bg-info" style="width: {{ (classification_results.evaluation_matrix.f1_score * 100)|round if classification_results.evaluation_matrix.f1_score else 0 }}%"></div>
+                                        </div>
+                                        <span class="small">{{ (classification_results.evaluation_matrix.f1_score * 100)|round if classification_results.evaluation_matrix.f1_score else 'N/A' }}%</span>
+                                    </div>
+                                </div>
+
+                                <!-- Judge metrics -->
+                                <div class="col-6">
+                                    <div class="small fw-bold text-muted">Innovation</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 progress me-2" style="height: 10px;">
+                                            <div class="progress-bar bg-primary" style="width: {{ (classification_results.evaluation_matrix.innovation * 100)|round if classification_results.evaluation_matrix.innovation else 0 }}%"></div>
+                                        </div>
+                                        <span class="small">{{ (classification_results.evaluation_matrix.innovation * 100)|round if classification_results.evaluation_matrix.innovation else 0 }}%</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small fw-bold text-muted">Feasibility</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 progress me-2" style="height: 10px;">
+                                            <div class="progress-bar bg-primary" style="width: {{ (classification_results.evaluation_matrix.feasibility * 100)|round if classification_results.evaluation_matrix.feasibility else 0 }}%"></div>
+                                        </div>
+                                        <span class="small">{{ (classification_results.evaluation_matrix.feasibility * 100)|round if classification_results.evaluation_matrix.feasibility else 0 }}%</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small fw-bold text-muted">Security</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 progress me-2" style="height: 10px;">
+                                            <div class="progress-bar bg-primary" style="width: {{ (classification_results.evaluation_matrix.security * 100)|round if classification_results.evaluation_matrix.security else 0 }}%"></div>
+                                        </div>
+                                        <span class="small">{{ (classification_results.evaluation_matrix.security * 100)|round if classification_results.evaluation_matrix.security else 0 }}%</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small fw-bold text-muted">Usability</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 progress me-2" style="height: 10px;">
+                                            <div class="progress-bar bg-primary" style="width: {{ (classification_results.evaluation_matrix.usability * 100)|round if classification_results.evaluation_matrix.usability else 0 }}%"></div>
+                                        </div>
+                                        <span class="small">{{ (classification_results.evaluation_matrix.usability * 100)|round if classification_results.evaluation_matrix.usability else 0 }}%</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="small fw-bold text-muted">Semantic Similarity Score</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 progress me-2" style="height: 10px;">
+                                            <div class="progress-bar bg-warning" style="width: {{ (classification_results.evaluation_matrix.semantic_similarity * 100)|round if classification_results.evaluation_matrix.semantic_similarity else 0 }}%"></div>
+                                        </div>
+                                        <span class="small">{{ (classification_results.evaluation_matrix.semantic_similarity * 100)|round(1) if classification_results.evaluation_matrix.semantic_similarity else 0 }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if classification_results.evaluation_matrix.judge_explanation %}
+                                <div class="mt-3 p-2 bg-light rounded small italic">
+                                    <strong><i class="fas fa-gavel"></i> LLM-as-Judge Evaluation:</strong><br>
+                                    {{ classification_results.evaluation_matrix.judge_explanation }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if classification_results.similar_tickets %}
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Similar Tickets Found:</h6>
+                            {% for ticket in classification_results.similar_tickets[:5] %}
+                                <div class="border rounded p-2 mb-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold">{{ ticket.title|truncate(60) }}</div>
+                                            <small class="text-muted">ID: {{ ticket.id }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-secondary">
+                                                {{ (ticket.similarity_score * 100)|round(1) }}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('create_ticket') }}" class="btn btn-success">
+                            <i class="fas fa-plus-circle"></i> Create Actual Ticket
+                        </a>
+                        <button class="btn btn-outline-primary" onclick="testAnother()">
+                            <i class="fas fa-redo"></i> Test Another
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> About Classification Testing
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-robot"></i>
+                        <strong>AI-Powered Classification:</strong> 
+                        Our machine learning model analyzes ticket content to automatically 
+                        categorize and find similar tickets.
+                    </div>
+                    
+                    <h6>What you'll see:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-tag text-primary"></i>
+                            <strong>Category:</strong> Predicted ticket category
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-percentage text-success"></i>
+                            <strong>Confidence:</strong> How certain the model is
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-search text-info"></i>
+                            <strong>Similar Tickets:</strong> Related existing tickets
+                        </li>
+                    </ul>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Note:</strong> This is a test only. No ticket will be created. 
+                        Use this to understand how your tickets will be processed.
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+function loadSample(title, description) {
+    document.getElementById('title').value = title;
+    document.getElementById('description').value = description;
+}
+
+function clearForm() {
+    document.getElementById('title').value = '';
+    document.getElementById('description').value = '';
+    // Remove validation classes
+    document.querySelector('form').classList.remove('was-validated');
+}
+
+function testAnother() {
+    clearForm();
+    window.scrollTo(0, 0);
+}
+
+// Character counter for description
+document.getElementById('description').addEventListener('input', function() {
+    const maxLength = 2000;
+    const currentLength = this.value.length;
+    const remaining = maxLength - currentLength;
+    
+    let helpText = this.parentNode.querySelector('.form-text');
+    if (remaining < 100) {
+        helpText.textContent = `${remaining} characters remaining`;
+        helpText.className = 'form-text text-warning';
+    } else {
+        helpText.textContent = `Maximum ${maxLength} characters`;
+        helpText.className = 'form-text';
+    }
+});
+</script>
+{% endblock %}

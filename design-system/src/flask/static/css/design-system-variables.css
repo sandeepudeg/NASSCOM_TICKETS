@@ -1,0 +1,195 @@
+/* TicketIQ Design System Variables - Flask Integration */
+/* This file contains all design tokens as CSS custom properties */
+
+:root {
+  /* Primitive Color Tokens */
+  --color-primitive-indigo-400: #4f46e5;
+  --color-primitive-indigo-600: #3730a3;
+  --color-primitive-cyan-500: #06b6d4;
+  --color-primitive-emerald-500: #10b981;
+  --color-primitive-amber-500: #f59e0b;
+  --color-primitive-red-500: #ef4444;
+  --color-primitive-slate-50: #f8fafc;
+  --color-primitive-slate-100: #f1f5f9;
+  --color-primitive-slate-200: #e2e8f0;
+  --color-primitive-slate-400: #94a3b8;
+  --color-primitive-slate-600: #475569;
+  --color-primitive-slate-700: #334155;
+  --color-primitive-slate-800: #1e293b;
+  --color-primitive-slate-900: #0f172a;
+  --color-primitive-gray-500: #1a1a2e;
+  --color-primitive-gray-600: #2e2e4a;
+  --color-primitive-gray-700: #1e1e35;
+  --color-primitive-gray-800: #16162a;
+  --color-primitive-gray-900: #0f0f1a;
+  --color-primitive-white: #ffffff;
+  --color-primitive-black: #000000;
+
+  /* Semantic Color Tokens */
+  --color-primary: #4f46e5;
+  --color-primary-dark: #3730a3;
+  --color-accent: #06b6d4;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-background-primary: #0f0f1a;
+  --color-background-secondary: #16162a;
+  --color-background-tertiary: #1e1e35;
+  --color-background-surface: #1a1a2e;
+  --color-border-primary: #2e2e4a;
+  --color-border-focus: #4f46e5;
+
+  /* Typography Tokens */
+  --font-family-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-xs: 0.7rem;
+  --font-size-sm: 0.8rem;
+  --font-size-base: 0.875rem;
+  --font-size-md: 0.9rem;
+  --font-size-lg: 0.95rem;
+  --font-size-xl: 1rem;
+  --font-size-2xl: 1.1rem;
+  --font-size-3xl: 1.125rem;
+  --font-size-4xl: 1.25rem;
+  --font-size-5xl: 1.5rem;
+  --font-size-6xl: 1.8rem;
+  --font-size-7xl: 2rem;
+  --font-size-8xl: 2.2rem;
+  --font-size-9xl: 3.5rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-line-height-tight: 1.15;
+  --font-line-height-normal: 1.6;
+
+  /* Spacing Tokens */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+  --spacing-32: 8rem;
+
+  /* Component Spacing */
+  --spacing-component-xs: 0.25rem;
+  --spacing-component-sm: 0.5rem;
+  --spacing-component-md: 1rem;
+  --spacing-component-lg: 1.5rem;
+  --spacing-component-xl: 2rem;
+
+  /* Layout Spacing */
+  --spacing-layout-xs: 1.5rem;
+  --spacing-layout-sm: 2rem;
+  --spacing-layout-md: 3rem;
+  --spacing-layout-lg: 4rem;
+  --spacing-layout-xl: 5rem;
+  --spacing-layout-2xl: 6rem;
+  --spacing-layout-3xl: 8rem;
+
+  /* Border Radius Tokens */
+  --border-radius-none: 0;
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-full: 999px;
+
+  /* Shadow Tokens */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Transition Tokens */
+  --transition-duration-fast: 150ms;
+  --transition-duration-normal: 250ms;
+  --transition-duration-slow: 400ms;
+  --transition-easing-ease: ease;
+  --transition-easing-ease-in: ease-in;
+  --transition-easing-ease-out: ease-out;
+  --transition-easing-ease-in-out: ease-in-out;
+
+  /* Component-Specific Tokens */
+  --button-padding-sm: var(--spacing-2) var(--spacing-3);
+  --button-padding-md: var(--spacing-3) var(--spacing-4);
+  --button-padding-lg: var(--spacing-4) var(--spacing-6);
+  --button-border-radius: var(--border-radius-md);
+  --button-font-weight: var(--font-weight-medium);
+  --button-transition: all var(--transition-duration-fast) var(--transition-easing-ease);
+
+  --input-padding: var(--spacing-3) var(--spacing-4);
+  --input-border-radius: var(--border-radius-md);
+  --input-border-width: 1px;
+  --input-font-size: var(--font-size-base);
+
+  --card-padding: var(--spacing-4);
+  --card-border-radius: var(--border-radius-lg);
+  --card-border-width: 1px;
+  --card-shadow: var(--shadow-sm);
+
+  --modal-border-radius: var(--border-radius-lg);
+  --modal-shadow: var(--shadow-xl);
+  --modal-padding: var(--spacing-4);
+
+  --navbar-padding: var(--spacing-3) 0;
+  --navbar-brand-font-size: var(--font-size-xl);
+  --navbar-brand-font-weight: var(--font-weight-semibold);
+
+  --alert-padding: var(--spacing-4);
+  --alert-border-radius: var(--border-radius-md);
+  --alert-border-width: 1px;
+
+  --badge-padding: var(--spacing-1) var(--spacing-2);
+  --badge-font-size: var(--font-size-xs);
+  --badge-font-weight: var(--font-weight-medium);
+  --badge-border-radius: var(--border-radius-sm);
+
+  --table-cell-padding: var(--spacing-3);
+  --table-border-width: 1px;
+
+  /* Grid System */
+  --container-max-width-sm: 540px;
+  --container-max-width-md: 720px;
+  --container-max-width-lg: 960px;
+  --container-max-width-xl: 1140px;
+  --container-max-width-xxl: 1320px;
+
+  --grid-gutter-width: 1.5rem;
+  --grid-columns: 12;
+
+  /* Breakpoints */
+  --breakpoint-xs: 0;
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-xxl: 1400px;
+
+  /* Z-Index Scale */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+  --z-index-toast: 1080;
+
+  /* Focus Ring */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-border-focus);
+  --focus-ring-opacity: 0.25;
+}

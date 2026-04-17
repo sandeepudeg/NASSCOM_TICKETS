@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Intelligent Ticket IQ — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy-deep:#020814;
+  --navy-mid:#040d1f;
+  --navy-surface:#071428;
+  --navy-card:#0b1d38;
+  --navy-input:#050f22;
+  --cyan:#00d4ff;
+  --cyan-dim:rgba(0,212,255,0.1);
+  --cyan-border:rgba(0,212,255,0.18);
+  --cyan-active:rgba(0,212,255,0.45);
+  --amber:#f8a220;
+  --green:#00e5a0;
+  --red:#ff4f6a;
+  --violet:#b57bff;
+  --text-primary:#e4f0ff;
+  --text-secondary:#6b8aad;
+  --text-dim:#2d4a6a;
+  --font-ui:'Outfit',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+html,body{height:100%;background:var(--navy-deep);color:var(--text-primary);font-family:var(--font-ui);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:48px 48px;z-index:0}
+.bg-radial{position:fixed;inset:0;background:radial-gradient(ellipse 65% 65% at 18% 55%,rgba(0,60,140,0.22) 0%,transparent 70%);z-index:0}
+.bg-scan{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,212,255,0.006) 3px,rgba(0,212,255,0.006) 4px);z-index:0;pointer-events:none}
+
+.shell{position:relative;z-index:1;display:flex;min-height:100vh}
+.panel-left{flex:1;display:flex;flex-direction:column;padding:52px 60px 80px;border-right:1px solid var(--cyan-border);position:relative;overflow:hidden}
+.panel-right{width:460px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:60px 48px;background:rgba(4,13,31,0.65);backdrop-filter:blur(20px)}
+
+.corner{position:absolute;width:18px;height:18px}
+.corner.tl{top:22px;left:22px;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.corner.br{bottom:22px;right:22px;border-bottom:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+.corner.tr{top:22px;right:22px;border-top:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+.corner.bl{bottom:22px;left:22px;border-bottom:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+
+/* BRAND */
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:48px}
+.brand-icon{width:40px;height:40px;border:1px solid var(--cyan-border);display:flex;align-items:center;justify-content:center}
+.brand-icon svg{width:18px;height:18px;color:var(--cyan)}
+.brand-name{font-size:14px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase}
+.brand-name span{color:var(--cyan)}
+
+/* HEADLINE */
+.eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';width:24px;height:1px;background:var(--cyan);opacity:0.5}
+h1{font-size:50px;font-weight:800;line-height:1.0;letter-spacing:-0.03em;margin-bottom:0}
+h1 .hl{color:var(--cyan)}
+.tagline{font-size:13px;font-weight:300;color:var(--text-secondary);line-height:1.65;max-width:440px;margin-top:16px;margin-bottom:40px}
+.tagline strong{color:var(--text-primary);font-weight:500}
+
+/* ══ FEATURE CARDS ══ */
+.cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.fc{
+  background:var(--navy-surface);
+  border:1px solid var(--cyan-border);
+  padding:20px 18px;
+  position:relative;
+  overflow:hidden;
+  transition:border-color 0.25s,background 0.25s;
+}
+.fc::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--ca,var(--cyan));
+  transform:scaleX(0);transform-origin:left;
+  transition:transform 0.3s;
+}
+.fc:hover{border-color:var(--ca,var(--cyan));background:rgba(0,212,255,0.04)}
+.fc:hover::after{transform:scaleX(1)}
+
+.fc.c-cyan{--ca:var(--cyan)}
+.fc.c-amber{--ca:var(--amber)}
+.fc.c-green{--ca:var(--green)}
+.fc.c-red{--ca:var(--red)}
+.fc.c-violet{--ca:var(--violet)}
+.fc.wide{grid-column:1/-1;display:flex;gap:18px;align-items:flex-start}
+
+.fc-icon{
+  width:38px;height:38px;
+  border:1px solid var(--ca,var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-bottom:12px;
+  color:var(--ca,var(--cyan));
+}
+.fc-icon svg{width:17px;height:17px}
+.fc.wide .fc-icon{margin-bottom:0;margin-top:2px}
+.fc-tag{font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ca,var(--cyan));opacity:0.75;margin-bottom:6px}
+.fc-title{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px;line-height:1.3}
+.fc-desc{font-size:11px;color:var(--text-secondary);line-height:1.6}
+.fc-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.chip{font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--ca,var(--cyan));color:var(--ca,var(--cyan));opacity:0.65}
+
+/* RIGHT PANEL */
+.form-header{margin-bottom:30px}
+.form-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.form-logo-sq{width:32px;height:32px;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:15px}
+.form-logo-name{font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase}
+.status-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);padding:5px 12px;margin-bottom:24px;font-family:var(--font-mono);font-size:10px;color:#00e5a0;letter-spacing:0.08em}
+.status-pill::before{content:'';width:5px;height:5px;background:#00e5a0;border-radius:50%;box-shadow:0 0 8px #00e5a0;animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.form-header h2{font-size:28px;font-weight:700;letter-spacing:-0.02em;margin-bottom:5px}
+.form-header p{font-size:13px;color:var(--text-secondary)}
+
+.field{margin-bottom:18px;position:relative}
+.field label{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:7px}
+.field input{width:100%;background:var(--navy-input);border:1px solid var(--cyan-border);color:var(--text-primary);font-family:var(--font-ui);font-size:14px;padding:12px 42px 12px 14px;outline:none;transition:all 0.2s;caret-color:var(--cyan)}
+.field input::placeholder{color:var(--text-dim)}
+.field input:focus{border-color:var(--cyan-active);background:rgba(0,212,255,0.04);box-shadow:0 0 0 1px var(--cyan-active),0 0 18px rgba(0,212,255,0.05)}
+.fic{position:absolute;right:13px;bottom:12px;color:var(--text-dim);transition:color 0.2s}
+.field input:focus~.fic{color:var(--cyan)}
+
+.form-opts{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.remember{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);cursor:pointer}
+.remember input{width:13px;height:13px;accent-color:var(--cyan);cursor:pointer}
+.forgot{font-family:var(--font-mono);font-size:11px;color:var(--cyan);text-decoration:none;letter-spacing:0.04em}
+.forgot:hover{color:#fff}
+
+.btn-sign{width:100%;background:var(--cyan);color:var(--navy-deep);font-family:var(--font-ui);font-size:14px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:14px;border:none;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;margin-bottom:18px}
+.btn-sign::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.14) 0%,transparent 55%)}
+.btn-sign:hover{background:#33ddff;box-shadow:0 0 30px rgba(0,212,255,0.38);transform:translateY(-1px)}
+.btn-sign:active{transform:scale(0.99)}
+.bna{margin-left:8px;display:inline-block;transition:transform 0.2s}
+.btn-sign:hover .bna{transform:translateX(5px)}
+
+.or-row{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.or-row::before,.or-row::after{content:'';flex:1;height:1px;background:var(--cyan-border)}
+.or-row span{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase}
+
+.alt-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+.btn-alt{background:transparent;border:1px solid var(--cyan-border);color:var(--text-secondary);font-family:var(--font-ui);font-size:12px;font-weight:500;padding:11px 10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.btn-alt:hover{border-color:var(--cyan-active);color:var(--text-primary);background:var(--cyan-dim)}
+
+.compliance{border-top:1px solid var(--cyan-border);padding-top:16px;display:flex;flex-direction:column;gap:8px}
+.compliance-tags{display:flex;gap:6px;flex-wrap:wrap}
+.ctag{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);border:1px solid var(--text-dim);padding:2px 6px;opacity:0.6}
+.compliance p{font-size:11px;color:var(--text-dim)}
+
+.status-bar{position:fixed;bottom:0;left:0;right:0;z-index:10;background:rgba(2,8,20,0.96);border-top:1px solid var(--cyan-border);padding:7px 32px;display:flex;align-items:center;gap:18px;backdrop-filter:blur(12px)}
+.sb-item{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:6px;letter-spacing:0.04em}
+.sb-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.sb-sep{width:1px;height:12px;background:var(--cyan-border)}
+.sb-right{margin-left:auto;display:flex;gap:18px;align-items:center}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.brand{animation:fadeUp 0.5s 0.05s both ease-out}
+.eyebrow{animation:fadeUp 0.5s 0.15s both ease-out}
+h1{animation:fadeUp 0.5s 0.2s both ease-out}
+.tagline{animation:fadeUp 0.5s 0.25s both ease-out}
+.cards-grid{animation:fadeUp 0.5s 0.3s both ease-out}
+.panel-right>*{animation:fadeUp 0.6s 0.38s both ease-out}
+
+@media(max-width:960px){.panel-left{display:none}.panel-right{width:100%;padding:48px 32px}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-radial"></div>
+<div class="bg-scan"></div>
+
+<div class="shell">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <div class="corner tl"></div>
+    <div class="corner br"></div>
+
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 12h6M9 16h6M7 8h10M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+        </svg>
+      </div>
+      <div class="brand-name">Ticket<span>IQ</span> Enterprise</div>
+    </div>
+
+    <div class="eyebrow">AI-Powered Operations Platform</div>
+    <h1>Intelligent<br/><span class="hl">Ticket IQ</span></h1>
+    <p class="tagline">
+      Next-gen IT Service Management powered by <strong>Large Language Models</strong> — 
+      automate routing, detect patterns, and resolve incidents at machine speed.
+    </p>
+
+    <div class="cards-grid">
+
+      <!-- 1. LLM Core -->
+      <div class="fc c-cyan">
+        <div class="fc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+        </div>
+        <div class="fc-tag">Core Engine</div>
+        <div class="fc-title">LLM-Powered Intelligence</div>
+        <div class="fc-desc">Understands natural language ticket content to classify, prioritize, and route with deep contextual reasoning — not keyword matching.</div>
+        <div class="fc-chips"><span class="chip">GPT-4 Class</span><span class="chip">NLP Parsing</span></div>
+      </div>
+
+      <!-- 2. Smart Routing -->
+      <div class="fc c-amber">
+        <div class="fc-icon" style="color:var(--amber)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="fc-tag">Routing</div>
+        <div class="fc-title">Smart Department Routing</div>
+        <div class="fc-desc">Automatically assigns tickets across Storage, Security, Network, Application, Infrastructure &amp; Access Management with 4.2/5.0 accuracy.</div>
+        <div class="fc-chips"><span class="chip">6 Depts</span><span class="chip">Auto-Assign</span></div>
+      </div>
+
+      <!-- 3. Pattern Detection -->
+      <div class="fc c-green">
+        <div class="fc-icon" style="color:var(--green)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="fc-tag">Detection</div>
+        <div class="fc-title">Anomaly & Pattern Alerts</div>
+        <div class="fc-desc">Monitors ticket streams to detect recurring incidents, spike patterns, and systemic failures before they escalate into outages.</div>
+        <div class="fc-chips"><span class="chip">Real-Time</span><span class="chip">Auto-Alert</span></div>
+      </div>
+
+      <!-- 4. Escalation -->
+      <div class="fc c-red">
+        <div class="fc-icon" style="color:var(--red)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="fc-tag">Escalation</div>
+        <div class="fc-title">Intelligent Escalation Engine</div>
+        <div class="fc-desc">Routes critical tickets to the right human with full context already summarised — dramatically reducing mean time to resolution.</div>
+        <div class="fc-chips"><span class="chip">Triage</span><span class="chip">Auto-Summary</span></div>
+      </div>
+
+      <!-- 5. Wide: Architecture -->
+      <div class="fc c-violet wide">
+        <div class="fc-icon" style="color:var(--violet)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="7" cy="10" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="12" cy="10" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="17" cy="10" r="1.5" fill="currentColor" opacity="0.4"/></svg>
+        </div>
+        <div>
+          <div class="fc-tag">Architecture</div>
+          <div class="fc-title">Enterprise-Grade Infrastructure</div>
+          <div class="fc-desc">Multi-department folder hierarchy with role-based access, full audit trails, and a real-time traffic monitoring dashboard. Built for scale with 99.98% uptime SLA, 124ms API latency, and SOC 2 Type II compliance from day one.</div>
+          <div class="fc-chips">
+            <span class="chip" style="--ca:var(--violet)">99.98% Uptime</span>
+            <span class="chip" style="--ca:var(--violet)">124ms API</span>
+            <span class="chip" style="--ca:var(--violet)">SOC 2 Type II</span>
+            <span class="chip" style="--ca:var(--violet)">RBAC</span>
+            <span class="chip" style="--ca:var(--violet)">Audit Logs</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL — LOGIN -->
+  <div class="panel-right">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="form-header">
+      <div class="form-logo">
+        <div class="form-logo-sq">🎫</div>
+        <div class="form-logo-name">TicketIQ</div>
+      </div>
+      <div class="status-pill">● System Operational · 99.98% uptime</div>
+      <h2>Sign In</h2>
+      <p>Access your IT operations workspace</p>
+    </div>
+
+    <form onsubmit="doLogin(event)">
+      <div class="field">
+        <label>Work Email</label>
+        <input type="email" id="email" placeholder="ops@company.com" required autocomplete="email"/>
+        <div class="fic">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-9.17 5.33a2 2 0 0 1-1.66 0L2 7"/></svg>
+        </div>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="••••••••••••••••" required autocomplete="current-password"/>
+        <div class="fic" onclick="togglePw()" style="cursor:pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+      </div>
+      <div class="form-opts">
+        <label class="remember"><input type="checkbox" checked/> Keep me signed in for 30 days</label>
+        <a href="#" class="forgot">Reset →</a>
+      </div>
+      <button type="submit" class="btn-sign" id="loginBtn">
+        Access Dashboard <span class="bna">→</span>
+      </button>
+    </form>
+
+    <div class="or-row"><span>or continue with</span></div>
+
+    <div class="alt-btns">
+      <button class="btn-alt" onclick="window.location.href='http://localhost:3003/auth/google'">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Google Workspace
+      </button>
+      <button class="btn-alt" onclick="window.location.href='http://localhost:3003/auth/saml'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        SSO / SAML 2.0
+      </button>
+    </div>
+
+    <div class="compliance">
+      <div class="compliance-tags">
+        <span class="ctag">SOC 2 Type II</span>
+        <span class="ctag">GDPR</span>
+        <span class="ctag">ISO 27001</span>
+        <span class="ctag">256-bit TLS</span>
+        <span class="ctag">MFA Ready</span>
+      </div>
+      <p>Protected by enterprise-grade security. All sessions encrypted end-to-end.</p>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="sb-item"><div class="sb-dot"></div> All Systems Operational</div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">Uptime · 99.98%</div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">API · 124ms</div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">Model Load · Low</div>
+  <div class="sb-right">
+    <div class="sb-item">v2.4.1-enterprise</div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">© 2025 TicketIQ</div>
+  </div>
+</div>
+
+<script>
+function doLogin(e){
+  e.preventDefault();
+  const btn=document.getElementById('loginBtn');
+  btn.textContent='Authenticating…';
+  btn.disabled=true;
+  btn.style.opacity='0.7';
+  setTimeout(()=>{window.location.href='http://localhost:3003/dashboard';},1400);
+}
+function togglePw(){
+  const i=document.getElementById('password');
+  i.type=i.type==='password'?'text':'password';
+}
+</script>
+</body>
+</html>

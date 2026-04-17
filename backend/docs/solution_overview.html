@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Tickets Folder Feature – Solution Overview</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #22d3ee;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+    }
+    body {
+      margin: 0;
+      padding: 32px 28px;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, #0b1224 0%, #0f172a 45%, #0a0f1f 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    h1, h2, h3 { margin: 0 0 12px; }
+    h1 { font-size: 32px; letter-spacing: -0.5px; }
+    h2 { font-size: 22px; }
+    p { margin: 0 0 10px; color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .card {
+      background: linear-gradient(145deg, #0f172a 0%, #0b1223 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+    ul { margin: 0 0 8px 18px; color: var(--text); }
+    code { background: #1f2937; padding: 2px 6px; border-radius: 6px; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(34, 211, 238, 0.14); color: var(--accent); font-weight: 600; font-size: 12px; }
+    .mermaid { background: #0b1224; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 12px; }
+    @media (max-width: 640px) { body { padding: 22px 18px; } }
+  </style>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "dark" });
+  </script>
+</head>
+<body>
+  <header style="margin-bottom:24px;">
+    <div class="pill">Solution Overview</div>
+    <h1>Tickets Folder Feature</h1>
+    <p>Self-hosted AI ticket routing &amp; resolution with zero external LLM calls, security-first defaults, and observability baked in.</p>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Approach</h2>
+      <ul>
+        <li>End-to-end stack: React 18 UI → Traefik → FastAPI → Ollama/pgvector/MinIO, all runnable via Docker Compose.</li>
+        <li>Strict layering (api → services → repositories → ml → schemas) keeps contracts clean and testable.</li>
+        <li>Safety pipeline: Presidio PII scrub → embeddings → LLM classify; confidence gating triggers RAG or escalation.</li>
+        <li>Observability-first: Prometheus metrics, OTEL traces, structured logs with SLO targets.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Unique Selling Proposition</h2>
+      <ul>
+        <li>100% local inference (Ollama) → zero SaaS LLM cost and no data egress risk.</li>
+        <li>Security by default: PII scrub before embeddings, AES-256 at rest, RBAC + audit log, rate limits.</li>
+        <li>Human-in-loop: built-in escalation queue and override feedback for retraining—reduces misroutes.</li>
+        <li>Domain adaptability: swap taxonomy/models and vector store (pgvector↔Qdrant) without code changes.</li>
+        <li>Ops-ready: metrics/traces/logs and SLOs included, not bolted on.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <h2>High-Level Architecture</h2>
+    <pre class="mermaid">
+graph TB
+  UI["React 18 UI"] --> GW["Traefik Gateway"]
+  GW --> KC["Keycloak / OIDC"]
+  GW --> API["FastAPI Backend"]
+  API --> PII["PII Scrubber (Presidio)"]
+  PII --> EMB["Embeddings (sentence-transformers)"]
+  EMB --> LLM["Ollama LLM"]
+  API --> RAG["RAG Engine"]
+  RAG --> PG["Postgres + pgvector"]
+  API --> MINIO["MinIO Object Storage"]
+  API --> MLFLOW["MLflow"]
+  API --> OBS["Prometheus · Jaeger · Loki"]
+    </pre>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <h2>Key Flows</h2>
+    <ul>
+      <li><strong>Ticket classify:</strong> JWT-validated request → scrub → embed → LLM category+confidence → if ≥ threshold run ANN search + LLM resolution suggestion; else escalate; persist ticket + audit entry.</li>
+      <li><strong>Foldering:</strong> CRUD with optimistic locking; bulk assign up to 100 tickets in one transaction with HTTP 207 on partial failure.</li>
+      <li><strong>Pattern alerts:</strong> scheduled clustering on recent tickets to surface recurring issues; actions to snooze/ack/dismiss.</li>
+    </ul>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <h2>Dependencies &amp; Assumptions</h2>
+    <ul>
+      <li>Docker 24+ &amp; Compose v2; Python 3.10+; Node 18+; Ollama models (mistral:7b-instruct or phi3-mini/gemma2b).</li>
+      <li>PostgreSQL 14+ with pgvector; MinIO; Keycloak/Authentik for OAuth2/OIDC.</li>
+      <li>Hardware: ≥8 GB RAM (16 GB recommended) and ~20 GB disk for models/data.</li>
+      <li>Secrets provided via .env: JWT, encryption keys, API base URLs; optional feature flags for multi-folder, Qdrant, PII toggle.</li>
+    </ul>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <h2>References</h2>
+    <ul>
+      <li><a href="../README.md">README.md</a> – Capabilities, startup, deployment topology.</li>
+      <li><a href="./architecture/ARCHITECTURE.md">docs/architecture/ARCHITECTURE.md</a> – Detailed diagrams, flows, SLOs.</li>
+      <li><a href="../VISUAL_DEMO_GUIDE.md">VISUAL_DEMO_GUIDE.md</a> – UI walkthrough and screenshots.</li>
+      <li><a href="../Use Case 1 _ Ticket Routing & Resolution.pdf">Use Case 1 PDF</a> – End-to-end ticket flow narrative.</li>
+      <li><a href="./architecture/DOMAIN_ADAPTATION.md">docs/architecture/DOMAIN_ADAPTATION.md</a> – Domain swap guide.</li>
+    </ul>
+  </section>
+</body>
+</html>

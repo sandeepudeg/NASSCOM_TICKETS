@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Form Example{% endblock %}
+
+{% block content %}
+    <!-- Import macros -->
+    {% from 'macros/components.html' import ds_card, ds_button, ds_alert %}
+    {% from 'macros/forms.html' import ds_input, ds_select, ds_textarea, ds_checkbox, ds_radio_group, ds_switch, ds_form_actions, ds_form_validation %}
+    {% from 'macros/layout.html' import ds_container, ds_row, ds_col, ds_section %}
+    
+    {% call ds_container(class='py-4') %}
+        <!-- Page Header -->
+        {% call ds_section(title='Form Components', subtitle='Examples of design system form components') %}
+        {% endcall %}
+        
+        {% call ds_row() %}
+            {% call ds_col(lg='8') %}
+                {% call ds_card(title='User Registration Form') %}
+                    <form method="post" action="#" novalidate>
+                        <!-- Form Validation Messages -->
+                        {{ ds_form_validation(
+                            errors=['Email is required', 'Password must be at least 8 characters'],
+                            success_message=''
+                        ) }}
+                        
+                        <!-- Basic Inputs -->
+                        {{ ds_input(
+                            name='first_name',
+                            label='First Name',
+                            placeholder='Enter your first name',
+                            required=true
+                        ) }}
+                        
+                        {{ ds_input(
+                            name='last_name',
+                            label='Last Name',
+                            placeholder='Enter your last name',
+                            required=true
+                        ) }}
+                        
+                        {{ ds_input(
+                            name='email',
+                            type='email',
+                            label='Email Address',
+                            placeholder='Enter your email',
+                            help_text='We will never share your email with anyone else.',
+                            required=true
+                        ) }}
+                        
+                        {{ ds_input(
+                            name='password',
+                            type='password',
+                            label='Password',
+                            placeholder='Enter a secure password',
+                            help_text='Password must be at least 8 characters long.',
+                            required=true
+                        ) }}
+                        
+                        {{ ds_input(
+                            name='confirm_password',
+                            type='password',
+                            label='Confirm Password',
+                            placeholder='Confirm your password',
+                            required=true
+                        ) }}
+                        
+                        <!-- Select Dropdown -->
+                        {{ ds_select(
+                            name='department',
+                            label='Department',
+                            options=[
+                                {'value': 'engineering', 'label': 'Engineering'},
+                                {'value': 'marketing', 'label': 'Marketing'},
+                                {'value': 'sales', 'label': 'Sales'},
+                                {'value': 'support', 'label': 'Customer Support'},
+                                {'value': 'hr', 'label': 'Human Resources'}
+                            ],
+                            help_text='Select your department',
+                            required=true
+                        ) }}
+                        
+                        <!-- Textarea -->
+                        {{ ds_textarea(
+                            name='bio',
+                            label='Bio',
+                            placeholder='Tell us about yourself...',
+                            help_text='Optional: Brief description about yourself',
+                            rows=4
+                        ) }}
+                        
+                        <!-- Radio Group -->
+                        {{ ds_radio_group(
+                            name='experience_level',
+                            label='Experience Level',
+                            options=[
+                                {'value': 'junior', 'label': 'Junior (0-2 years)'},
+                                {'value': 'mid', 'label': 'Mid-level (3-5 years)'},
+                                {'value': 'senior', 'label': 'Senior (6+ years)'}
+                            ],
+                            help_text='Select your experience level',
+                            required=true
+                        ) }}
+                        
+                        <!-- Checkboxes -->
+                        <div class="mb-3">
+                            <label class="form-label">Skills</label>
+                            {{ ds_checkbox(
+                                name='skills[]',
+                                value='javascript',
+                                label='JavaScript'
+                            ) }}
+                            {{ ds_checkbox(
+                                name='skills[]',
+                                value='python',
+                                label='Python'
+                            ) }}
+                            {{ ds_checkbox(
+                                name='skills[]',
+                                value='react',
+                                label='React'
+                            ) }}
+                            {{ ds_checkbox(
+                                name='skills[]',
+                                value='flask',
+                                label='Flask'
+                            ) }}
+                        </div>
+                        
+                        <!-- Switches -->
+                        {{ ds_switch(
+                            name='newsletter',
+                            label='Subscribe to newsletter',
+                            help_text='Receive updates about new features and announcements'
+                        ) }}
+                        
+                        {{ ds_switch(
+                            name='notifications',
+                            label='Enable notifications',
+                            checked=true,
+                            help_text='Receive email notifications for important updates'
+                        ) }}
+                        
+                        <!-- Terms and Conditions -->
+                        {{ ds_checkbox(
+                            name='terms',
+                            label='I agree to the Terms and Conditions',
+                            required=true
+                        ) }}
+                        
+                        <!-- Form Actions -->
+                        {% call ds_form_actions(align='between') %}
+                            {{ ds_button('Cancel', variant='secondary') }}
+                            {{ ds_button('Create Account', variant='primary', type='submit') }}
+                        {% endcall %}
+                    </form>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(lg='4') %}
+                <!-- Form Guidelines -->
+                {% call ds_card(title='Form Guidelines') %}
+                    <h6>Design System Features:</h6>
+                    <ul class="mb-3">
+                        <li>Consistent spacing and typography</li>
+                        <li>Accessible form controls</li>
+                        <li>Clear validation states</li>
+                        <li>Responsive design</li>
+                        <li>Dark theme support</li>
+                    </ul>
+                    
+                    {{ ds_alert('All form components follow WCAG 2.1 AA accessibility standards.', type='info', dismissible=false) }}
+                {% endcall %}
+                
+                <!-- Component Variants -->
+                {% call ds_card(title='Button Variants', class='mt-4') %}
+                    <div class="d-grid gap-2">
+                        {{ ds_button('Primary Button', variant='primary', class='w-100') }}
+                        {{ ds_button('Secondary Button', variant='secondary', class='w-100') }}
+                        {{ ds_button('Outline Button', variant='outline', class='w-100') }}
+                        {{ ds_button('Success Button', variant='success', class='w-100') }}
+                        {{ ds_button('Warning Button', variant='warning', class='w-100') }}
+                        {{ ds_button('Danger Button', variant='danger', class='w-100') }}
+                    </div>
+                {% endcall %}
+                
+                <!-- Alert Examples -->
+                {% call ds_card(title='Alert Examples', class='mt-4') %}
+                    {{ ds_alert('This is a success alert!', type='success', dismissible=false) }}
+                    {{ ds_alert('This is a warning alert!', type='warning', dismissible=false) }}
+                    {{ ds_alert('This is an error alert!', type='danger', dismissible=false) }}
+                    {{ ds_alert('This is an info alert!', type='info', dismissible=false) }}
+                {% endcall %}
+            {% endcall %}
+        {% endcall %}
+    {% endcall %}
+{% endblock %}

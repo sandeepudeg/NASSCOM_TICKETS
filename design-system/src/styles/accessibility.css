@@ -1,0 +1,557 @@
+/* TicketIQ Design System - Accessibility Features */
+/* WCAG 2.1 AA Compliance Implementation */
+
+/* ===== FOCUS MANAGEMENT ===== */
+
+/* Enhanced focus indicators with high visibility */
+.focus-visible,
+*:focus-visible {
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: 2px;
+  border-radius: var(--borderRadius-sm);
+}
+
+/* Focus indicators for different component types */
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.form-check-input:focus-visible {
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+/* High contrast focus indicators */
+@media (prefers-contrast: high) {
+  .focus-visible,
+  *:focus-visible,
+  .btn:focus-visible,
+  .form-control:focus-visible,
+  .form-select:focus-visible,
+  .form-check-input:focus-visible {
+    outline: 4px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+/* Focus trap for modals and dialogs */
+.focus-trap {
+  position: relative;
+}
+
+.focus-trap::before,
+.focus-trap::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Skip navigation links */
+.skip-nav {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-theme-primary);
+  color: var(--color-primitive-white);
+  padding: var(--spacing-2) var(--spacing-4);
+  text-decoration: none;
+  border-radius: var(--borderRadius-md);
+  z-index: 9999;
+  font-weight: var(--font-weight-semibold);
+  transition: top var(--transition-duration-fast) var(--transition-easing-smooth);
+}
+
+.skip-nav:focus {
+  top: 6px;
+  outline: 3px solid var(--color-primitive-white);
+  outline-offset: 2px;
+}
+
+/* ===== SCREEN READER SUPPORT ===== */
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Screen reader only text that becomes visible on focus */
+.sr-only-focusable:focus {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* Live regions for dynamic content */
+.live-region {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.live-region[aria-live="polite"] {
+  /* Polite announcements */
+}
+
+.live-region[aria-live="assertive"] {
+  /* Urgent announcements */
+}
+
+/* ===== KEYBOARD NAVIGATION ===== */
+
+/* Keyboard navigation indicators */
+.keyboard-nav-active *:focus {
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: 2px;
+}
+
+/* Remove focus outline when using mouse */
+.mouse-nav-active *:focus {
+  outline: none;
+}
+
+/* Keyboard navigation for custom components */
+.keyboard-navigable {
+  position: relative;
+}
+
+.keyboard-navigable[tabindex="0"]:focus {
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: 2px;
+}
+
+/* Arrow key navigation support */
+.arrow-nav-container [role="option"]:focus,
+.arrow-nav-container [role="menuitem"]:focus,
+.arrow-nav-container [role="tab"]:focus {
+  background-color: var(--color-theme-background-secondary);
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: -2px;
+}
+
+/* ===== COLOR CONTRAST & VISIBILITY ===== */
+
+/* Ensure minimum contrast ratios */
+.text-contrast-aa {
+  color: var(--color-theme-text);
+  background-color: var(--color-theme-background);
+}
+
+.text-contrast-aaa {
+  color: var(--color-theme-text);
+  background-color: var(--color-theme-background);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* High contrast mode enhancements */
+@media (prefers-contrast: high) {
+  :root {
+    --color-theme-primary: #0000ff;
+    --color-theme-danger: #ff0000;
+    --color-theme-success: #008000;
+    --color-theme-warning: #ff8c00;
+  }
+  
+  .btn {
+    border: 2px solid currentColor;
+  }
+  
+  .form-control,
+  .form-select {
+    border: 2px solid currentColor;
+  }
+  
+  .card {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Forced colors mode (Windows High Contrast) */
+@media (forced-colors: active) {
+  .btn {
+    border: 1px solid ButtonText;
+  }
+  
+  .btn:focus {
+    outline: 2px solid Highlight;
+  }
+  
+  .form-control,
+  .form-select {
+    border: 1px solid ButtonText;
+  }
+  
+  .card {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* ===== FORM ACCESSIBILITY ===== */
+
+/* Required field indicators */
+.required::after {
+  content: " *";
+  color: var(--color-theme-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Form validation states */
+.form-control.is-valid {
+  border-color: var(--color-theme-success);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310b981' d='m2.3 6.73.94-.94 2.94 2.94L8.5 6.4l.94.94L6.5 10.27z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid {
+  border-color: var(--color-theme-danger);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.5 5.5 1 1m0-1-1 1'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* Error message styling */
+.invalid-feedback {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875em;
+  color: var(--color-theme-danger);
+}
+
+.valid-feedback {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875em;
+  color: var(--color-theme-success);
+}
+
+/* Form field grouping */
+fieldset {
+  border: 1px solid var(--color-theme-border);
+  border-radius: var(--borderRadius-md);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+legend {
+  font-weight: var(--font-weight-semibold);
+  padding: 0 var(--spacing-2);
+  color: var(--color-theme-text);
+}
+
+/* ===== INTERACTIVE ELEMENT ACCESSIBILITY ===== */
+
+/* Button accessibility enhancements */
+.btn[aria-pressed="true"] {
+  background-color: var(--color-theme-primary);
+  border-color: var(--color-theme-primary);
+  color: var(--color-primitive-white);
+}
+
+.btn[aria-expanded="true"]::after {
+  content: " (expanded)";
+  position: absolute;
+  left: -10000px;
+}
+
+.btn[aria-expanded="false"]::after {
+  content: " (collapsed)";
+  position: absolute;
+  left: -10000px;
+}
+
+/* Link accessibility */
+a:not([class]) {
+  color: var(--color-theme-primary);
+  text-decoration: underline;
+}
+
+a:not([class]):hover {
+  color: var(--color-theme-primaryDark);
+  text-decoration: none;
+}
+
+a:not([class]):focus {
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: 2px;
+  border-radius: var(--borderRadius-sm);
+}
+
+/* Skip link for external links */
+a[href^="http"]:not([href*="localhost"]):not([href*="127.0.0.1"])::after {
+  content: " (external link)";
+  font-size: 0.875em;
+  color: var(--color-theme-text-secondary);
+}
+
+/* ===== MOTION & ANIMATION ACCESSIBILITY ===== */
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  /* Keep essential loading indicators but make them less distracting */
+  .spinner {
+    animation: none;
+    border-top-color: var(--color-theme-primary);
+    border-right-color: var(--color-theme-primary);
+  }
+  
+  .progress-bar-indeterminate .progress-bar-fill {
+    animation: none;
+    width: 50%;
+  }
+}
+
+/* Vestibular disorder considerations */
+@media (prefers-reduced-motion: reduce) {
+  .parallax,
+  .zoom-effect,
+  .rotate-effect {
+    transform: none !important;
+  }
+}
+
+/* ===== RESPONSIVE TEXT & ZOOM SUPPORT ===== */
+
+/* Text scaling support up to 200% */
+@media (min-resolution: 2dppx) {
+  body {
+    font-size: calc(var(--typography-body-normal-fontSize) * 1.1);
+  }
+}
+
+/* Ensure content remains usable at 200% zoom */
+.container {
+  max-width: none;
+  padding-left: var(--spacing-4);
+  padding-right: var(--spacing-4);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-left: var(--spacing-2);
+    padding-right: var(--spacing-2);
+  }
+}
+
+/* ===== TOUCH TARGET ACCESSIBILITY ===== */
+
+/* Minimum touch target size (44x44px) */
+.btn,
+.form-check-input,
+.form-control,
+.form-select,
+a[role="button"],
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception for inline elements */
+.btn-sm {
+  min-height: 32px;
+  min-width: 32px;
+}
+
+/* Touch target spacing */
+.btn + .btn,
+.form-check + .form-check {
+  margin-left: var(--spacing-2);
+}
+
+/* ===== ERROR PREVENTION & RECOVERY ===== */
+
+/* Confirmation dialogs for destructive actions */
+.btn-danger[data-confirm]::before {
+  content: "⚠️ ";
+}
+
+/* Form auto-save indicators */
+.form-autosave {
+  position: relative;
+}
+
+.form-autosave::after {
+  content: "Auto-saved";
+  position: absolute;
+  top: -1.5rem;
+  right: 0;
+  font-size: 0.75rem;
+  color: var(--color-theme-success);
+  opacity: 0;
+  transition: opacity var(--transition-duration-fast);
+}
+
+.form-autosave.saving::after {
+  content: "Saving...";
+  opacity: 1;
+}
+
+.form-autosave.saved::after {
+  opacity: 1;
+}
+
+/* ===== CONTENT ACCESSIBILITY ===== */
+
+/* Heading hierarchy indicators for screen readers */
+h1::before { content: "Heading level 1: "; position: absolute; left: -10000px; }
+h2::before { content: "Heading level 2: "; position: absolute; left: -10000px; }
+h3::before { content: "Heading level 3: "; position: absolute; left: -10000px; }
+h4::before { content: "Heading level 4: "; position: absolute; left: -10000px; }
+h5::before { content: "Heading level 5: "; position: absolute; left: -10000px; }
+h6::before { content: "Heading level 6: "; position: absolute; left: -10000px; }
+
+/* List accessibility */
+ul[role="list"],
+ol[role="list"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+/* Table accessibility */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table th {
+  font-weight: var(--font-weight-semibold);
+  border-bottom: 2px solid var(--color-theme-border);
+}
+
+.table caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-2);
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Accessibility helper classes */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.visually-hidden-focusable:focus,
+.visually-hidden-focusable:active {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* Accessibility state indicators */
+.aria-expanded-true[aria-expanded="true"] .collapse-icon {
+  transform: rotate(180deg);
+}
+
+.aria-selected-true[aria-selected="true"] {
+  background-color: var(--color-theme-primary);
+  color: var(--color-primitive-white);
+}
+
+.aria-current-page[aria-current="page"] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-theme-primary);
+}
+
+/* Focus management utilities */
+.focus-within:focus-within {
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: 2px;
+}
+
+.focus-trap-active {
+  position: relative;
+}
+
+/* Announcement utilities */
+.announce-polite {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.announce-assertive {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ===== PRINT ACCESSIBILITY ===== */
+
+@media print {
+  /* Ensure good contrast in print */
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  /* Show URLs for links */
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+  
+  /* Hide interactive elements */
+  .btn,
+  .form-control,
+  .form-select {
+    border: 1px solid black !important;
+  }
+  
+  /* Ensure headings break properly */
+  h1, h2, h3, h4, h5, h6 {
+    break-after: avoid;
+  }
+}

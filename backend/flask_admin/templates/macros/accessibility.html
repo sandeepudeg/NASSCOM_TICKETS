@@ -1,0 +1,622 @@
+{# TicketIQ Design System - Accessibility Macros #}
+{# WCAG 2.1 AA Compliant Flask Components #}
+
+{# Skip Navigation Link #}
+{% macro ds_skip_nav(href='#main-content', text='Skip to main content') %}
+  <a href="{{ href }}" class="skip-nav">{{ text }}</a>
+{% endmacro %}
+
+{# Accessible Button with Enhanced Features #}
+{% macro ds_accessible_button(text, variant='primary', size='medium', type='button', disabled=false, 
+                              class='', id='', onclick='', form='', name='', value='', 
+                              aria_label='', aria_describedby='', aria_pressed='', aria_expanded='', 
+                              aria_controls='', loading=false, loading_text='Loading...') %}
+  {% set button_classes = ['btn'] %}
+  {% if variant == 'primary' %}
+    {% set _ = button_classes.append('btn-primary') %}
+  {% elif variant == 'secondary' %}
+    {% set _ = button_classes.append('btn-secondary') %}
+  {% elif variant == 'outline' %}
+    {% set _ = button_classes.append('btn-outline-primary') %}
+  {% elif variant == 'success' %}
+    {% set _ = button_classes.append('btn-success') %}
+  {% elif variant == 'warning' %}
+    {% set _ = button_classes.append('btn-warning') %}
+  {% elif variant == 'danger' %}
+    {% set _ = button_classes.append('btn-danger') %}
+  {% endif %}
+  
+  {% if size == 'small' %}
+    {% set _ = button_classes.append('btn-sm') %}
+  {% elif size == 'large' %}
+    {% set _ = button_classes.append('btn-lg') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = button_classes.append(class) %}
+  {% endif %}
+  
+  <button 
+    type="{{ type }}"
+    class="{{ button_classes | join(' ') }}"
+    {% if id %}id="{{ id }}"{% endif %}
+    {% if disabled or loading %}disabled{% endif %}
+    {% if onclick %}onclick="{{ onclick }}"{% endif %}
+    {% if form %}form="{{ form }}"{% endif %}
+    {% if name %}name="{{ name }}"{% endif %}
+    {% if value %}value="{{ value }}"{% endif %}
+    {% if aria_label %}aria-label="{{ aria_label }}"{% else %}aria-label="{{ text }}"{% endif %}
+    {% if aria_describedby %}aria-describedby="{{ aria_describedby }}"{% endif %}
+    {% if aria_pressed %}aria-pressed="{{ aria_pressed }}"{% endif %}
+    {% if aria_expanded %}aria-expanded="{{ aria_expanded }}"{% endif %}
+    {% if aria_controls %}aria-controls="{{ aria_controls }}"{% endif %}
+    {% if loading %}aria-busy="true"{% endif %}
+  >
+    {% if loading %}
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span class="sr-only">{{ loading_text }}</span>
+    {% endif %}
+    <span {% if loading %}aria-hidden="true"{% endif %}>{{ text }}</span>
+  </button>
+{% endmacro %}
+
+{# Accessible Input with Enhanced Validation #}
+{% macro ds_accessible_input(name, type='text', placeholder='', value='', label='', help_text='', 
+                            required=false, disabled=false, class='', id='', autocomplete='',
+                            error='', success='', aria_describedby='', maxlength='', pattern='') %}
+  {% set input_id = id or (name + '_input') %}
+  {% set input_classes = ['form-control'] %}
+  {% if error %}
+    {% set _ = input_classes.append('is-invalid') %}
+  {% elif success %}
+    {% set _ = input_classes.append('is-valid') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = input_classes.append(class) %}
+  {% endif %}
+  
+  {% set described_by_parts = [] %}
+  {% if help_text %}
+    {% set _ = described_by_parts.append(input_id + '_help') %}
+  {% endif %}
+  {% if error %}
+    {% set _ = described_by_parts.append(input_id + '_error') %}
+  {% endif %}
+  {% if success %}
+    {% set _ = described_by_parts.append(input_id + '_success') %}
+  {% endif %}
+  {% if aria_describedby %}
+    {% set _ = described_by_parts.append(aria_describedby) %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ input_id }}" class="form-label{% if required %} required{% endif %}">
+        {{ label }}
+        {% if required %}<span class="text-danger ms-1" aria-label="required">*</span>{% endif %}
+      </label>
+    {% endif %}
+    
+    <input 
+      type="{{ type }}"
+      class="{{ input_classes | join(' ') }}"
+      id="{{ input_id }}"
+      name="{{ name }}"
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if value %}value="{{ value }}"{% endif %}
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+      {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+      {% if pattern %}pattern="{{ pattern }}"{% endif %}
+      {% if error %}aria-invalid="true"{% elif success %}aria-invalid="false"{% endif %}
+      {% if described_by_parts %}aria-describedby="{{ described_by_parts | join(' ') }}"{% endif %}
+    />
+    
+    {% if help_text %}
+      <div id="{{ input_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+    
+    {% if error %}
+      <div id="{{ input_id }}_error" class="invalid-feedback" role="alert" aria-live="polite">
+        {{ error }}
+      </div>
+    {% endif %}
+    
+    {% if success %}
+      <div id="{{ input_id }}_success" class="valid-feedback" role="status" aria-live="polite">
+        {{ success }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Accessible Select with Enhanced Features #}
+{% macro ds_accessible_select(name, options, selected='', label='', help_text='', required=false, 
+                             disabled=false, class='', id='', error='', success='', placeholder='') %}
+  {% set select_id = id or (name + '_select') %}
+  {% set select_classes = ['form-select'] %}
+  {% if error %}
+    {% set _ = select_classes.append('is-invalid') %}
+  {% elif success %}
+    {% set _ = select_classes.append('is-valid') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = select_classes.append(class) %}
+  {% endif %}
+  
+  {% set described_by_parts = [] %}
+  {% if help_text %}
+    {% set _ = described_by_parts.append(select_id + '_help') %}
+  {% endif %}
+  {% if error %}
+    {% set _ = described_by_parts.append(select_id + '_error') %}
+  {% endif %}
+  {% if success %}
+    {% set _ = described_by_parts.append(select_id + '_success') %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ select_id }}" class="form-label{% if required %} required{% endif %}">
+        {{ label }}
+        {% if required %}<span class="text-danger ms-1" aria-label="required">*</span>{% endif %}
+      </label>
+    {% endif %}
+    
+    <select 
+      class="{{ select_classes | join(' ') }}"
+      id="{{ select_id }}"
+      name="{{ name }}"
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if error %}aria-invalid="true"{% elif success %}aria-invalid="false"{% endif %}
+      {% if described_by_parts %}aria-describedby="{{ described_by_parts | join(' ') }}"{% endif %}
+    >
+      {% if placeholder %}
+        <option value="" disabled {% if not selected %}selected{% endif %}>{{ placeholder }}</option>
+      {% endif %}
+      {% for option in options %}
+        {% if option is mapping %}
+          <option value="{{ option.value }}" 
+                  {% if option.value == selected %}selected{% endif %}
+                  {% if option.disabled %}disabled{% endif %}>
+            {{ option.label }}
+          </option>
+        {% else %}
+          <option value="{{ option }}" {% if option == selected %}selected{% endif %}>
+            {{ option }}
+          </option>
+        {% endif %}
+      {% endfor %}
+    </select>
+    
+    {% if help_text %}
+      <div id="{{ select_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+    
+    {% if error %}
+      <div id="{{ select_id }}_error" class="invalid-feedback" role="alert" aria-live="polite">
+        {{ error }}
+      </div>
+    {% endif %}
+    
+    {% if success %}
+      <div id="{{ select_id }}_success" class="valid-feedback" role="status" aria-live="polite">
+        {{ success }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Accessible Textarea with Character Count #}
+{% macro ds_accessible_textarea(name, placeholder='', value='', label='', help_text='', required=false, 
+                               disabled=false, rows=3, class='', id='', error='', success='', 
+                               maxlength='', show_char_count=false) %}
+  {% set textarea_id = id or (name + '_textarea') %}
+  {% set textarea_classes = ['form-control'] %}
+  {% if error %}
+    {% set _ = textarea_classes.append('is-invalid') %}
+  {% elif success %}
+    {% set _ = textarea_classes.append('is-valid') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = textarea_classes.append(class) %}
+  {% endif %}
+  
+  {% set described_by_parts = [] %}
+  {% if help_text %}
+    {% set _ = described_by_parts.append(textarea_id + '_help') %}
+  {% endif %}
+  {% if error %}
+    {% set _ = described_by_parts.append(textarea_id + '_error') %}
+  {% endif %}
+  {% if success %}
+    {% set _ = described_by_parts.append(textarea_id + '_success') %}
+  {% endif %}
+  {% if show_char_count and maxlength %}
+    {% set _ = described_by_parts.append(textarea_id + '_count') %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ textarea_id }}" class="form-label{% if required %} required{% endif %}">
+        {{ label }}
+        {% if required %}<span class="text-danger ms-1" aria-label="required">*</span>{% endif %}
+      </label>
+    {% endif %}
+    
+    <textarea 
+      class="{{ textarea_classes | join(' ') }}"
+      id="{{ textarea_id }}"
+      name="{{ name }}"
+      rows="{{ rows }}"
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+      {% if error %}aria-invalid="true"{% elif success %}aria-invalid="false"{% endif %}
+      {% if described_by_parts %}aria-describedby="{{ described_by_parts | join(' ') }}"{% endif %}
+      {% if show_char_count and maxlength %}
+        oninput="updateCharCount('{{ textarea_id }}', {{ maxlength }})"
+      {% endif %}
+    >{{ value }}</textarea>
+    
+    {% if show_char_count and maxlength %}
+      <div id="{{ textarea_id }}_count" class="form-text" aria-live="polite">
+        <span id="{{ textarea_id }}_current">{{ value|length if value else 0 }}</span> / {{ maxlength }} characters
+      </div>
+    {% endif %}
+    
+    {% if help_text %}
+      <div id="{{ textarea_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+    
+    {% if error %}
+      <div id="{{ textarea_id }}_error" class="invalid-feedback" role="alert" aria-live="polite">
+        {{ error }}
+      </div>
+    {% endif %}
+    
+    {% if success %}
+      <div id="{{ textarea_id }}_success" class="valid-feedback" role="status" aria-live="polite">
+        {{ success }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Accessible Checkbox with Enhanced Features #}
+{% macro ds_accessible_checkbox(name, value='1', label='', checked=false, disabled=false, 
+                               class='', id='', help_text='', error='', indeterminate=false) %}
+  {% set checkbox_id = id or (name + '_checkbox') %}
+  {% set checkbox_classes = ['form-check-input'] %}
+  {% if error %}
+    {% set _ = checkbox_classes.append('is-invalid') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = checkbox_classes.append(class) %}
+  {% endif %}
+  
+  {% set described_by_parts = [] %}
+  {% if help_text %}
+    {% set _ = described_by_parts.append(checkbox_id + '_help') %}
+  {% endif %}
+  {% if error %}
+    {% set _ = described_by_parts.append(checkbox_id + '_error') %}
+  {% endif %}
+  
+  <div class="form-check mb-3">
+    <input 
+      type="checkbox"
+      class="{{ checkbox_classes | join(' ') }}"
+      id="{{ checkbox_id }}"
+      name="{{ name }}"
+      value="{{ value }}"
+      {% if checked %}checked{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if error %}aria-invalid="true"{% endif %}
+      {% if described_by_parts %}aria-describedby="{{ described_by_parts | join(' ') }}"{% endif %}
+      {% if indeterminate %}data-indeterminate="true"{% endif %}
+    />
+    {% if label %}
+      <label class="form-check-label" for="{{ checkbox_id }}">
+        {{ label }}
+      </label>
+    {% endif %}
+    
+    {% if help_text %}
+      <div id="{{ checkbox_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+    
+    {% if error %}
+      <div id="{{ checkbox_id }}_error" class="invalid-feedback" role="alert" aria-live="polite">
+        {{ error }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Accessible Radio Group with Fieldset #}
+{% macro ds_accessible_radio_group(name, options, selected='', label='', help_text='', required=false, 
+                                  disabled=false, class='', id='', error='') %}
+  {% set group_id = id or (name + '_group') %}
+  
+  {% set described_by_parts = [] %}
+  {% if help_text %}
+    {% set _ = described_by_parts.append(group_id + '_help') %}
+  {% endif %}
+  {% if error %}
+    {% set _ = described_by_parts.append(group_id + '_error') %}
+  {% endif %}
+  
+  <fieldset class="mb-3 {% if class %}{{ class }}{% endif %}" {% if id %}id="{{ group_id }}"{% endif %}>
+    {% if label %}
+      <legend class="form-label{% if required %} required{% endif %}">
+        {{ label }}
+        {% if required %}<span class="text-danger ms-1" aria-label="required">*</span>{% endif %}
+      </legend>
+    {% endif %}
+    
+    <div role="radiogroup" 
+         {% if error %}aria-invalid="true"{% endif %}
+         {% if described_by_parts %}aria-describedby="{{ described_by_parts | join(' ') }}"{% endif %}>
+      {% for option in options %}
+        {% set radio_id = name + '_' + (option.value if option is mapping else option|string) + '_radio' %}
+        <div class="form-check mb-2">
+          <input 
+            type="radio"
+            class="form-check-input"
+            id="{{ radio_id }}"
+            name="{{ name }}"
+            value="{{ option.value if option is mapping else option }}"
+            {% if (option.value if option is mapping else option) == selected %}checked{% endif %}
+            {% if disabled or (option.disabled if option is mapping else false) %}disabled{% endif %}
+            {% if required %}required{% endif %}
+          />
+          <label class="form-check-label" for="{{ radio_id }}">
+            {{ option.label if option is mapping else option }}
+          </label>
+        </div>
+      {% endfor %}
+    </div>
+    
+    {% if help_text %}
+      <div id="{{ group_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+    
+    {% if error %}
+      <div id="{{ group_id }}_error" class="invalid-feedback" role="alert" aria-live="polite">
+        {{ error }}
+      </div>
+    {% endif %}
+  </fieldset>
+{% endmacro %}
+
+{# Accessible Alert with Enhanced Features #}
+{% macro ds_accessible_alert(message, type='info', dismissible=true, class='', id='', 
+                            heading='', live_region='polite', icon=true) %}
+  {% set alert_classes = ['alert'] %}
+  {% if type == 'success' %}
+    {% set _ = alert_classes.append('alert-success') %}
+  {% elif type == 'warning' %}
+    {% set _ = alert_classes.append('alert-warning') %}
+  {% elif type == 'danger' or type == 'error' %}
+    {% set _ = alert_classes.append('alert-danger') %}
+  {% elif type == 'primary' %}
+    {% set _ = alert_classes.append('alert-primary') %}
+  {% else %}
+    {% set _ = alert_classes.append('alert-info') %}
+  {% endif %}
+  
+  {% if dismissible %}
+    {% set _ = alert_classes.append('alert-dismissible') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = alert_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ alert_classes | join(' ') }}" 
+       role="alert" 
+       {% if live_region %}aria-live="{{ live_region }}"{% endif %}
+       {% if id %}id="{{ id }}"{% endif %}>
+    
+    {% if icon %}
+      <span class="alert-icon me-2" aria-hidden="true">
+        {% if type == 'success' %}✓{% endif %}
+        {% if type == 'warning' %}⚠{% endif %}
+        {% if type == 'danger' or type == 'error' %}✕{% endif %}
+        {% if type == 'info' %}ℹ{% endif %}
+      </span>
+    {% endif %}
+    
+    <div class="alert-content">
+      {% if heading %}
+        <h4 class="alert-heading">{{ heading }}</h4>
+      {% endif %}
+      {{ message }}
+    </div>
+    
+    {% if dismissible %}
+      <button type="button" 
+              class="btn-close" 
+              data-bs-dismiss="alert" 
+              aria-label="Close alert">
+      </button>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Accessible Modal with Focus Management #}
+{% macro ds_accessible_modal(title, body='', footer='', modal_id='modal', size='', class='', 
+                            backdrop=true, keyboard=true, focus_on_open='', return_focus_to='') %}
+  {% set modal_classes = ['modal', 'fade'] %}
+  {% if class %}
+    {% set _ = modal_classes.append(class) %}
+  {% endif %}
+  
+  {% set dialog_classes = ['modal-dialog'] %}
+  {% if size == 'small' %}
+    {% set _ = dialog_classes.append('modal-sm') %}
+  {% elif size == 'large' %}
+    {% set _ = dialog_classes.append('modal-lg') %}
+  {% elif size == 'extra-large' %}
+    {% set _ = dialog_classes.append('modal-xl') %}
+  {% endif %}
+  
+  <div class="{{ modal_classes | join(' ') }}" 
+       id="{{ modal_id }}" 
+       tabindex="-1" 
+       role="dialog"
+       aria-labelledby="{{ modal_id }}Label" 
+       aria-hidden="true"
+       aria-modal="true"
+       {% if not backdrop %}data-bs-backdrop="static"{% endif %}
+       {% if not keyboard %}data-bs-keyboard="false"{% endif %}
+       {% if focus_on_open %}data-focus-on-open="{{ focus_on_open }}"{% endif %}
+       {% if return_focus_to %}data-return-focus-to="{{ return_focus_to }}"{% endif %}>
+    
+    <div class="{{ dialog_classes | join(' ') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title h5" id="{{ modal_id }}Label">{{ title }}</h1>
+          <button type="button" 
+                  class="btn-close" 
+                  data-bs-dismiss="modal" 
+                  aria-label="Close dialog">
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          {% if caller %}
+            {{ caller() }}
+          {% else %}
+            {{ body }}
+          {% endif %}
+        </div>
+        
+        {% if footer %}
+          <div class="modal-footer">
+            {{ footer }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{# Accessible Breadcrumb Navigation #}
+{% macro ds_accessible_breadcrumb(items, class='', id='') %}
+  <nav aria-label="Breadcrumb" {% if class %}class="{{ class }}"{% endif %} {% if id %}id="{{ id }}"{% endif %}>
+    <ol class="breadcrumb">
+      {% for item in items %}
+        <li class="breadcrumb-item{% if item.current %} active{% endif %}"
+            {% if item.current %}aria-current="page"{% endif %}>
+          {% if item.href and not item.current %}
+            <a href="{{ item.href }}">{{ item.label }}</a>
+          {% else %}
+            {{ item.label }}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+{% endmacro %}
+
+{# Accessible Data Table #}
+{% macro ds_accessible_table(headers, rows, caption='', class='', id='', sortable=false, 
+                            responsive=true, striped=false, hover=false) %}
+  {% set table_classes = ['table'] %}
+  {% if striped %}
+    {% set _ = table_classes.append('table-striped') %}
+  {% endif %}
+  {% if hover %}
+    {% set _ = table_classes.append('table-hover') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = table_classes.append(class) %}
+  {% endif %}
+  
+  {% if responsive %}
+    <div class="table-responsive">
+  {% endif %}
+  
+  <table class="{{ table_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if caption %}
+      <caption>{{ caption }}</caption>
+    {% endif %}
+    
+    <thead>
+      <tr>
+        {% for header in headers %}
+          <th scope="col"
+              {% if sortable and header.sortable %}
+                role="columnheader"
+                aria-sort="{% if header.sort_direction %}{{ header.sort_direction }}{% else %}none{% endif %}"
+                tabindex="0"
+                class="sortable"
+              {% endif %}>
+            {% if sortable and header.sortable %}
+              <button type="button" class="btn btn-link p-0 text-start w-100 border-0">
+                {{ header.label }}
+                <span class="sort-indicator ms-1" aria-hidden="true">
+                  {% if header.sort_direction == 'ascending' %}↑{% endif %}
+                  {% if header.sort_direction == 'descending' %}↓{% endif %}
+                  {% if not header.sort_direction %}↕{% endif %}
+                </span>
+              </button>
+            {% else %}
+              {{ header.label if header is mapping else header }}
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          {% for cell in row %}
+            {% if loop.first %}
+              <th scope="row">{{ cell }}</th>
+            {% else %}
+              <td>{{ cell }}</td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+  {% if responsive %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{# Live Region for Dynamic Content Announcements #}
+{% macro ds_live_region(id, type='polite', class='') %}
+  <div id="{{ id }}" 
+       aria-live="{{ type }}" 
+       aria-atomic="true"
+       class="live-region {% if class %}{{ class }}{% endif %}">
+  </div>
+{% endmacro %}
+
+{# Character Count Update Script #}
+<script>
+function updateCharCount(textareaId, maxLength) {
+  const textarea = document.getElementById(textareaId);
+  const counter = document.getElementById(textareaId + '_current');
+  if (textarea && counter) {
+    counter.textContent = textarea.value.length;
+  }
+}
+
+// Set indeterminate state for checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('input[type="checkbox"][data-indeterminate="true"]').forEach(function(checkbox) {
+    checkbox.indeterminate = true;
+  });
+});
+</script>

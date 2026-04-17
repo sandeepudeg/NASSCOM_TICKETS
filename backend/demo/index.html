@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TicketIQ — AI-Powered IT Ticket Routing & Resolution</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg: #0f0f1a;
+      --bg2: #16162a;
+      --bg3: #1e1e35;
+      --border: #2e2e4a;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --card: #1a1a2e;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,15,26,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo { font-size: 1.25rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .nav-logo span { color: var(--primary); }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a { color: var(--muted); font-size: 0.9rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-badge { background: var(--primary); color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; margin-left: 0.5rem; }
+
+    /* HERO */
+    .hero {
+      min-height: 90vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 4rem 2rem;
+      background: radial-gradient(ellipse at 50% 0%, rgba(79,70,229,0.18) 0%, transparent 70%);
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(79,70,229,0.15); border: 1px solid rgba(79,70,229,0.4);
+      color: #a5b4fc; font-size: 0.8rem; padding: 4px 14px; border-radius: 999px;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.15; max-width: 800px; }
+    .hero h1 em { font-style: normal; color: var(--primary); }
+    .hero p { color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 1.25rem auto 2rem; }
+    .btn-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      padding: 0.65rem 1.5rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem;
+      padding: 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+    /* SECTIONS */
+    section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-tag { font-size: 0.8rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .section-title { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: 1rem; }
+    .section-sub { color: var(--muted); max-width: 600px; margin-bottom: 3rem; }
+
+    /* FEATURE GRID */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.5rem; transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-card p { font-size: 0.875rem; color: var(--muted); }
+
+    /* ARCHITECTURE */
+    .arch-diagram {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+      padding: 2rem; overflow-x: auto;
+    }
+    .arch-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .arch-box {
+      background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.6rem 1rem; font-size: 0.8rem; text-align: center; min-width: 110px;
+    }
+    .arch-box.primary { border-color: var(--primary); color: #a5b4fc; }
+    .arch-box.accent { border-color: var(--accent); color: #67e8f9; }
+    .arch-box.success { border-color: var(--success); color: #6ee7b7; }
+    .arch-box.warning { border-color: var(--warning); color: #fcd34d; }
+    .arch-arrow { text-align: center; color: var(--muted); font-size: 1.2rem; margin: 0.25rem 0; }
+    .arch-label { font-size: 0.7rem; color: var(--muted); text-align: center; margin-bottom: 0.5rem; }
+
+    /* TECH STACK */
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
+    .stack-group { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .stack-group h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 0.75rem; }
+    .stack-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--muted); }
+    .stack-item::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+
+    /* UI SCREENS */
+    .screens-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .screen-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden;
+    }
+    .screen-header {
+      background: var(--bg3); padding: 0.75rem 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .screen-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .screen-title { font-size: 0.8rem; color: var(--muted); margin-left: 0.25rem; }
+    .screen-body { padding: 1rem; }
+    .mock-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+    .mock-row:last-child { border-bottom: none; }
+    .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+    .badge-green { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .badge-amber { background: rgba(245,158,11,0.15); color: #fcd34d; }
+    .badge-red { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .badge-blue { background: rgba(79,70,229,0.15); color: #a5b4fc; }
+    .badge-cyan { background: rgba(6,182,212,0.15); color: #67e8f9; }
+    .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-val { font-weight: 700; }
+    .progress-bar { height: 6px; border-radius: 3px; background: var(--border); margin-top: 0.25rem; }
+    .progress-fill { height: 100%; border-radius: 3px; }
+
+    /* DATASETS */
+    .dataset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .dataset-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .dataset-card h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .dataset-card p { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; }
+    .dataset-code { background: var(--bg3); border-radius: 6px; padding: 0.5rem 0.75rem; font-family: monospace; font-size: 0.75rem; color: #a5b4fc; }
+
+    /* METRICS */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; }
+    .metric-card .val { font-size: 2rem; font-weight: 800; }
+    .metric-card .lbl { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    .metric-card.green .val { color: var(--success); }
+    .metric-card.blue .val { color: var(--primary); }
+    .metric-card.cyan .val { color: var(--accent); }
+    .metric-card.amber .val { color: var(--warning); }
+
+    /* FOOTER */
+    footer {
+      background: var(--bg2); border-top: 1px solid var(--border);
+      padding: 2rem; text-align: center; color: var(--muted); font-size: 0.85rem;
+    }
+    footer strong { color: var(--text); }
+
+    /* DIVIDER */
+    .full-divider { border: none; border-top: 1px solid var(--border); }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">🎫 Ticket<span>IQ</span></div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#ui">UI</a></li>
+    <li><a href="#stack">Tech Stack</a></li>
+    <li><a href="#datasets">Datasets</a></li>
+    <li><a href="#metrics">Quality</a></li>
+    <li><a href="#security">Security</a></li>
+  </ul>
+  <div>
+    <span class="nav-badge">Nasscom Hackathon</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🚀 AI-Powered IT Operations</div>
+  <h1>Intelligent Ticket Routing &amp;<br/><em>Resolution at Scale</em></h1>
+  <p>TicketIQ automatically classifies, routes, and resolves IT support tickets using open source LLMs, RAG pipelines, and agentic escalation — all self-hosted with zero proprietary API dependencies.</p>
+  <div class="btn-group">
+    <button class="btn btn-primary">View Architecture</button>
+    <button class="btn btn-outline">Read Requirements</button>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat"><div class="stat-value">7</div><div class="stat-label">Ticket Categories</div></div>
+  <div class="stat"><div class="stat-value">≥0.80</div><div class="stat-label">Target F1 Score</div></div>
+  <div class="stat"><div class="stat-value">&lt;5s</div><div class="stat-label">Classification Latency</div></div>
+  <div class="stat"><div class="stat-value">3</div><div class="stat-label">Kaggle Datasets</div></div>
+  <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Open Source Stack</div></div>
+  <div class="stat"><div class="stat-value">0</div><div class="stat-label">Proprietary API Costs</div></div>
+</div>
+
+<hr class="full-divider"/>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-tag">What it does</div>
+  <h2 class="section-title">Full-Stack AI Ticket Management</h2>
+  <p class="section-sub">From ticket ingestion to resolution suggestion — every layer is covered, open source, and self-hostable.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>AI Classification</h3>
+      <p>Classifies tickets into 7 categories (Infrastructure, Application, Security, Database, Storage, Network, Access Management) using Mistral/Phi-3/Gemma via Ollama with confidence scoring.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <h3>RAG-Based Resolution</h3>
+      <p>Retrieves top-5 semantically similar resolved tickets (cosine similarity ≥ 0.70) and generates ranked resolution steps using LangChain or LlamaIndex.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚠️</div>
+      <h3>Agentic Escalation</h3>
+      <p>Tickets with confidence score below 0.65 are automatically escalated to a human review queue with webhook notifications and override tracking.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📁</div>
+      <h3>Folder Management</h3>
+      <p>Organise tickets into named folders with drag-and-drop assignment, bulk operations, ticket count badges, and cursor-based pagination.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔁</div>
+      <h3>Pattern Detection</h3>
+      <p>Detects repeated issue clusters (≥3 tickets, similarity ≥ 0.80, within 7-day window) and surfaces automation suggestions to reduce toil.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>AI Model Dashboard</h3>
+      <p>Live UI panel showing F1 scores per category, semantic similarity score, LLM-as-judge routing/resolution scores, and model version comparison.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <h3>PII Scrubbing</h3>
+      <p>All ticket content is scrubbed of PII (names, emails, IPs, Aadhaar) using Microsoft Presidio before entering the embedding pipeline — GDPR/DPDP compliant.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3>Continuous Retraining</h3>
+      <p>Weekly automated retraining pipeline incorporating agent override labels (weighted 2×), with MLflow tracking and instant rollback support.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📥</div>
+      <h3>Structured Ingestion</h3>
+      <p>Accepts plain text, JSON logs (ECS), OpenTelemetry traces (OTLP), and Prometheus Alertmanager payloads with causal context extraction.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider"/>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="section-tag">System Design</div>
+  <h2 class="section-title">Architecture Overview</h2>
+  <p class="section-sub">A layered, containerised architecture covering all 6 domains: Infrastructure, Application, Security, Database, Storage, and Network.</p>
+  <div class="arch-diagram">
+    <div class="arch-label">CLIENT LAYER</div>
+    <div class="arch-row">
+      <div class="arch-box accent">React 18 + TypeScript<br/><small>Ant Design / MUI</small></div>
+    </div>
+    <div class="arch-arrow">↓ HTTPS / TLS 1.2+</div>
+    <div class="arch-label">NETWORK LAYER</div>
+    <div class="arch-row">
+      <div class="arch-box warning">Traefik / Nginx<br/><small>API Gateway + Rate Limiting</small></div>
+      <div class="arch-box warning">Keycloak / Authentik<br/><small>OAuth2 / OIDC / RBAC</small></div>
+    </div>
+    <div class="arch-arrow">↓ REST / gRPC + mTLS</div>
+    <div class="arch-label">APPLICATION LAYER</div>
+    <div class="arch-row">
+      <div class="arch-box primary">FastAPI<br/><small>Folder Manager</small></div>
+      <div class="arch-box primary">FastAPI<br/><small>Ticket Assignment</small></div>
+      <div class="arch-box primary">FastAPI<br/><small>AI Classifier</small></div>
+      <div class="arch-box primary">Ollama<br/><small>LLM Runtime</small></div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-label">DATA LAYER</div>
+    <div class="arch-row">
+      <div class="arch-box success">PostgreSQL 14+<br/><small>+ pgvector</small></div>
+      <div class="arch-box success">Qdrant / ChromaDB<br/><small>Vector Store (alt)</small></div>
+      <div class="arch-box success">MinIO<br/><small>Object Storage</small></div>
+      <div class="arch-box success">MLflow<br/><small>Model Registry</small></div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-label">OBSERVABILITY LAYER</div>
+    <div class="arch-row">
+      <div class="arch-box">Prometheus<br/><small>Metrics</small></div>
+      <div class="arch-box">Jaeger<br/><small>Tracing (OTLP)</small></div>
+      <div class="arch-box">Loki + Grafana<br/><small>Logs + Dashboards</small></div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider"/>
+
+<!-- UI SCREENS -->
+<section id="ui">
+  <div class="section-tag">User Interface</div>
+  <h2 class="section-title">Enterprise-Grade UI</h2>
+  <p class="section-sub">Full-featured React UI with light/dark mode, keyboard navigation, drag-and-drop, and real-time updates.</p>
+  <div class="screens-grid">
+
+    <!-- Ticket List -->
+    <div class="screen-card">
+      <div class="screen-header">
+        <div class="screen-dot" style="background:#ef4444"></div>
+        <div class="screen-dot" style="background:#f59e0b"></div>
+        <div class="screen-dot" style="background:#10b981"></div>
+        <span class="screen-title">Ticket Management</span>
+      </div>
+      <div class="screen-body">
+        <div class="mock-row"><span style="flex:1">TKT-1042 — DB replication lag</span><span class="badge badge-green">Database</span><span class="badge badge-amber">High</span></div>
+        <div class="mock-row"><span style="flex:1">TKT-1041 — VPN connectivity drop</span><span class="badge badge-cyan">Network</span><span class="badge badge-red">Critical</span></div>
+        <div class="mock-row"><span style="flex:1">TKT-1040 — App crash on login</span><span class="badge badge-blue">Application</span><span class="badge badge-amber">High</span></div>
+        <div class="mock-row"><span style="flex:1">TKT-1039 — Disk full on NAS</span><span class="badge badge-amber">Storage</span><span class="badge badge-green">Medium</span></div>
+        <div class="mock-row"><span style="flex:1">TKT-1038 — SSO failure for user</span><span class="badge badge-red">Access Mgmt</span><span class="badge badge-amber">High</span></div>
+      </div>
+    </div>
+
+    <!-- Classification Result -->
+    <div class="screen-card">
+      <div class="screen-header">
+        <div class="screen-dot" style="background:#ef4444"></div>
+        <div class="screen-dot" style="background:#f59e0b"></div>
+        <div class="screen-dot" style="background:#10b981"></div>
+        <span class="screen-title">Classification Result</span>
+      </div>
+      <div class="screen-body">
+        <div class="metric-row"><span>Predicted Category</span><span class="badge badge-cyan">Network</span></div>
+        <div class="metric-row">
+          <span>Confidence Score</span>
+          <span class="metric-val" style="color:var(--success)">87%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:87%;background:var(--success)"></div></div>
+        <div class="metric-row" style="margin-top:0.5rem"><span>Causal Signal</span><span style="font-size:0.75rem;color:var(--muted)">Latency spike detected</span></div>
+        <div class="metric-row"><span>Similar Tickets</span><span class="metric-val" style="color:var(--accent)">5 found</span></div>
+        <div class="metric-row"><span>Resolution Steps</span><span class="metric-val" style="color:var(--primary)">3 suggested</span></div>
+      </div>
+    </div>
+
+    <!-- Escalation Queue -->
+    <div class="screen-card">
+      <div class="screen-header">
+        <div class="screen-dot" style="background:#ef4444"></div>
+        <div class="screen-dot" style="background:#f59e0b"></div>
+        <div class="screen-dot" style="background:#10b981"></div>
+        <span class="screen-title">Escalation Queue</span>
+      </div>
+      <div class="screen-body">
+        <div class="mock-row"><span style="flex:1">TKT-1035 — Unknown error</span><span class="badge badge-red">58% conf.</span></div>
+        <div class="mock-row"><span style="flex:1">TKT-1031 — Mixed signals</span><span class="badge badge-red">61% conf.</span></div>
+        <div class="mock-row"><span style="flex:1">TKT-1028 — Ambiguous alert</span><span class="badge badge-red">54% conf.</span></div>
+        <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--muted)">3 tickets awaiting human review · sorted oldest first</div>
+      </div>
+    </div>
+
+    <!-- AI Model Performance -->
+    <div class="screen-card">
+      <div class="screen-header">
+        <div class="screen-dot" style="background:#ef4444"></div>
+        <div class="screen-dot" style="background:#f59e0b"></div>
+        <div class="screen-dot" style="background:#10b981"></div>
+        <span class="screen-title">AI Model Performance</span>
+      </div>
+      <div class="screen-body">
+        <div class="metric-row"><span>Macro F1 Score</span><span class="metric-val" style="color:var(--success)">0.83 ✓</span></div>
+        <div class="metric-row"><span>Semantic Similarity</span><span class="metric-val" style="color:var(--success)">0.76 ✓</span></div>
+        <div class="metric-row"><span>LLM Judge — Routing</span><span class="metric-val" style="color:var(--success)">4.1 / 5</span></div>
+        <div class="metric-row"><span>LLM Judge — Resolution</span><span class="metric-val" style="color:var(--warning)">3.7 / 5</span></div>
+        <div class="metric-row"><span>Equitable Recall Spread</span><span class="metric-val" style="color:var(--success)">0.18 ✓</span></div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="screen-card">
+      <div class="screen-header">
+        <div class="screen-dot" style="background:#ef4444"></div>
+        <div class="screen-dot" style="background:#f59e0b"></div>
+        <div class="screen-dot" style="background:#10b981"></div>
+        <span class="screen-title">Dashboard &amp; Analytics</span>
+      </div>
+      <div class="screen-body">
+        <div class="metric-row"><span>Total Tickets</span><span class="metric-val">1,284</span></div>
+        <div class="metric-row"><span>Open</span><span class="metric-val" style="color:var(--warning)">342</span></div>
+        <div class="metric-row"><span>Resolved</span><span class="metric-val" style="color:var(--success)">891</span></div>
+        <div class="metric-row"><span>Escalated</span><span class="metric-val" style="color:var(--danger)">51</span></div>
+        <div class="metric-row"><span>Mean Confidence (7d)</span><span class="metric-val" style="color:var(--success)">81%</span></div>
+        <div class="metric-row"><span>Pattern Alerts</span><span class="metric-val" style="color:var(--warning)">4 active</span></div>
+      </div>
+    </div>
+
+    <!-- Pattern Alerts -->
+    <div class="screen-card">
+      <div class="screen-header">
+        <div class="screen-dot" style="background:#ef4444"></div>
+        <div class="screen-dot" style="background:#f59e0b"></div>
+        <div class="screen-dot" style="background:#10b981"></div>
+        <span class="screen-title">Pattern Alerts</span>
+      </div>
+      <div class="screen-body">
+        <div class="mock-row"><span style="flex:1">VPN drop (7 occurrences)</span><span class="badge badge-cyan">Network</span></div>
+        <div class="mock-row"><span style="flex:1">DB replication lag (5×)</span><span class="badge badge-green">Database</span></div>
+        <div class="mock-row"><span style="flex:1">Disk full alerts (4×)</span><span class="badge badge-amber">Storage</span></div>
+        <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--muted)">Actions: Acknowledge · Snooze · Dismiss</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="full-divider"/>
+
+<!-- TECH STACK -->
+<section id="stack">
+  <div class="section-tag">Technology</div>
+  <h2 class="section-title">100% Open Source Stack</h2>
+  <p class="section-sub">Every tool is free, open source, and self-hostable. No proprietary APIs, no vendor lock-in.</p>
+  <div class="stack-grid">
+    <div class="stack-group">
+      <h4>Application</h4>
+      <div class="stack-item">FastAPI (Python 3.10+)</div>
+      <div class="stack-item">Pydantic v2</div>
+      <div class="stack-item">SQLAlchemy + Alembic</div>
+      <div class="stack-item">Celery (async tasks)</div>
+    </div>
+    <div class="stack-group">
+      <h4>AI / ML</h4>
+      <div class="stack-item">Ollama (LLM runtime)</div>
+      <div class="stack-item">Mistral / Phi-3 / Gemma</div>
+      <div class="stack-item">LangChain / LlamaIndex</div>
+      <div class="stack-item">sentence-transformers</div>
+      <div class="stack-item">MLflow (model registry)</div>
+      <div class="stack-item">Hypothesis (PBT)</div>
+    </div>
+    <div class="stack-group">
+      <h4>Database &amp; Storage</h4>
+      <div class="stack-item">PostgreSQL 14+ + pgvector</div>
+      <div class="stack-item">Qdrant / ChromaDB</div>
+      <div class="stack-item">MinIO (S3-compatible)</div>
+      <div class="stack-item">Redis (caching)</div>
+    </div>
+    <div class="stack-group">
+      <h4>Frontend</h4>
+      <div class="stack-item">React 18 + TypeScript</div>
+      <div class="stack-item">Ant Design / MUI</div>
+      <div class="stack-item">TanStack Query</div>
+      <div class="stack-item">Zustand / Redux Toolkit</div>
+      <div class="stack-item">Apache ECharts / Recharts</div>
+      <div class="stack-item">react-i18next</div>
+    </div>
+    <div class="stack-group">
+      <h4>Infrastructure</h4>
+      <div class="stack-item">Docker + Docker Compose</div>
+      <div class="stack-item">Kubernetes + Helm</div>
+      <div class="stack-item">Traefik / Nginx</div>
+      <div class="stack-item">GitHub Actions (CI/CD)</div>
+    </div>
+    <div class="stack-group">
+      <h4>Security</h4>
+      <div class="stack-item">Keycloak / Authentik</div>
+      <div class="stack-item">Infisical (secrets)</div>
+      <div class="stack-item">Presidio (PII scrubbing)</div>
+      <div class="stack-item">Bandit + Semgrep (SAST)</div>
+      <div class="stack-item">Trivy (CVE scanning)</div>
+    </div>
+    <div class="stack-group">
+      <h4>Observability</h4>
+      <div class="stack-item">Prometheus</div>
+      <div class="stack-item">Jaeger (OpenTelemetry)</div>
+      <div class="stack-item">Loki + Grafana</div>
+    </div>
+    <div class="stack-group">
+      <h4>Data &amp; Privacy</h4>
+      <div class="stack-item">kagglehub (datasets)</div>
+      <div class="stack-item">Microsoft Presidio</div>
+      <div class="stack-item">python-dotenv</div>
+      <div class="stack-item">Ruff + Radon (quality)</div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider"/>
+
+<!-- DATASETS -->
+<section id="datasets">
+  <div class="section-tag">Training Data</div>
+  <h2 class="section-title">Kaggle Datasets</h2>
+  <p class="section-sub">Three openly licensed Kaggle datasets downloaded via kagglehub, cached in MinIO, and preprocessed automatically.</p>
+  <div class="dataset-grid">
+    <div class="dataset-card">
+      <h4>IT Service Ticket Classification</h4>
+      <p>Primary dataset for ticket category classification training across IT support domains.</p>
+      <div class="dataset-code">kagglehub.dataset_download(<br/>"adisongoh/it-service-ticket-classification-dataset")</div>
+    </div>
+    <div class="dataset-card">
+      <h4>Multilingual Customer Support Tickets</h4>
+      <p>Multilingual support ticket data for broader classification coverage across languages.</p>
+      <div class="dataset-code">kagglehub.dataset_download(<br/>"tobiasbueck/multilingual-customer-support-tickets")</div>
+    </div>
+    <div class="dataset-card">
+      <h4>ServiceNow-like Incident Response Log</h4>
+      <p>Incident response logs similar to ServiceNow for routing and escalation training.</p>
+      <div class="dataset-code">kagglehub.dataset_download(<br/>"vipulshinde/incident-response-log")</div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider"/>
+
+<!-- QUALITY METRICS -->
+<section id="metrics">
+  <div class="section-tag">Quality &amp; Evaluation</div>
+  <h2 class="section-title">Defined Quality Targets</h2>
+  <p class="section-sub">Every metric has a defined threshold. Models that don't pass don't get promoted.</p>
+  <div class="metrics-grid">
+    <div class="metric-card green"><div class="val">≥0.80</div><div class="lbl">Macro F1 Score (all 7 categories)</div></div>
+    <div class="metric-card cyan"><div class="val">≥0.72</div><div class="lbl">Mean Semantic Similarity Score</div></div>
+    <div class="metric-card blue"><div class="val">≥3.5/5</div><div class="lbl">LLM-as-Judge Routing Score</div></div>
+    <div class="metric-card blue"><div class="val">≥3.5/5</div><div class="lbl">LLM-as-Judge Resolution Score</div></div>
+    <div class="metric-card amber"><div class="val">≤0.25</div><div class="lbl">Equitable Recall Spread</div></div>
+    <div class="metric-card green"><div class="val">≥0.65</div><div class="lbl">Min per-category F1 (any single)</div></div>
+    <div class="metric-card cyan"><div class="val">p95 ≤4s</div><div class="lbl">Inference Latency SLO</div></div>
+    <div class="metric-card amber"><div class="val">80%</div><div class="lbl">Backend Test Coverage</div></div>
+  </div>
+</section>
+
+<hr class="full-divider"/>
+
+<!-- SECURITY -->
+<section id="security">
+  <div class="section-tag">Security &amp; Compliance</div>
+  <h2 class="section-title">Enterprise Security Posture</h2>
+  <p class="section-sub">Security is built in at every layer — not bolted on.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🔐</div>
+      <h3>OAuth2 / OIDC Auth</h3>
+      <p>Keycloak or Authentik for authentication. Access tokens expire in 15 min. Refresh tokens expire after 8h inactivity.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <h3>RBAC — 4 Roles</h3>
+      <p>viewer, agent, manager, admin — each with scoped permissions. Enforced at API gateway and service level.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧹</div>
+      <h3>PII Scrubbing</h3>
+      <p>Microsoft Presidio scrubs names, emails, IPs, Aadhaar, phone numbers before any embedding or storage. GDPR + DPDP compliant.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Encryption</h3>
+      <p>AES-256 at rest. TLS 1.2+ in transit. mTLS between internal services. Secrets via Infisical OSS.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔎</div>
+      <h3>SAST + CVE Scanning</h3>
+      <p>Bandit + Semgrep on every PR. Trivy scans container images. HIGH/CRITICAL findings block merge and promotion.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Immutable Audit Log</h3>
+      <p>Append-only audit_log table with row-level security. 12-month retention in DB, 5-year archive in MinIO.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider"/>
+
+<!-- FOOTER -->
+<footer>
+  <p><strong>TicketIQ</strong> — AI-Powered IT Ticket Routing &amp; Resolution Platform</p>
+  <p style="margin-top:0.5rem">Built for the <strong>Nasscom Hackathon</strong> · 100% Open Source · Python + React + Docker</p>
+  <p style="margin-top:0.5rem;font-size:0.75rem">Requirements Specification v2.1 · All tools OSI-approved open source</p>
+</footer>
+
+</body>
+</html>

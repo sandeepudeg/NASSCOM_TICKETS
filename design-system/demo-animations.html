@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketIQ Design System - Animation Standards Demo</title>
+    <link rel="stylesheet" href="dist/css/variables.css">
+    <link rel="stylesheet" href="src/styles/index.css">
+    <style>
+        body {
+            font-family: var(--font-family-sans);
+            background: var(--color-theme-background);
+            color: var(--color-theme-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        
+        .demo-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--color-theme-surface);
+            border: 1px solid var(--color-theme-border);
+            border-radius: var(--borderRadius-lg);
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .demo-item {
+            padding: 1rem;
+            background: var(--color-theme-background-secondary);
+            border: 1px solid var(--color-theme-border);
+            border-radius: var(--borderRadius-md);
+            text-align: center;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-3) var(--spacing-4);
+            border: 1px solid;
+            border-radius: var(--borderRadius-md);
+            font-weight: var(--font-weight-semibold);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all var(--transition-duration-normal) var(--transition-easing-smooth);
+            transform: translateZ(0);
+        }
+        
+        .btn-primary {
+            background: var(--color-theme-primary);
+            color: white;
+            border-color: var(--color-theme-primary);
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-theme-primaryDark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-theme-text);
+            border-color: var(--color-theme-border);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--color-theme-primary);
+            color: var(--color-theme-primary);
+            transform: translateY(-1px);
+        }
+        
+        .card-demo {
+            padding: 1.5rem;
+            background: var(--color-theme-surface);
+            border: 1px solid var(--color-theme-border);
+            border-radius: var(--borderRadius-lg);
+            transition: all var(--transition-duration-normal) var(--transition-easing-smooth);
+            transform: translateZ(0);
+        }
+        
+        .card-demo:hover {
+            border-color: var(--color-theme-primary);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .input-demo {
+            width: 100%;
+            padding: var(--spacing-3) var(--spacing-4);
+            background: var(--color-theme-background-tertiary);
+            border: 1px solid var(--color-theme-border);
+            border-radius: var(--borderRadius-md);
+            color: var(--color-theme-text);
+            transition: all var(--transition-duration-normal) var(--transition-easing-smooth);
+        }
+        
+        .input-demo:focus {
+            outline: none;
+            border-color: var(--color-theme-primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .loading-demo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn var(--animation-duration-fast) var(--transition-easing-smooth);
+        }
+        
+        .modal-content {
+            background: var(--color-theme-surface);
+            border-radius: var(--borderRadius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            animation: scaleIn var(--animation-duration-normal) var(--transition-easing-spring);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--color-theme-surface);
+            border: 1px solid var(--color-theme-border);
+            border-radius: var(--borderRadius-md);
+            padding: 1rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight var(--animation-duration-normal) var(--transition-easing-spring);
+            z-index: 1001;
+        }
+        
+        .performance-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .performance-item {
+            height: 60px;
+            background: var(--color-theme-primary);
+            border-radius: var(--borderRadius-sm);
+            transition: transform var(--transition-duration-fast) var(--transition-easing-smooth);
+            transform: translateZ(0);
+        }
+        
+        .performance-item:hover {
+            transform: scale(1.1);
+        }
+        
+        .stagger-demo > div {
+            opacity: 0;
+            animation: fadeIn var(--animation-duration-normal) var(--transition-easing-smooth) forwards;
+        }
+        
+        .stagger-demo > div:nth-child(1) { animation-delay: 0ms; }
+        .stagger-demo > div:nth-child(2) { animation-delay: 100ms; }
+        .stagger-demo > div:nth-child(3) { animation-delay: 200ms; }
+        .stagger-demo > div:nth-child(4) { animation-delay: 300ms; }
+        .stagger-demo > div:nth-child(5) { animation-delay: 400ms; }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 3rem;
+            height: 1.5rem;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-theme-border);
+            transition: var(--transition-duration-normal) var(--transition-easing-smooth);
+            border-radius: var(--borderRadius-full);
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 1.125rem;
+            width: 1.125rem;
+            left: 0.1875rem;
+            bottom: 0.1875rem;
+            background-color: var(--color-theme-background);
+            transition: var(--transition-duration-normal) var(--transition-easing-smooth);
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--color-theme-primary);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(1.5rem);
+        }
+    </style>
+</head>
+<body>
+    <header style="text-align: center; margin-bottom: 3rem;">
+        <h1 style="font-size: var(--typography-heading-h1-fontSize); margin-bottom: 1rem;">
+            TicketIQ Design System
+        </h1>
+        <p style="font-size: var(--typography-body-large-fontSize); color: var(--color-theme-text-muted);">
+            Animation and Interaction Standards Demo
+        </p>
+    </header>
+
+    <main>
+        <!-- Button Animations -->
+        <section class="demo-section">
+            <h2>Button Animations</h2>
+            <p>Buttons with hover, focus, and active state animations</p>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <button class="btn btn-primary">Primary Button</button>
+                </div>
+                <div class="demo-item">
+                    <button class="btn btn-secondary">Secondary Button</button>
+                </div>
+                <div class="demo-item">
+                    <button class="btn btn-primary" disabled>Disabled Button</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card Interactions -->
+        <section class="demo-section">
+            <h2>Card Interactions</h2>
+            <p>Interactive cards with hover lift effects</p>
+            <div class="demo-grid">
+                <div class="card-demo">
+                    <h3>Interactive Card</h3>
+                    <p>Hover to see the lift effect</p>
+                </div>
+                <div class="card-demo">
+                    <h3>Another Card</h3>
+                    <p>Smooth transitions on hover</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Form Input Animations -->
+        <section class="demo-section">
+            <h2>Form Input Animations</h2>
+            <p>Inputs with focus animations and micro-interactions</p>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <input type="text" class="input-demo" placeholder="Focus me for animation">
+                </div>
+                <div class="demo-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <p style="margin-top: 0.5rem; font-size: 0.875rem;">Toggle Switch</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Animations -->
+        <section class="demo-section">
+            <h2>Loading Animations</h2>
+            <p>Various loading states and indicators</p>
+            
+            <div class="loading-demo">
+                <div class="spinner"></div>
+                <span>Default Spinner</span>
+            </div>
+            
+            <div class="loading-demo">
+                <div class="spinner spinner-sm"></div>
+                <span>Small Spinner</span>
+            </div>
+            
+            <div class="loading-demo">
+                <div class="spinner spinner-lg"></div>
+                <span>Large Spinner</span>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <p>Progress Bar:</p>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" style="width: 65%;"></div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <p>Indeterminate Progress:</p>
+                <div class="progress-bar progress-bar-indeterminate">
+                    <div class="progress-bar-fill"></div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <p>Skeleton Loading:</p>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text" style="width: 80%;"></div>
+            </div>
+        </section>
+
+        <!-- Entrance Animations -->
+        <section class="demo-section">
+            <h2>Entrance Animations</h2>
+            <p>Elements with staggered entrance animations</p>
+            <button onclick="restartStagger()" class="btn btn-primary" style="margin-bottom: 1rem;">
+                Restart Animation
+            </button>
+            <div class="stagger-demo demo-grid" id="staggerDemo">
+                <div class="demo-item">Item 1</div>
+                <div class="demo-item">Item 2</div>
+                <div class="demo-item">Item 3</div>
+                <div class="demo-item">Item 4</div>
+                <div class="demo-item">Item 5</div>
+            </div>
+        </section>
+
+        <!-- Performance Demo -->
+        <section class="demo-section">
+            <h2>Performance Optimized Animations</h2>
+            <p>60fps animations with hardware acceleration (hover over items)</p>
+            <div class="performance-demo">
+                <!-- Generate 50 items for performance testing -->
+            </div>
+        </section>
+
+        <!-- Modal Demo -->
+        <section class="demo-section">
+            <h2>Modal Animations</h2>
+            <p>Modal with backdrop and content animations</p>
+            <button onclick="showModal()" class="btn btn-primary">Show Modal</button>
+        </section>
+
+        <!-- Toast Demo -->
+        <section class="demo-section">
+            <h2>Toast Notifications</h2>
+            <p>Animated toast notifications</p>
+            <div class="demo-grid">
+                <button onclick="showToast('success')" class="btn btn-primary">Success Toast</button>
+                <button onclick="showToast('error')" class="btn btn-primary">Error Toast</button>
+                <button onclick="showToast('warning')" class="btn btn-primary">Warning Toast</button>
+                <button onclick="showToast('info')" class="btn btn-primary">Info Toast</button>
+            </div>
+        </section>
+
+        <!-- Reduced Motion -->
+        <section class="demo-section">
+            <h2>Accessibility</h2>
+            <p>Animations respect <code>prefers-reduced-motion</code> setting</p>
+            <p style="font-size: 0.875rem; color: var(--color-theme-text-muted);">
+                Enable "Reduce motion" in your system accessibility settings to see animations become minimal.
+            </p>
+        </section>
+    </main>
+
+    <script>
+        // Generate performance demo items
+        const performanceDemo = document.querySelector('.performance-demo');
+        for (let i = 0; i < 50; i++) {
+            const item = document.createElement('div');
+            item.className = 'performance-item';
+            performanceDemo.appendChild(item);
+        }
+
+        // Stagger animation restart
+        function restartStagger() {
+            const container = document.getElementById('staggerDemo');
+            const items = container.children;
+            
+            // Reset animations
+            for (let item of items) {
+                item.style.animation = 'none';
+                item.offsetHeight; // Trigger reflow
+                item.style.animation = null;
+            }
+        }
+
+        // Modal functionality
+        function showModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-backdrop';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3 style="margin-top: 0;">Animated Modal</h3>
+                    <p>This modal uses entrance animations with backdrop blur.</p>
+                    <button onclick="closeModal(this)" class="btn btn-primary">Close Modal</button>
+                </div>
+            `;
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(modal);
+                }
+            });
+            
+            document.body.appendChild(modal);
+        }
+
+        function closeModal(element) {
+            const modal = element.closest('.modal-backdrop');
+            modal.style.animation = 'fadeOut var(--animation-duration-fast) var(--transition-easing-smooth)';
+            setTimeout(() => {
+                modal.remove();
+            }, 150);
+        }
+
+        // Toast functionality
+        let toastCount = 0;
+        function showToast(type) {
+            const toastId = ++toastCount;
+            const colors = {
+                success: { bg: 'rgba(16, 185, 129, 0.1)', border: '#10b981', text: '#10b981' },
+                error: { bg: 'rgba(239, 68, 68, 0.1)', border: '#ef4444', text: '#ef4444' },
+                warning: { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', text: '#f59e0b' },
+                info: { bg: 'rgba(79, 70, 229, 0.1)', border: '#4f46e5', text: '#4f46e5' }
+            };
+            
+            const messages = {
+                success: 'Operation completed successfully!',
+                error: 'An error occurred. Please try again.',
+                warning: 'Please review your input.',
+                info: 'Here\'s some helpful information.'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.top = `${1 + (toastCount - 1) * 5}rem`;
+            toast.style.backgroundColor = colors[type].bg;
+            toast.style.borderColor = colors[type].border;
+            toast.style.color = colors[type].text;
+            
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>${messages[type]}</span>
+                    <button onclick="closeToast(this)" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0.25rem;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    closeToast(toast.querySelector('button'));
+                }
+            }, 5000);
+        }
+
+        function closeToast(button) {
+            const toast = button.closest('.toast');
+            toast.style.animation = 'slideInRight var(--animation-duration-normal) var(--transition-easing-smooth) reverse';
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.querySelector('.modal-backdrop');
+                if (modal) {
+                    closeModal(modal);
+                }
+            }
+        });
+
+        // Performance monitoring
+        if ('performance' in window) {
+            const observer = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    if (entry.entryType === 'measure') {
+                        console.log(`Animation performance: ${entry.name} took ${entry.duration}ms`);
+                    }
+                }
+            });
+            observer.observe({ entryTypes: ['measure'] });
+        }
+    </script>
+</body>
+</html>

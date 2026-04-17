@@ -1,0 +1,544 @@
+/* TicketIQ Design System - Flask Integration CSS */
+/* This file provides the complete Flask integration styles */
+
+/* Import design tokens */
+@import url('design-system-variables.css');
+
+/* Import theme system */
+@import url('themes.css');
+
+/* Base Styles and Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  line-height: var(--font-line-height-normal);
+  font-size: var(--font-size-base);
+  margin: 0;
+  padding: 0;
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+  margin-bottom: var(--spacing-4);
+  color: var(--color-text-primary);
+}
+
+h1 { font-size: var(--font-size-5xl); }
+h2 { font-size: var(--font-size-4xl); }
+h3 { font-size: var(--font-size-3xl); }
+h4 { font-size: var(--font-size-2xl); }
+h5 { font-size: var(--font-size-xl); }
+h6 { font-size: var(--font-size-lg); }
+
+p {
+  margin-bottom: var(--spacing-4);
+  color: var(--color-text-primary);
+}
+
+/* Links */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-duration-fast) var(--transition-easing-ease);
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Bootstrap Component Overrides */
+
+/* Button Overrides */
+.btn {
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-duration-fast) var(--transition-easing-ease);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-base);
+  border: 1px solid transparent;
+}
+
+.btn:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  color: white;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-background-tertiary);
+  border-color: var(--color-border-focus);
+  color: var(--color-text-primary);
+}
+
+.btn-outline-primary {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: transparent;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.btn-success {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.btn-warning {
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+  color: white;
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  color: white;
+}
+
+.btn-sm {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+  padding: var(--spacing-4) var(--spacing-6);
+  font-size: var(--font-size-lg);
+}
+
+/* Form Control Overrides */
+.form-control {
+  background-color: var(--color-background-surface);
+  border: 1px solid var(--color-border-primary);
+  color: var(--color-text-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-base);
+  transition: border-color var(--transition-duration-fast) var(--transition-easing-ease);
+}
+
+.form-control::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.form-control:focus {
+  background-color: var(--color-background-surface);
+  border-color: var(--color-border-focus);
+  color: var(--color-text-primary);
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+  outline: none;
+}
+
+.form-control:disabled {
+  background-color: var(--color-background-secondary);
+  opacity: 0.6;
+  color: var(--color-text-secondary);
+}
+
+.form-select {
+  background-color: var(--color-background-surface);
+  border: 1px solid var(--color-border-primary);
+  color: var(--color-text-primary);
+  border-radius: var(--border-radius-md);
+}
+
+.form-select:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+  outline: none;
+}
+
+.form-label {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-base);
+}
+
+.form-text {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-1);
+}
+
+/* Checkbox and Radio Overrides */
+.form-check-input {
+  background-color: var(--color-background-surface);
+  border: 1px solid var(--color-border-primary);
+}
+
+.form-check-input:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.form-check-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.form-check-label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+/* Card Overrides */
+.card {
+  background-color: var(--color-background-surface);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+  background-color: var(--color-background-secondary);
+  border-bottom: 1px solid var(--color-border-primary);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-4);
+}
+
+.card-body {
+  color: var(--color-text-primary);
+  padding: var(--spacing-4);
+}
+
+.card-footer {
+  background-color: var(--color-background-secondary);
+  border-top: 1px solid var(--color-border-primary);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-4);
+}
+
+.card-title {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-3);
+}
+
+/* Alert Overrides */
+.alert {
+  border-radius: var(--border-radius-md);
+  border: 1px solid;
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.alert-primary {
+  background-color: rgba(79, 70, 229, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.alert-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.alert-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.alert-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.alert-info {
+  background-color: rgba(6, 182, 212, 0.1);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Modal Overrides */
+.modal-content {
+  background-color: var(--color-background-surface);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--color-border-primary);
+  padding: var(--spacing-4);
+}
+
+.modal-title {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.modal-body {
+  color: var(--color-text-primary);
+  padding: var(--spacing-4);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--color-border-primary);
+  padding: var(--spacing-4);
+}
+
+.btn-close {
+  filter: invert(1);
+}
+
+/* Navigation Overrides */
+.navbar {
+  background-color: var(--color-background-secondary) !important;
+  border-bottom: 1px solid var(--color-border-primary);
+  padding: var(--spacing-3) 0;
+}
+
+.navbar-brand {
+  color: var(--color-text-primary) !important;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xl);
+}
+
+.navbar-nav .nav-link {
+  color: var(--color-text-primary) !important;
+  transition: color var(--transition-duration-fast) var(--transition-easing-ease);
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+.navbar-nav .nav-link:hover {
+  color: var(--color-primary) !important;
+}
+
+.navbar-nav .nav-link.active {
+  color: var(--color-primary) !important;
+  font-weight: var(--font-weight-medium);
+}
+
+.navbar-toggler {
+  border-color: var(--color-border-primary);
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+/* Badge Overrides */
+.badge {
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.bg-success {
+  background-color: var(--color-success) !important;
+}
+
+.bg-warning {
+  background-color: var(--color-warning) !important;
+}
+
+.bg-danger {
+  background-color: var(--color-danger) !important;
+}
+
+.bg-info {
+  background-color: var(--color-accent) !important;
+}
+
+/* Table Overrides */
+.table {
+  color: var(--color-text-primary);
+}
+
+.table th {
+  border-bottom: 2px solid var(--color-border-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  padding: var(--spacing-3);
+}
+
+.table td {
+  border-bottom: 1px solid var(--color-border-primary);
+  padding: var(--spacing-3);
+  color: var(--color-text-primary);
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Utility Classes */
+.bg-surface {
+  background-color: var(--color-background-surface) !important;
+}
+
+.bg-secondary-surface {
+  background-color: var(--color-background-secondary) !important;
+}
+
+.bg-tertiary-surface {
+  background-color: var(--color-background-tertiary) !important;
+}
+
+.text-primary-custom {
+  color: var(--color-primary) !important;
+}
+
+.text-accent {
+  color: var(--color-accent) !important;
+}
+
+.text-muted-custom {
+  color: var(--color-text-secondary) !important;
+}
+
+.border-primary-custom {
+  border-color: var(--color-border-primary) !important;
+}
+
+.border-focus {
+  border-color: var(--color-border-focus) !important;
+}
+
+/* Spacing Utilities */
+.gap-1 { gap: var(--spacing-1) !important; }
+.gap-2 { gap: var(--spacing-2) !important; }
+.gap-3 { gap: var(--spacing-3) !important; }
+.gap-4 { gap: var(--spacing-4) !important; }
+.gap-5 { gap: var(--spacing-5) !important; }
+
+/* Shadow Utilities */
+.shadow-sm-custom { box-shadow: var(--shadow-sm) !important; }
+.shadow-md { box-shadow: var(--shadow-md) !important; }
+.shadow-lg-custom { box-shadow: var(--shadow-lg) !important; }
+.shadow-xl-custom { box-shadow: var(--shadow-xl) !important; }
+
+/* Transition Utilities */
+.transition-fast {
+  transition: all var(--transition-duration-fast) var(--transition-easing-ease) !important;
+}
+
+.transition-normal {
+  transition: all var(--transition-duration-normal) var(--transition-easing-ease) !important;
+}
+
+/* Hover Effects */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Focus Utilities */
+.focus-ring:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+  .btn {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+  }
+  
+  .card-body {
+    padding: var(--spacing-3);
+  }
+  
+  .navbar-brand {
+    font-size: var(--font-size-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: var(--font-size-4xl); }
+  h2 { font-size: var(--font-size-3xl); }
+  h3 { font-size: var(--font-size-2xl); }
+}

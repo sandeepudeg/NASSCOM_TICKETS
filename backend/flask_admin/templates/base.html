@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tickets Admin{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
+    
+    <!-- TicketIQ Design System CSS -->
+    <link href="{{ url_for('static', filename='css/design-system-variables.css') }}?v={{ asset_version }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/ticketiq-flask.css') }}?v={{ asset_version }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/themes.css') }}?v={{ asset_version }}" rel="stylesheet">
+    
+    <!-- Custom CSS with versioning for cache busting -->
+    <link href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/enhanced-flask.css') }}?v={{ asset_version }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/ds-components.css') }}?v={{ asset_version }}" rel="stylesheet">
+    
+    <!-- Preload critical assets for better performance -->
+    <link rel="preload" href="{{ url_for('static', filename='css/design-system-variables.css') }}" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/ticketiq-flask.css') }}" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='js/app.js') }}" as="script">
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Enhanced Design System Navigation -->
+    <nav class="enhanced-nav">
+        <div style="display: flex; align-items: center; gap: 2rem;">
+            <a href="{{ url_for('dashboard') }}" class="enhanced-nav-logo">
+                <i class="fas fa-ticket-alt"></i> Tickets<span>IQ</span>
+            </a>
+            
+            <!-- Enhanced Search -->
+            <div class="enhanced-search-container">
+                <input type="text" class="enhanced-search-input" id="globalSearch" 
+                       placeholder="Search tickets, folders...">
+                <i class="fas fa-search enhanced-search-icon"></i>
+            </div>
+        </div>
+        
+        <!-- Enhanced Navigation Actions -->
+        <div class="enhanced-nav-actions">
+            <!-- System Status Indicator -->
+            <div class="enhanced-status-indicator" id="systemStatus">
+                <i class="fas fa-circle"></i>
+                <small>Online</small>
+            </div>
+            
+            <!-- Quick Actions -->
+            <button class="enhanced-btn enhanced-btn-success enhanced-btn-sm" onclick="showQuickTicket()">
+                <i class="fas fa-plus"></i> Ticket
+            </button>
+            <button class="enhanced-btn enhanced-btn-primary enhanced-btn-sm" onclick="showQuickFolder()">
+                <i class="fas fa-folder-plus"></i> Folder
+            </button>
+            <button class="enhanced-btn enhanced-btn-warning enhanced-btn-sm" onclick="showQuickClassify()">
+                <i class="fas fa-robot"></i> Test
+            </button>
+            
+            <!-- Theme Toggle -->
+            <button class="enhanced-btn enhanced-btn-outline enhanced-btn-sm" onclick="toggleTheme()" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
+            
+            <!-- Settings -->
+            <button class="enhanced-btn enhanced-btn-outline enhanced-btn-sm" onclick="toggleSettings()">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Flash Messages (Design System) -->
+    <div id="flashContainer" class="ds-toast-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="ds-toast ds-toast-{{ 'danger' if category == 'error' else category }}" role="alert">
+                        {{ message }}
+                        <button type="button" class="ds-toast-close" onclick="this.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="ds-main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="ds-fab-container">
+        <button class="ds-fab-main" onclick="toggleFAB()">
+            <i class="fas fa-plus"></i>
+        </button>
+        <div class="ds-fab-menu" id="fabMenu">
+            <button class="ds-fab-item" onclick="showQuickTicket()" title="Create Ticket">
+                <i class="fas fa-ticket-alt"></i>
+            </button>
+            <button class="ds-fab-item" onclick="showQuickFolder()" title="Create Folder">
+                <i class="fas fa-folder"></i>
+            </button>
+            <button class="ds-fab-item" onclick="showQuickClassify()" title="Test Classification">
+                <i class="fas fa-robot"></i>
+            </button>
+            <button class="ds-fab-item" onclick="refreshData()" title="Refresh Data">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Action Modals (Design System) -->
+    
+    <!-- Quick Ticket Modal -->
+    <div class="ds-modal" id="quickTicketModal">
+        <div class="ds-modal-backdrop" onclick="closeModal('quickTicketModal')"></div>
+        <div class="ds-modal-content ds-modal-lg">
+            <div class="ds-modal-header">
+                <h5 class="ds-modal-title">
+                    <i class="fas fa-plus-circle"></i> Quick Ticket
+                </h5>
+                <button type="button" class="ds-modal-close" onclick="closeModal('quickTicketModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ds-modal-body">
+                <form id="quickTicketForm">
+                    <div class="ds-form-row">
+                        <div class="ds-form-col-8">
+                            <div class="ds-form-group">
+                                <input type="text" class="ds-input" id="quickTitle" 
+                                       placeholder="Ticket title..." required>
+                            </div>
+                            <div class="ds-form-group">
+                                <textarea class="ds-textarea" id="quickDescription" rows="4" 
+                                          placeholder="Describe the issue..." required></textarea>
+                            </div>
+                        </div>
+                        <div class="ds-form-col-4">
+                            <div class="ds-form-group">
+                                <select class="ds-select" id="quickFolder">
+                                    <option value="">Select folder...</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="ds-form-group">
+                                <label class="ds-checkbox">
+                                    <input type="checkbox" id="autoClassify" checked>
+                                    <span class="ds-checkbox-mark"></span>
+                                    Auto-classify
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!-- AI result area: shown after ticket creation -->
+                <div id="ticketCreationResult" style="display:none;"></div>
+            </div>
+            <div class="ds-modal-footer">
+                <button type="button" class="ds-btn ds-btn-secondary" 
+                        id="closeTicketModalBtn"
+                        onclick="closeModal('quickTicketModal')">Cancel</button>
+                <button type="button" class="ds-btn ds-btn-primary" 
+                        id="createTicketBtn"
+                        onclick="submitQuickTicket()">
+                    <i class="fas fa-plus"></i> Create Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Folder Modal -->
+    <div class="ds-modal" id="quickFolderModal">
+        <div class="ds-modal-backdrop" onclick="closeModal('quickFolderModal')"></div>
+        <div class="ds-modal-content">
+            <div class="ds-modal-header">
+                <h5 class="ds-modal-title">
+                    <i class="fas fa-folder-plus"></i> Quick Folder
+                </h5>
+                <button type="button" class="ds-modal-close" onclick="closeModal('quickFolderModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ds-modal-body">
+                <form id="quickFolderForm">
+                    <div class="ds-form-group">
+                        <input type="text" class="ds-input" id="folderName" 
+                               placeholder="Folder name..." required>
+                    </div>
+                    <div class="ds-form-group">
+                        <textarea class="ds-textarea" id="folderDescription" rows="2" 
+                                  placeholder="Optional description..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="ds-modal-footer">
+                <button type="button" class="ds-btn ds-btn-secondary" onclick="closeModal('quickFolderModal')">Cancel</button>
+                <button type="button" class="ds-btn ds-btn-info" onclick="submitQuickFolder()">
+                    <i class="fas fa-plus"></i> Create Folder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Classify Modal -->
+    <div class="ds-modal" id="quickClassifyModal">
+        <div class="ds-modal-backdrop" onclick="closeModal('quickClassifyModal')"></div>
+        <div class="ds-modal-content ds-modal-lg">
+            <div class="ds-modal-header">
+                <h5 class="ds-modal-title">
+                    <i class="fas fa-robot"></i> Quick Classification Test
+                </h5>
+                <button type="button" class="ds-modal-close" onclick="closeModal('quickClassifyModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ds-modal-body">
+                <form id="quickClassifyForm">
+                    <div class="ds-form-group">
+                        <textarea class="ds-textarea" id="classifyText" rows="4" 
+                                  placeholder="Enter text to classify..." required></textarea>
+                    </div>
+                    <div id="classifyResults" class="ds-classification-results" style="display: none;">
+                        <!-- Results populated dynamically -->
+                    </div>
+                </form>
+            </div>
+            <div class="ds-modal-footer">
+                <button type="button" class="ds-btn ds-btn-secondary" onclick="closeModal('quickClassifyModal')">Close</button>
+                <button type="button" class="ds-btn ds-btn-warning" onclick="submitQuickClassify()">
+                    <i class="fas fa-robot"></i> Classify
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="ds-sidebar" id="settingsPanel">
+        <div class="ds-sidebar-header">
+            <h5 class="ds-sidebar-title">Settings</h5>
+            <button type="button" class="ds-sidebar-close" onclick="toggleSettings()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="ds-sidebar-body">
+            <div class="ds-form-group">
+                <label class="ds-label">Auto-refresh interval</label>
+                <select class="ds-select" id="refreshInterval">
+                    <option value="0">Disabled</option>
+                    <option value="30">30 seconds</option>
+                    <option value="60" selected>1 minute</option>
+                    <option value="300">5 minutes</option>
+                </select>
+            </div>
+            <div class="ds-form-group">
+                <label class="ds-checkbox">
+                    <input type="checkbox" id="compactMode">
+                    <span class="ds-checkbox-mark"></span>
+                    Compact mode
+                </label>
+            </div>
+            <div class="ds-form-group">
+                <label class="ds-checkbox">
+                    <input type="checkbox" id="darkMode" checked>
+                    <span class="ds-checkbox-mark"></span>
+                    Dark mode
+                </label>
+            </div>
+            <hr class="ds-divider">
+            <div class="ds-form-group">
+                <small class="ds-text-muted">
+                    API: {{ api_base_url }}<br>
+                    Updated: {{ current_time.strftime('%H:%M:%S') if current_time else 'N/A' }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <!-- Design System Theme Script -->
+    <script>
+        // Theme management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update theme toggle button
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                const icon = themeToggle.querySelector('i');
+                icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+
+        // Load saved theme
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // Update theme toggle button
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                const icon = themeToggle.querySelector('i');
+                icon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+
+        // Modal management
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('ds-modal-show');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('ds-modal-show');
+                document.body.style.overflow = '';
+                // Dispatch event so app logic can reset forms
+                const event = new CustomEvent('ds-modal-hidden', { detail: { modalId } });
+                document.dispatchEvent(event);
+            }
+        }
+
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', loadTheme);
+    </script>
+    <!-- Efficient App JS -->
+    <script src="{{ url_for('static', filename='js/efficient_app.js') }}?v={{ asset_version }}" defer></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

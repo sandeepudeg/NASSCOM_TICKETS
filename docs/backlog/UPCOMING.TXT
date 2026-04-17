@@ -1,0 +1,42 @@
+THE COUNT OF EACH DEPARTMENT IS NOT SHOWN IT IS SOME HOW SKIPPERD -->
+INSTEAD OF CIOLLASABLE MAKE IT VISDIBLE ALL THe TIME.
+PATTERN ALTERTS SHOULD BE LINKED TO ALTERTS
+MODEL METRIC SHOULD BE LINKED TO INTELLIGANCE
+FOR APPLICATION DEPARTMENT TEXT IS NOT VISIBLE(BAR GRAPH)
+ADD HALLUCINATION RATE IN llm PERFORMANCE
+UNDER TRAFFIC MANAGEMENT OR MONITORING PERVIOUS DAT TICKETS COUNT WILL BECOME BASELINE AND TEH URRENT DAY  WILL BE MONITOERED OVER THIS 
+TEH TICKEN NUMBER IS WRAPPED IN INTELLIGENCE PAGE INSTEAD DISPLAY IT IN A SINGLE LINE
+mISSING SERIAL NUMBER CHECK FOR EVERY DEPARTMENT
+iNTELLIGANCE  IN LIGHT MODE TEH f1 ACCURACY SCORE IS NOT CLEARLY VISIBLE 
+aDD "AI Powered Intelligent Ticket Routing & Resolution POWERED BY LLM add at very top and then shift the things downlowrd
+log in screen should have a option to select the tenant
+Clean up folder structure to look more professionong taht can be pushed on git
+Deployement through docker
+#KAG-1775989946-0453
+on the monitoring how it will be done once it is deplooyed through HF.
+SDhouild it be included in Settings for all or only for admin ?
+
+
+
+
+Feature	PDF Requirement	Current Implementation Status
+Classification	7 Categories (incl. Access Management)	✅ 6 departments active; Missing: "Access Management"
+RAG Layer	Retrieve similar past tickets & suggest steps	✅ Fully implemented in Intelligence Report
+Agentic Layer	Confidence < Threshold → Escalate	✅ Implemented; tickets are flagged for escalation
+Bonus: Automation	Repeated issue → suggest automation	❌ Missing: Logic to detect if a pattern warrants automation
+Bonus: Privacy	PII Redaction / India DPDP / GDPR	⚠️ Masking logic exists, but needs "Auditable Redaction" mention
+Robustness	Handle logs, traces, and causal analysis	❌ Missing: Explicit "Causal Analysis" section in reports
+🚀 Recommended Enhancements (To Close the Gaps)
+Integrate "Access Management":
+
+Backend: Add Access Management as a 7th label in the classifier and a department in the database.
+Frontend: Ensure the Dashboard and Sidebar reflect this 7th vertical.
+Add "Automation Intelligence" (Bonus Points):
+
+In the Intelligence Report, if the confidence or similarity to past resolved tickets is > 95%, add a tag: [!] AUTOMATION OPPORTUNITY. This shows the system is "Agentic" as requested in the PDF.
+Causal Analysis Section:
+
+Add a "Root Cause Analysis" (RCA) field to the AI output. The PDF specifically asks for "correlation with symptoms." We can derive this from the RAG context.
+PII Privacy Metadata:
+
+In the System Settings, add a metric: "PII Entities Redacted" (e.g., 2,451). This specifically targets the "Impact Assessment" section (Page 3) regarding India's DPDP Act and GDPR.

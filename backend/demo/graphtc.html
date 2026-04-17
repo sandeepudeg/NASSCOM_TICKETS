@@ -1,0 +1,53 @@
+graph TD
+    %% Define Infrastructure
+    subgraph Infra ["Deployment Infrastructure (Self-Hosted: Docker/Kubernetes)"]
+        
+        %% Physical/Virtual Hardware
+        subgraph Hardware ["Compute Hardware"]
+            GPU[GPU Acceleration<br/>NVIDIA CUDA / AMD ROCm]
+            ComputeNode[General Compute Node<br/>(e.g., Min 16GB RAM)]
+        end
+
+        %% The Application Stack
+        subgraph Containers ["Containerized Services (Docker Compose/K8s)"]
+            
+            Gateway[Traefik/Nginx<br/>Ingress Gateway]
+            
+            subgraph AppNode ["Application Pods/Services"]
+                FastAPI[FastAPI App Services<br/>(Multiple Replicas)]
+            end
+            
+            subgraph AINode ["AI Processing Pods/Services"]
+                Classifier[Classifier Service]
+                Ollama[Ollama Runtime]
+                MLflow[MLflow Model Registry]
+            end
+            
+            subgraph DatabaseNode ["Stateful Services"]
+                Postgres[(PostgreSQL<br/>+pgvector)]
+                ObjectStorage[MinIO<br/>Object Storage]
+            end
+        end
+    end
+
+    %% Observability Stack (Sidecar/External)
+    subgraph Observability ["Observability Stack"]
+        Prometheus[Prometheus<br/>(Metrics)]
+        Jaeger[Jaeger<br/>(Tracing)]
+        Loki[Loki + Grafana<br/>(Logs + Dashboards)]
+    end
+
+    %% Connections
+    Ollama --- GPU
+    Ollama --- ComputeNode
+    FastAPI --- ComputeNode
+    
+    Ingress --> Gateway
+    Gateway --> FastAPI
+    Gateway --> AINode
+    
+    AppNode -- "mTLS" --> DatabaseNode
+    AppNode -- "mTLS" --> AINode
+    
+    %% Monitoring connections (implicit)
+    Containers -.-> Observability

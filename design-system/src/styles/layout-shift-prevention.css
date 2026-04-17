@@ -1,0 +1,128 @@
+/* TicketIQ Design System - Layout Shift Prevention */
+
+/* Skeleton Loading States */
+.skeleton {
+  background: linear-gradient(90deg, 
+    var(--color-theme-bg2) 25%, 
+    var(--color-theme-bg3) 50%, 
+    var(--color-theme-bg2) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Component Size Reservations */
+.btn-skeleton {
+  height: 2.5rem; /* Match button height */
+  width: 6rem; /* Typical button width */
+  border-radius: var(--borderRadius-md);
+}
+
+.input-skeleton {
+  height: 2.5rem; /* Match input height */
+  width: 100%;
+  border-radius: var(--borderRadius-sm);
+}
+
+.card-skeleton {
+  height: 12rem; /* Typical card height */
+  width: 100%;
+  border-radius: var(--borderRadius-lg);
+}
+
+.text-skeleton {
+  height: 1.2em; /* Match line height */
+  width: 100%;
+  border-radius: var(--borderRadius-sm);
+  margin-bottom: 0.5em;
+}
+
+.text-skeleton.short {
+  width: 60%;
+}
+
+.text-skeleton.medium {
+  width: 80%;
+}
+
+/* Image Loading States */
+.img-skeleton {
+  background: var(--color-theme-bg2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-theme-textMuted);
+}
+
+.img-skeleton::before {
+  content: '📷';
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+/* Prevent Layout Shift During Loading */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Font Loading States */
+.font-loading * {
+  visibility: hidden;
+}
+
+.font-loading .critical-text {
+  visibility: visible;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.font-loaded * {
+  visibility: visible;
+}
+
+/* Aspect Ratio Containers (prevent image layout shift) */
+.aspect-ratio {
+  position: relative;
+  width: 100%;
+}
+
+.aspect-ratio::before {
+  content: '';
+  display: block;
+  padding-top: var(--aspect-ratio, 56.25%); /* 16:9 default */
+}
+
+.aspect-ratio > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Common aspect ratios */
+.aspect-16-9 { --aspect-ratio: 56.25%; }
+.aspect-4-3 { --aspect-ratio: 75%; }
+.aspect-1-1 { --aspect-ratio: 100%; }
+.aspect-3-2 { --aspect-ratio: 66.67%; }
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: var(--color-theme-bg2);
+  }
+}

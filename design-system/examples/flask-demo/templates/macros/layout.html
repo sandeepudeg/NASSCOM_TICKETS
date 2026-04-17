@@ -1,0 +1,287 @@
+{# TicketIQ Design System - Layout Macros #}
+{# This file provides layout-related Jinja2 macros #}
+
+{# Container Component #}
+{% macro ds_container(fluid=false, class='', id='') %}
+  {% set container_classes = [] %}
+  {% if fluid %}
+    {% set _ = container_classes.append('container-fluid') %}
+  {% else %}
+    {% set _ = container_classes.append('container') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = container_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ container_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Row Component #}
+{% macro ds_row(class='', id='', justify='', align='') %}
+  {% set row_classes = ['row'] %}
+  
+  {% if justify %}
+    {% if justify == 'start' %}
+      {% set _ = row_classes.append('justify-content-start') %}
+    {% elif justify == 'center' %}
+      {% set _ = row_classes.append('justify-content-center') %}
+    {% elif justify == 'end' %}
+      {% set _ = row_classes.append('justify-content-end') %}
+    {% elif justify == 'between' %}
+      {% set _ = row_classes.append('justify-content-between') %}
+    {% elif justify == 'around' %}
+      {% set _ = row_classes.append('justify-content-around') %}
+    {% endif %}
+  {% endif %}
+  
+  {% if align %}
+    {% if align == 'start' %}
+      {% set _ = row_classes.append('align-items-start') %}
+    {% elif align == 'center' %}
+      {% set _ = row_classes.append('align-items-center') %}
+    {% elif align == 'end' %}
+      {% set _ = row_classes.append('align-items-end') %}
+    {% endif %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = row_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ row_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Column Component #}
+{% macro ds_col(size='', sm='', md='', lg='', xl='', xxl='', class='', id='') %}
+  {% set col_classes = [] %}
+  
+  {% if size %}
+    {% if size == 'auto' %}
+      {% set _ = col_classes.append('col-auto') %}
+    {% else %}
+      {% set _ = col_classes.append('col-' + size|string) %}
+    {% endif %}
+  {% else %}
+    {% set _ = col_classes.append('col') %}
+  {% endif %}
+  
+  {% if sm %}
+    {% set _ = col_classes.append('col-sm-' + sm|string) %}
+  {% endif %}
+  
+  {% if md %}
+    {% set _ = col_classes.append('col-md-' + md|string) %}
+  {% endif %}
+  
+  {% if lg %}
+    {% set _ = col_classes.append('col-lg-' + lg|string) %}
+  {% endif %}
+  
+  {% if xl %}
+    {% set _ = col_classes.append('col-xl-' + xl|string) %}
+  {% endif %}
+  
+  {% if xxl %}
+    {% set _ = col_classes.append('col-xxl-' + xxl|string) %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = col_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ col_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Flex Container Component #}
+{% macro ds_flex(direction='row', wrap=false, justify='', align='', class='', id='') %}
+  {% set flex_classes = ['d-flex'] %}
+  
+  {% if direction == 'column' %}
+    {% set _ = flex_classes.append('flex-column') %}
+  {% endif %}
+  
+  {% if wrap %}
+    {% set _ = flex_classes.append('flex-wrap') %}
+  {% endif %}
+  
+  {% if justify %}
+    {% if justify == 'start' %}
+      {% set _ = flex_classes.append('justify-content-start') %}
+    {% elif justify == 'center' %}
+      {% set _ = flex_classes.append('justify-content-center') %}
+    {% elif justify == 'end' %}
+      {% set _ = flex_classes.append('justify-content-end') %}
+    {% elif justify == 'between' %}
+      {% set _ = flex_classes.append('justify-content-between') %}
+    {% elif justify == 'around' %}
+      {% set _ = flex_classes.append('justify-content-around') %}
+    {% endif %}
+  {% endif %}
+  
+  {% if align %}
+    {% if align == 'start' %}
+      {% set _ = flex_classes.append('align-items-start') %}
+    {% elif align == 'center' %}
+      {% set _ = flex_classes.append('align-items-center') %}
+    {% elif align == 'end' %}
+      {% set _ = flex_classes.append('align-items-end') %}
+    {% elif align == 'stretch' %}
+      {% set _ = flex_classes.append('align-items-stretch') %}
+    {% endif %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = flex_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ flex_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Stack Component (Vertical spacing) #}
+{% macro ds_stack(gap='md', class='', id='') %}
+  {% set stack_classes = ['d-flex', 'flex-column'] %}
+  
+  {% if gap == 'xs' %}
+    {% set _ = stack_classes.append('gap-1') %}
+  {% elif gap == 'sm' %}
+    {% set _ = stack_classes.append('gap-2') %}
+  {% elif gap == 'md' %}
+    {% set _ = stack_classes.append('gap-3') %}
+  {% elif gap == 'lg' %}
+    {% set _ = stack_classes.append('gap-4') %}
+  {% elif gap == 'xl' %}
+    {% set _ = stack_classes.append('gap-5') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = stack_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ stack_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Grid Component (CSS Grid) #}
+{% macro ds_grid(columns='1', gap='md', class='', id='') %}
+  {% set grid_classes = ['d-grid'] %}
+  
+  {% if gap == 'xs' %}
+    {% set _ = grid_classes.append('gap-1') %}
+  {% elif gap == 'sm' %}
+    {% set _ = grid_classes.append('gap-2') %}
+  {% elif gap == 'md' %}
+    {% set _ = grid_classes.append('gap-3') %}
+  {% elif gap == 'lg' %}
+    {% set _ = grid_classes.append('gap-4') %}
+  {% elif gap == 'xl' %}
+    {% set _ = grid_classes.append('gap-5') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = grid_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ grid_classes | join(' ') }}" 
+       style="grid-template-columns: repeat({{ columns }}, 1fr);"
+       {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Sidebar Layout Component #}
+{% macro ds_sidebar_layout(sidebar_width='250px', class='', id='') %}
+  <div class="d-flex {% if class %}{{ class }}{% endif %}" 
+       {% if id %}id="{{ id }}"{% endif %}>
+    <div class="sidebar bg-surface border-end" 
+         style="width: {{ sidebar_width }}; min-height: 100vh;">
+      {{ caller('sidebar') }}
+    </div>
+    <div class="main-content flex-grow-1">
+      {{ caller('main') }}
+    </div>
+  </div>
+{% endmacro %}
+
+{# Header Layout Component #}
+{% macro ds_header_layout(header_height='60px', class='', id='') %}
+  <div class="{% if class %}{{ class }}{% endif %}" 
+       {% if id %}id="{{ id }}"{% endif %}>
+    <header class="bg-secondary-surface border-bottom" 
+            style="height: {{ header_height }};">
+      {{ caller('header') }}
+    </header>
+    <main class="main-content" 
+          style="min-height: calc(100vh - {{ header_height }});">
+      {{ caller('main') }}
+    </main>
+  </div>
+{% endmacro %}
+
+{# Breadcrumb Component #}
+{% macro ds_breadcrumb(items, class='', id='') %}
+  {% set breadcrumb_classes = ['breadcrumb'] %}
+  {% if class %}
+    {% set _ = breadcrumb_classes.append(class) %}
+  {% endif %}
+  
+  <nav aria-label="breadcrumb" {% if id %}id="{{ id }}"{% endif %}>
+    <ol class="{{ breadcrumb_classes | join(' ') }}">
+      {% for item in items %}
+        <li class="breadcrumb-item {% if loop.last %}active{% endif %}"
+            {% if loop.last %}aria-current="page"{% endif %}>
+          {% if not loop.last and item.url %}
+            <a href="{{ item.url }}">{{ item.text }}</a>
+          {% else %}
+            {{ item.text }}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+{% endmacro %}
+
+{# Section Component #}
+{% macro ds_section(title='', subtitle='', class='', id='', padding='md') %}
+  {% set section_classes = [] %}
+  
+  {% if padding == 'xs' %}
+    {% set _ = section_classes.append('py-2') %}
+  {% elif padding == 'sm' %}
+    {% set _ = section_classes.append('py-3') %}
+  {% elif padding == 'md' %}
+    {% set _ = section_classes.append('py-4') %}
+  {% elif padding == 'lg' %}
+    {% set _ = section_classes.append('py-5') %}
+  {% elif padding == 'xl' %}
+    {% set _ = section_classes.append('py-6') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = section_classes.append(class) %}
+  {% endif %}
+  
+  <section class="{{ section_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if title or subtitle %}
+      <div class="mb-4">
+        {% if title %}
+          <h2 class="mb-2">{{ title }}</h2>
+        {% endif %}
+        {% if subtitle %}
+          <p class="text-muted-custom mb-0">{{ subtitle }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+    
+    {{ caller() }}
+  </section>
+{% endmacro %}

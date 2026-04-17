@@ -1,0 +1,16 @@
+- [x] Create `.gitignore` in the root
+- [x] Create `docs/` directory hierarchy
+    - [x] `docs/deployment/`
+    - [x] `docs/architecture/`
+    - [x] `docs/research/`
+    - [x] `docs/proposals/`
+- [x] Relocate root documentation files
+    - [x] Move setup/deployment guides
+    - [x] Move architecture overviews
+    - [x] Move research summaries
+- [x] Incorporate Planning Artifacts
+    - [x] Copy `implementation_plan.md` to `docs/proposals/`
+    - [x] Copy `walkthrough.md` to `docs/proposals/`
+    - [x] Copy `task.md` to `docs/proposals/`
+- [/] Update `README.md` with new features and structure
+- [ ] Verify structure and application stability

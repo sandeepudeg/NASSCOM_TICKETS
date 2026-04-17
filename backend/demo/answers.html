@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketIQ Solution Overview - Architecture, USP & Dependencies</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f0f1a;
+            --bg2: #16162a;
+            --bg3: #1e1e35;
+            --border: #2e2e4a;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --card: #1a1a2e;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        
+        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--primary); text-align: center; }
+        h2 { font-size: 2rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--accent); }
+        h3 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.75rem; color: var(--text); }
+        h4 { font-size: 1.2rem; font-weight: 600; margin: 1rem 0 0.5rem; color: var(--success); }
+
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .architecture-diagram {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .layer {
+            display: flex;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .layer-box {
+            background: var(--bg3);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 200px;
+            font-weight: 600;
+        }
+
+        .layer-box.client { border-color: var(--primary); color: #a5b4fc; }
+        .layer-box.network { border-color: var(--warning); color: #fcd34d; }
+        .layer-box.app { border-color: var(--accent); color: #67e8f9; }
+        .layer-box.data { border-color: var(--success); color: #6ee7b7; }
+        .layer-box.obs { border-color: var(--muted); color: var(--muted); }
+
+        .arrow {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--muted);
+            margin: 0.5rem 0;
+        }
+
+        .layer-label {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .card h4 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid var(--border);
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: var(--bg3);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: var(--bg2);
+        }
+
+        .highlight {
+            background: rgba(79, 70, 229, 0.15);
+            color: #a5b4fc;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .flow-diagram {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--bg3);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .flow-step-number {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .metric-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--success);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .tech-category {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .tech-category h4 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .tech-item::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎫 TicketIQ Solution Overview</h1>
+        <p style="text-align: center; font-size: 1.2rem; color: var(--muted); margin-bottom: 3rem;">
+            AI-Powered IT Ticket Routing & Resolution Platform - Architecture, USP & Dependencies
+        </p>
+
+        <!-- Solution Approach -->
+        <div class="section">
+            <h2>🚀 Solution Approach & High-Level Design</h2>
+            
+            <h3>1. Solution Overview</h3>
+            <p>TicketIQ is an AI-powered IT operations platform that automatically classifies, routes, and resolves IT support tickets using open-source LLMs and RAG (Retrieval-Augmented Generation) pipelines. The system provides enterprise-grade functionality while maintaining complete data sovereignty and zero vendor lock-in.</p>
+
+            <h3>2. High-Level Architecture</h3>
+            <div class="architecture-diagram">
+                <div class="layer-label">CLIENT LAYER</div>
+                <div class="layer">
+                    <div class="layer-box client">
+                        <strong>React 18 + TypeScript</strong><br>
+                        <small>Ant Design / Material-UI</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓ HTTPS / TLS 1.2+</div>
+                
+                <div class="layer-label">NETWORK LAYER</div>
+                <div class="layer">
+                    <div class="layer-box network">
+                        <strong>Traefik / Nginx</strong><br>
+                        <small>API Gateway + Rate Limiting</small>
+                    </div>
+                    <div class="layer-box network">
+                        <strong>Keycloak / Authentik</strong><br>
+                        <small>OAuth2 / OIDC / RBAC</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓ REST / gRPC + mTLS</div>
+                
+                <div class="layer-label">APPLICATION LAYER</div>
+                <div class="layer">
+                    <div class="layer-box app">
+                        <strong>FastAPI Services</strong><br>
+                        <small>Folder Manager, Ticket Assignment</small>
+                    </div>
+                    <div class="layer-box app">
+                        <strong>AI Classifier</strong><br>
+                        <small>ML Pipeline + RAG</small>
+                    </div>
+                    <div class="layer-box app">
+                        <strong>Ollama Runtime</strong><br>
+                        <small>LLM Inference Engine</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="layer-label">DATA LAYER</div>
+                <div class="layer">
+                    <div class="layer-box data">
+                        <strong>PostgreSQL 14+</strong><br>
+                        <small>+ pgvector extension</small>
+                    </div>
+                    <div class="layer-box data">
+                        <strong>Qdrant / ChromaDB</strong><br>
+                        <small>Vector Store (alternative)</small>
+                    </div>
+                    <div class="layer-box data">
+                        <strong>MinIO</strong><br>
+                        <small>Object Storage (S3-compatible)</small>
+                    </div>
+                    <div class="layer-box data">
+                        <strong>MLflow</strong><br>
+                        <small>Model Registry & Tracking</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="layer-label">OBSERVABILITY LAYER</div>
+                <div class="layer">
+                    <div class="layer-box obs">
+                        <strong>Prometheus</strong><br>
+                        <small>Metrics Collection</small>
+                    </div>
+                    <div class="layer-box obs">
+                        <strong>Jaeger</strong><br>
+                        <small>Distributed Tracing (OTLP)</small>
+                    </div>
+                    <div class="layer-box obs">
+                        <strong>Loki + Grafana</strong><br>
+                        <small>Logs + Dashboards</small>
+                    </div>
+                </div>
+            </div>
+
+            <h3>3. Core AI Processing Flow</h3>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-number">1</div>
+                    <div>
+                        <strong>Ticket Ingestion</strong><br>
+                        <small>Plain text, JSON logs (ECS), OpenTelemetry traces, Prometheus alerts</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">2</div>
+                    <div>
+                        <strong>PII Scrubbing</strong><br>
+                        <small>Microsoft Presidio removes names, emails, IPs, Aadhaar numbers</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">3</div>
+                    <div>
+                        <strong>AI Classification</strong><br>
+                        <small>Mistral/Phi-3/Gemma via Ollama → 7 categories with confidence scoring</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">4</div>
+                    <div>
+                        <strong>RAG Resolution</strong><br>
+                        <small>Retrieve top-5 similar tickets (≥0.70 similarity) → Generate resolution steps</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">5</div>
+                    <div>
+                        <strong>Escalation Logic</strong><br>
+                        <small>Confidence < 0.65 → Human review queue with webhook notifications</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USP Section -->
+        <div class="section">
+            <h2>🎯 Unique Selling Proposition (USP)</h2>
+            
+            <h3>Market Comparison</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>TicketIQ</th>
+                        <th>ServiceNow</th>
+                        <th>Jira Service Mgmt</th>
+                        <th>Zendesk</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Deployment Model</strong></td>
+                        <td><span class="success">100% Self-Hosted</span></td>
+                        <td><span class="warning">SaaS/Cloud Only</span></td>
+                        <td><span class="warning">SaaS Primary</span></td>
+                        <td><span class="warning">SaaS Only</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI/LLM Integration</strong></td>
+                        <td><span class="success">Local LLMs (Ollama)</span></td>
+                        <td><span class="warning">OpenAI API ($$$)</span></td>
+                        <td><span class="warning">Limited AI</span></td>
+                        <td><span class="warning">Basic AI Features</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data Sovereignty</strong></td>
+                        <td><span class="success">Complete Control</span></td>
+                        <td><span class="warning">Cloud-Based</span></td>
+                        <td><span class="warning">Cloud-Based</span></td>
+                        <td><span class="warning">Cloud-Based</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Licensing Cost</strong></td>
+                        <td><span class="success">$0 (Open Source)</span></td>
+                        <td><span class="warning">$100+/user/month</span></td>
+                        <td><span class="warning">$20+/user/month</span></td>
+                        <td><span class="warning">$19+/user/month</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Customization</strong></td>
+                        <td><span class="success">Full Source Access</span></td>
+                        <td><span class="warning">Limited APIs</span></td>
+                        <td><span class="warning">Plugin System</span></td>
+                        <td><span class="warning">Limited APIs</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Compliance</strong></td>
+                        <td><span class="success">GDPR/DPDP Ready</span></td>
+                        <td><span class="highlight">Enterprise Compliant</span></td>
+                        <td><span class="highlight">SOC2/ISO27001</span></td>
+                        <td><span class="highlight">SOC2/GDPR</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Key Differentiators</h3>
+            <div class="grid">
+                <div class="card">
+                    <h4>🔓 Zero Vendor Lock-in</h4>
+                    <ul class="feature-list">
+                        <li>100% OSI-approved open source stack</li>
+                        <li>Self-hosted LLMs eliminate API dependencies</li>
+                        <li>Complete source code access and modification rights</li>
+                        <li>No per-user or per-token pricing models</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🛡️ Enterprise Security & Compliance</h4>
+                    <ul class="feature-list">
+                        <li>Data never leaves organizational boundaries</li>
+                        <li>Built-in PII scrubbing with Microsoft Presidio</li>
+                        <li>mTLS between all internal services</li>
+                        <li>Immutable audit logs with 12-month retention</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🤖 Advanced AI Without Cloud Dependencies</h4>
+                    <ul class="feature-list">
+                        <li>Local LLM execution via Ollama runtime</li>
+                        <li>RAG pipeline with semantic similarity search</li>
+                        <li>Automated quality scoring with LLM-as-Judge</li>
+                        <li>Continuous retraining with MLflow tracking</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>📊 Comprehensive Quality Assurance</h4>
+                    <ul class="feature-list">
+                        <li>Defined performance thresholds (≥0.80 F1 score)</li>
+                        <li>Real-time model performance monitoring</li>
+                        <li>Automated rollback for underperforming models</li>
+                        <li>Pattern detection for proactive issue resolution</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dependencies & Assumptions -->
+        <div class="section">
+            <h2>⚙️ Dependencies & Assumptions</h2>
+            
+            <h3>Technical Dependencies</h3>
+            <div class="tech-stack">
+                <div class="tech-category">
+                    <h4>Infrastructure Requirements</h4>
+                    <div class="tech-item">Docker + Docker Compose or Kubernetes</div>
+                    <div class="tech-item">Minimum 16GB RAM for LLM models</div>
+                    <div class="tech-item">GPU acceleration (NVIDIA CUDA/AMD ROCm)</div>
+                    <div class="tech-item">PostgreSQL 14+ with pgvector extension</div>
+                    <div class="tech-item">Persistent storage for model artifacts</div>
+                </div>
+                
+                <div class="tech-category">
+                    <h4>External Services</h4>
+                    <div class="tech-item">Keycloak/Authentik (self-hosted auth)</div>
+                    <div class="tech-item">MinIO (S3-compatible object storage)</div>
+                    <div class="tech-item">Prometheus/Grafana observability stack</div>
+                    <div class="tech-item">SMTP server for notifications</div>
+                    <div class="tech-item">Webhook endpoints for escalations</div>
+                </div>
+                
+                <div class="tech-category">
+                    <h4>Data Dependencies</h4>
+                    <div class="tech-item">IT Service Ticket Classification Dataset</div>
+                    <div class="tech-item">Multilingual Customer Support Tickets</div>
+                    <div class="tech-item">ServiceNow-like Incident Response Log</div>
+                    <div class="tech-item">Historical ticket data for training</div>
+                    <div class="tech-item">Kaggle API access for dataset downloads</div>
+                </div>
+                
+                <div class="tech-category">
+                    <h4>Network Requirements</h4>
+                    <div class="tech-item">Internal service mesh connectivity</div>
+                    <div class="tech-item">HTTPS/TLS 1.2+ for external access</div>
+                    <div class="tech-item">Load balancer for high availability</div>
+                    <div class="tech-item">Firewall rules for service isolation</div>
+                    <div class="tech-item">DNS resolution for service discovery</div>
+                </div>
+            </div>
+
+            <h3>Key Assumptions</h3>
+            <div class="grid">
+                <div class="card">
+                    <h4>🏢 Organizational Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Structured IT support processes in place</li>
+                        <li>DevOps team capable of container management</li>
+                        <li>Comfort with self-hosted open source solutions</li>
+                        <li>Preference for CAPEX over OPEX model</li>
+                        <li>Need for data sovereignty and compliance</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>📈 Scale & Performance Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Processing 1000+ tickets per day</li>
+                        <li>Response time requirements < 5 seconds</li>
+                        <li>High availability (99.9% uptime) needed</li>
+                        <li>Multi-language support requirements</li>
+                        <li>Integration with existing ITSM tools</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🎯 Data Quality Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Historical tickets have consistent categorization</li>
+                        <li>Kaggle datasets representative of use cases</li>
+                        <li>Primary language is English (with multilingual support)</li>
+                        <li>Human agents available for override feedback</li>
+                        <li>Regular model retraining feasible</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🔧 Technical Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Reliable internal network connectivity</li>
+                        <li>Sufficient compute resources for LLM inference</li>
+                        <li>Backup and disaster recovery procedures</li>
+                        <li>Security team approval for self-hosted AI</li>
+                        <li>Integration capabilities with existing systems</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Quality Metrics & Targets</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-value">≥0.80</span>
+                    <div class="metric-label">Macro F1 Score<br>(All 7 Categories)</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≥0.72</span>
+                    <div class="metric-label">Mean Semantic<br>Similarity Score</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≥3.5/5</span>
+                    <div class="metric-label">LLM-as-Judge<br>Routing Score</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≤4s</span>
+                    <div class="metric-label">P95 Inference<br>Latency SLO</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≤0.25</span>
+                    <div class="metric-label">Equitable Recall<br>Spread</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">80%</span>
+                    <div class="metric-label">Backend Test<br>Coverage</div>
+                </div>
+            </div>
+
+            <h3>Risk Mitigation Strategies</h3>
+            <div class="grid">
+                <div class="card">
+                    <h4>🔧 Technical Risks</h4>
+                    <ul class="feature-list">
+                        <li><strong>Model Drift:</strong> Automated retraining pipeline with performance monitoring</li>
+                        <li><strong>Scalability:</strong> Horizontal scaling with Kubernetes and load balancing</li>
+                        <li><strong>Data Loss:</strong> Multi-tier backup strategy (DB + object storage)</li>
+                        <li><strong>Security:</strong> Automated scanning and regular security updates</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🏢 Operational Risks</h4>
+                    <ul class="feature-list">
+                        <li><strong>Adoption Resistance:</strong> Gradual rollout with parallel legacy operation</li>
+                        <li><strong>Performance Issues:</strong> Comprehensive monitoring with SLA alerting</li>
+                        <li><strong>Skills Gap:</strong> Training programs and documentation</li>
+                        <li><strong>Integration Challenges:</strong> API-first design with standard protocols</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 3rem; padding: 2rem; border-top: 1px solid var(--border); color: var(--muted);">
+            <p><strong>TicketIQ</strong> — AI-Powered IT Ticket Routing & Resolution Platform</p>
+            <p style="margin-top: 0.5rem;">Built for Enterprise • 100% Open Source • Complete Data Sovereignty</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">Architecture Overview v1.0 • All components OSI-approved open source</p>
+        </div>
+    </div>
+</body>
+</html>

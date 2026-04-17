@@ -1,0 +1,260 @@
+/* TicketIQ Design System - Theme System for Flask */
+/* This file provides theme switching support for Flask applications */
+
+/* Dark Theme (Default) */
+:root,
+[data-theme="dark"] {
+  /* Theme-specific color mappings */
+  --color-theme-primary: var(--color-primary);
+  --color-theme-accent: var(--color-accent);
+  --color-theme-success: var(--color-success);
+  --color-theme-warning: var(--color-warning);
+  --color-theme-danger: var(--color-danger);
+  
+  /* Dark theme backgrounds */
+  --color-theme-background: var(--color-background-primary);
+  --color-theme-background-secondary: var(--color-background-secondary);
+  --color-theme-background-tertiary: var(--color-background-tertiary);
+  --color-theme-surface: var(--color-background-surface);
+  
+  /* Dark theme text colors */
+  --color-theme-text: var(--color-text-primary);
+  --color-theme-text-secondary: var(--color-text-secondary);
+  --color-theme-text-muted: var(--color-text-secondary);
+  
+  /* Dark theme borders */
+  --color-theme-border: var(--color-border-primary);
+  --color-theme-border-focus: var(--color-border-focus);
+  
+  /* Component-specific theme mappings */
+  --navbar-bg: var(--color-background-secondary);
+  --card-bg: var(--color-background-surface);
+  --input-bg: var(--color-background-surface);
+  --modal-bg: var(--color-background-surface);
+}
+
+/* Light Theme */
+[data-theme="light"] {
+  /* Light theme color overrides */
+  --color-theme-primary: #4f46e5;
+  --color-theme-accent: #06b6d4;
+  --color-theme-success: #10b981;
+  --color-theme-warning: #f59e0b;
+  --color-theme-danger: #ef4444;
+  
+  /* Light theme backgrounds */
+  --color-theme-background: #ffffff;
+  --color-theme-background-secondary: #f8fafc;
+  --color-theme-background-tertiary: #f1f5f9;
+  --color-theme-surface: #ffffff;
+  
+  /* Light theme text colors */
+  --color-theme-text: #0f172a;
+  --color-theme-text-secondary: #475569;
+  --color-theme-text-muted: #64748b;
+  
+  /* Light theme borders */
+  --color-theme-border: #e2e8f0;
+  --color-theme-border-focus: #4f46e5;
+  
+  /* Component-specific light theme mappings */
+  --navbar-bg: #f8fafc;
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --modal-bg: #ffffff;
+}
+
+/* Light theme component overrides */
+[data-theme="light"] .navbar {
+  background-color: var(--navbar-bg) !important;
+  border-bottom-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .navbar-brand,
+[data-theme="light"] .navbar-nav .nav-link {
+  color: var(--color-theme-text) !important;
+}
+
+[data-theme="light"] .navbar-nav .nav-link:hover,
+[data-theme="light"] .navbar-nav .nav-link.active {
+  color: var(--color-theme-primary) !important;
+}
+
+[data-theme="light"] .card {
+  background-color: var(--card-bg);
+  border-color: var(--color-theme-border);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .card-header {
+  background-color: var(--color-theme-background-secondary);
+  border-bottom-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .card-footer {
+  background-color: var(--color-theme-background-secondary);
+  border-top-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .form-control,
+[data-theme="light"] .form-select {
+  background-color: var(--input-bg);
+  border-color: var(--color-theme-border);
+  color: var(--color-theme-text);
+}
+
+[data-theme="light"] .form-control:focus,
+[data-theme="light"] .form-select:focus {
+  border-color: var(--color-theme-border-focus);
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+[data-theme="light"] .form-control::placeholder {
+  color: var(--color-theme-text-muted);
+}
+
+[data-theme="light"] .modal-content {
+  background-color: var(--modal-bg);
+  border-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .modal-header {
+  border-bottom-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .modal-footer {
+  border-top-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .table th {
+  border-bottom-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .table td {
+  border-bottom-color: var(--color-theme-border);
+}
+
+[data-theme="light"] .table-hover tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .btn-close {
+  filter: none;
+}
+
+/* Alert theme overrides for light mode */
+[data-theme="light"] .alert-primary {
+  background-color: rgba(79, 70, 229, 0.1);
+  border-color: var(--color-theme-primary);
+  color: #3730a3;
+}
+
+[data-theme="light"] .alert-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-color: var(--color-theme-success);
+  color: #047857;
+}
+
+[data-theme="light"] .alert-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: var(--color-theme-warning);
+  color: #92400e;
+}
+
+[data-theme="light"] .alert-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-theme-danger);
+  color: #b91c1c;
+}
+
+[data-theme="light"] .alert-info {
+  background-color: rgba(6, 182, 212, 0.1);
+  border-color: var(--color-theme-accent);
+  color: #0891b2;
+}
+
+/* Theme Toggle Button Styles */
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--color-theme-border);
+  color: var(--color-theme-text);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-duration-fast) var(--transition-easing-ease);
+  font-size: var(--font-size-sm);
+}
+
+.theme-toggle:hover {
+  background-color: var(--color-theme-background-secondary);
+  border-color: var(--color-theme-border-focus);
+}
+
+.theme-toggle:focus {
+  outline: 2px solid var(--color-theme-border-focus);
+  outline-offset: 2px;
+}
+
+/* Auto theme detection */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    /* Apply light theme variables when system preference is light */
+    --color-theme-primary: #4f46e5;
+    --color-theme-accent: #06b6d4;
+    --color-theme-success: #10b981;
+    --color-theme-warning: #f59e0b;
+    --color-theme-danger: #ef4444;
+    
+    --color-theme-background: #ffffff;
+    --color-theme-background-secondary: #f8fafc;
+    --color-theme-background-tertiary: #f1f5f9;
+    --color-theme-surface: #ffffff;
+    
+    --color-theme-text: #0f172a;
+    --color-theme-text-secondary: #475569;
+    --color-theme-text-muted: #64748b;
+    
+    --color-theme-border: #e2e8f0;
+    --color-theme-border-focus: #4f46e5;
+  }
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color var(--transition-duration-normal) var(--transition-easing-ease),
+              border-color var(--transition-duration-normal) var(--transition-easing-ease),
+              color var(--transition-duration-normal) var(--transition-easing-ease);
+}
+
+/* Disable transitions during theme switch to prevent flash */
+.theme-switching * {
+  transition: none !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-theme-border: currentColor;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+  }
+  
+  .btn {
+    border-width: 2px;
+  }
+  
+  .form-control,
+  .form-select {
+    border-width: 2px;
+  }
+  
+  .card {
+    border-width: 2px;
+  }
+}

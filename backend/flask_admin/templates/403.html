@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Access Forbidden - Tickets Admin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="error-page">
+            <i class="fas fa-lock fa-5x text-warning mb-4"></i>
+            <h1 class="display-4 text-warning">403</h1>
+            <h2 class="mb-3">Access Forbidden</h2>
+            <p class="lead text-muted mb-4">
+                You don't have permission to access this resource.
+            </p>
+            
+            <div class="alert alert-warning">
+                <i class="fas fa-shield-alt"></i>
+                <strong>Access Denied:</strong> This action requires appropriate permissions 
+                or may be restricted for security reasons.
+            </div>
+            
+            <div class="mb-4">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-home"></i> Return to Dashboard
+                </a>
+                <button class="btn btn-outline-secondary" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">What you can do:</h6>
+                    <ul class="list-unstyled text-start">
+                        <li class="mb-2">
+                            <i class="fas fa-user text-info"></i>
+                            Check if you're logged in with the correct account
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-key text-info"></i>
+                            Verify you have the necessary permissions
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-envelope text-info"></i>
+                            Contact an administrator for access
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

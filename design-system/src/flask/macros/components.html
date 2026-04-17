@@ -1,0 +1,369 @@
+{# TicketIQ Design System - Jinja2 Component Macros #}
+{# This file provides Jinja2 macros for design system components #}
+
+{# Import layout and navigation macros #}
+{% from 'layout.html' import ds_container, ds_row, ds_col, ds_flex, ds_stack, ds_grid, ds_sidebar_layout, ds_header_layout, ds_breadcrumb, ds_section %}
+{% from 'navigation.html' import ds_navbar, ds_nav_item, ds_sidebar, ds_sidebar_item, ds_tabs, ds_tab_item, ds_pills, ds_pill_item, ds_dropdown, ds_dropdown_item, ds_dropdown_divider, ds_skip_nav, ds_mobile_drawer, ds_main_content, ds_nav_layout %}
+
+{# Button Component #}
+{% macro ds_button(text, variant='primary', size='medium', type='button', disabled=false, class='', id='', onclick='', form='', name='', value='') %}
+  {% set button_classes = ['btn'] %}
+  {% if variant == 'primary' %}
+    {% set _ = button_classes.append('btn-primary') %}
+  {% elif variant == 'secondary' %}
+    {% set _ = button_classes.append('btn-secondary') %}
+  {% elif variant == 'outline' %}
+    {% set _ = button_classes.append('btn-outline-primary') %}
+  {% elif variant == 'success' %}
+    {% set _ = button_classes.append('btn-success') %}
+  {% elif variant == 'warning' %}
+    {% set _ = button_classes.append('btn-warning') %}
+  {% elif variant == 'danger' %}
+    {% set _ = button_classes.append('btn-danger') %}
+  {% endif %}
+  
+  {% if size == 'small' %}
+    {% set _ = button_classes.append('btn-sm') %}
+  {% elif size == 'large' %}
+    {% set _ = button_classes.append('btn-lg') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = button_classes.append(class) %}
+  {% endif %}
+  
+  <button 
+    type="{{ type }}"
+    class="{{ button_classes | join(' ') }}"
+    {% if id %}id="{{ id }}"{% endif %}
+    {% if disabled %}disabled{% endif %}
+    {% if onclick %}onclick="{{ onclick }}"{% endif %}
+    {% if form %}form="{{ form }}"{% endif %}
+    {% if name %}name="{{ name }}"{% endif %}
+    {% if value %}value="{{ value }}"{% endif %}
+    aria-label="{{ text }}"
+  >
+    {{ text }}
+  </button>
+{% endmacro %}
+
+{# Input Component #}
+{% macro ds_input(name, type='text', placeholder='', value='', label='', help_text='', required=false, disabled=false, class='', id='', autocomplete='') %}
+  {% set input_id = id or (name + '_input') %}
+  {% set input_classes = ['form-control'] %}
+  {% if class %}
+    {% set _ = input_classes.append(class) %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ input_id }}" class="form-label">
+        {{ label }}
+        {% if required %}<span class="text-danger">*</span>{% endif %}
+      </label>
+    {% endif %}
+    
+    <input 
+      type="{{ type }}"
+      class="{{ input_classes | join(' ') }}"
+      id="{{ input_id }}"
+      name="{{ name }}"
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if value %}value="{{ value }}"{% endif %}
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+      aria-describedby="{% if help_text %}{{ input_id }}_help{% endif %}"
+    />
+    
+    {% if help_text %}
+      <div id="{{ input_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Select Component #}
+{% macro ds_select(name, options, selected='', label='', help_text='', required=false, disabled=false, class='', id='') %}
+  {% set select_id = id or (name + '_select') %}
+  {% set select_classes = ['form-select'] %}
+  {% if class %}
+    {% set _ = select_classes.append(class) %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ select_id }}" class="form-label">
+        {{ label }}
+        {% if required %}<span class="text-danger">*</span>{% endif %}
+      </label>
+    {% endif %}
+    
+    <select 
+      class="{{ select_classes | join(' ') }}"
+      id="{{ select_id }}"
+      name="{{ name }}"
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      aria-describedby="{% if help_text %}{{ select_id }}_help{% endif %}"
+    >
+      {% for option in options %}
+        {% if option is mapping %}
+          <option value="{{ option.value }}" {% if option.value == selected %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% else %}
+          <option value="{{ option }}" {% if option == selected %}selected{% endif %}>
+            {{ option }}
+          </option>
+        {% endif %}
+      {% endfor %}
+    </select>
+    
+    {% if help_text %}
+      <div id="{{ select_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Textarea Component #}
+{% macro ds_textarea(name, placeholder='', value='', label='', help_text='', required=false, disabled=false, rows=3, class='', id='') %}
+  {% set textarea_id = id or (name + '_textarea') %}
+  {% set textarea_classes = ['form-control'] %}
+  {% if class %}
+    {% set _ = textarea_classes.append(class) %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ textarea_id }}" class="form-label">
+        {{ label }}
+        {% if required %}<span class="text-danger">*</span>{% endif %}
+      </label>
+    {% endif %}
+    
+    <textarea 
+      class="{{ textarea_classes | join(' ') }}"
+      id="{{ textarea_id }}"
+      name="{{ name }}"
+      rows="{{ rows }}"
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      aria-describedby="{% if help_text %}{{ textarea_id }}_help{% endif %}"
+    >{{ value }}</textarea>
+    
+    {% if help_text %}
+      <div id="{{ textarea_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Card Component #}
+{% macro ds_card(title='', body='', footer='', class='', id='', header_class='', body_class='', footer_class='') %}
+  {% set card_classes = ['card'] %}
+  {% if class %}
+    {% set _ = card_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ card_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if title %}
+      <div class="card-header {% if header_class %}{{ header_class }}{% endif %}">
+        <h5 class="card-title mb-0">{{ title }}</h5>
+      </div>
+    {% endif %}
+    
+    {% if body or caller %}
+      <div class="card-body {% if body_class %}{{ body_class }}{% endif %}">
+        {% if caller %}
+          {{ caller() }}
+        {% else %}
+          {{ body }}
+        {% endif %}
+      </div>
+    {% endif %}
+    
+    {% if footer %}
+      <div class="card-footer {% if footer_class %}{{ footer_class }}{% endif %}">
+        {{ footer }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Alert Component #}
+{% macro ds_alert(message, type='info', dismissible=true, class='', id='') %}
+  {% set alert_classes = ['alert'] %}
+  {% if type == 'success' %}
+    {% set _ = alert_classes.append('alert-success') %}
+  {% elif type == 'warning' %}
+    {% set _ = alert_classes.append('alert-warning') %}
+  {% elif type == 'danger' or type == 'error' %}
+    {% set _ = alert_classes.append('alert-danger') %}
+  {% elif type == 'primary' %}
+    {% set _ = alert_classes.append('alert-primary') %}
+  {% else %}
+    {% set _ = alert_classes.append('alert-info') %}
+  {% endif %}
+  
+  {% if dismissible %}
+    {% set _ = alert_classes.append('alert-dismissible') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = alert_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ alert_classes | join(' ') }}" role="alert" {% if id %}id="{{ id }}"{% endif %}>
+    {{ message }}
+    {% if dismissible %}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Badge Component #}
+{% macro ds_badge(text, variant='primary', class='', id='') %}
+  {% set badge_classes = ['badge'] %}
+  {% if variant == 'primary' %}
+    {% set _ = badge_classes.append('bg-primary') %}
+  {% elif variant == 'secondary' %}
+    {% set _ = badge_classes.append('bg-secondary') %}
+  {% elif variant == 'success' %}
+    {% set _ = badge_classes.append('bg-success') %}
+  {% elif variant == 'warning' %}
+    {% set _ = badge_classes.append('bg-warning') %}
+  {% elif variant == 'danger' %}
+    {% set _ = badge_classes.append('bg-danger') %}
+  {% elif variant == 'info' %}
+    {% set _ = badge_classes.append('bg-info') %}
+  {% elif variant == 'light' %}
+    {% set _ = badge_classes.append('bg-light text-dark') %}
+  {% elif variant == 'dark' %}
+    {% set _ = badge_classes.append('bg-dark') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = badge_classes.append(class) %}
+  {% endif %}
+  
+  <span class="{{ badge_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ text }}
+  </span>
+{% endmacro %}
+
+{# Modal Component #}
+{% macro ds_modal(title, body='', footer='', modal_id='modal', size='', class='', backdrop=true, keyboard=true) %}
+  {% set modal_classes = ['modal', 'fade'] %}
+  {% if class %}
+    {% set _ = modal_classes.append(class) %}
+  {% endif %}
+  
+  {% set dialog_classes = ['modal-dialog'] %}
+  {% if size == 'small' %}
+    {% set _ = dialog_classes.append('modal-sm') %}
+  {% elif size == 'large' %}
+    {% set _ = dialog_classes.append('modal-lg') %}
+  {% elif size == 'extra-large' %}
+    {% set _ = dialog_classes.append('modal-xl') %}
+  {% endif %}
+  
+  <div class="{{ modal_classes | join(' ') }}" id="{{ modal_id }}" tabindex="-1" 
+       aria-labelledby="{{ modal_id }}Label" aria-hidden="true"
+       {% if not backdrop %}data-bs-backdrop="static"{% endif %}
+       {% if not keyboard %}data-bs-keyboard="false"{% endif %}>
+    <div class="{{ dialog_classes | join(' ') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="{{ modal_id }}Label">{{ title }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <div class="modal-body">
+          {% if caller %}
+            {{ caller() }}
+          {% else %}
+            {{ body }}
+          {% endif %}
+        </div>
+        
+        {% if footer %}
+          <div class="modal-footer">
+            {{ footer }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{# Navigation Component #}
+{% macro ds_navbar(brand_text='', brand_url='#', nav_items=[], class='', id='', fixed='') %}
+  {% set navbar_classes = ['navbar', 'navbar-expand-lg', 'navbar-dark'] %}
+  {% if fixed == 'top' %}
+    {% set _ = navbar_classes.append('fixed-top') %}
+  {% elif fixed == 'bottom' %}
+    {% set _ = navbar_classes.append('fixed-bottom') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = navbar_classes.append(class) %}
+  {% endif %}
+  
+  <nav class="{{ navbar_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    <div class="container-fluid">
+      {% if brand_text %}
+        <a class="navbar-brand" href="{{ brand_url }}">{{ brand_text }}</a>
+      {% endif %}
+      
+      {% if nav_items %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#navbarNav" aria-controls="navbarNav" 
+                aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            {% for item in nav_items %}
+              <li class="nav-item">
+                <a class="nav-link {% if item.active %}active{% endif %}" 
+                   href="{{ item.url }}"
+                   {% if item.active %}aria-current="page"{% endif %}>
+                  {{ item.text }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  </nav>
+{% endmacro %}
+
+{# Loading Spinner Component #}
+{% macro ds_spinner(size='medium', variant='primary', class='', id='', text='Loading...') %}
+  {% set spinner_classes = ['spinner-border'] %}
+  {% if variant == 'primary' %}
+    {% set _ = spinner_classes.append('text-primary') %}
+  {% elif variant == 'secondary' %}
+    {% set _ = spinner_classes.append('text-secondary') %}
+  {% elif variant == 'success' %}
+    {% set _ = spinner_classes.append('text-success') %}
+  {% elif variant == 'warning' %}
+    {% set _ = spinner_classes.append('text-warning') %}
+  {% elif variant == 'danger' %}
+    {% set _ = spinner_classes.append('text-danger') %}
+  {% endif %}
+  
+  {% if size == 'small' %}
+    {% set _ = spinner_classes.append('spinner-border-sm') %}
+  {% endif %}
+  
+  {% if class %}
+    {% set _ = spinner_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ spinner_classes | join(' ') }}" role="status" {% if id %}id="{{ id }}"{% endif %}>
+    <span class="sr-only">{{ text }}</span>
+  </div>
+{% endmacro %}

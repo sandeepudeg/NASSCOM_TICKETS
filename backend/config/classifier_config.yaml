@@ -1,0 +1,76 @@
+# Classifier Configuration
+# This file defines the category taxonomy for ticket classification.
+# Adding a new category requires:
+# 1. Add category definition to this file
+# 2. Provide at least 50 labeled examples in training dataset
+# 3. Run retrain_classifier.py to update the model
+
+version: "1.0"
+
+categories:
+  - name: Infrastructure
+    description: Issues with servers, virtual machines, compute resources, OS-level failures, or hardware
+    examples:
+      - "Server crashed and won't restart"
+      - "VM running out of memory"
+      - "Disk failure on production host"
+    
+  - name: Application
+    description: Bugs, crashes, performance issues, or feature failures within a software application
+    examples:
+      - "Application throws 500 error on checkout"
+      - "Dashboard loading very slowly"
+      - "Feature X not working as expected"
+    
+  - name: Security
+    description: Threats, vulnerabilities, access anomalies, malware alerts, or compliance violations
+    examples:
+      - "Suspicious login attempts detected"
+      - "Security scan found critical vulnerability"
+      - "Malware alert on workstation"
+    
+  - name: Database
+    description: Query failures, replication lag, corruption, schema issues, or database connectivity problems
+    examples:
+      - "Database connection pool exhausted"
+      - "Replication lag exceeding 5 minutes"
+      - "Query timeout on reports table"
+    
+  - name: Storage
+    description: Disk full events, NAS/SAN failures, object storage errors, or backup failures
+    examples:
+      - "Disk space at 95% on /data volume"
+      - "Backup job failed last night"
+      - "S3 bucket returning 503 errors"
+    
+  - name: Network
+    description: Connectivity loss, latency spikes, DNS failures, firewall rule issues, or VPN problems
+    examples:
+      - "Cannot reach production API from office"
+      - "High latency to database server"
+      - "DNS resolution failing for internal services"
+    
+  - name: Access Management
+    description: Account lockouts, permission errors, SSO failures, or provisioning requests
+    examples:
+      - "User locked out after password reset"
+      - "Cannot access shared folder - permission denied"
+      - "SSO login failing for new employees"
+
+# Minimum training examples required per category
+min_training_examples: 50
+
+# Confidence threshold for escalation (tickets below this are escalated to human review)
+escalation_threshold: 0.65
+
+# Model configuration
+model:
+  # Ollama model to use for classification
+  ollama_model: "mistral"
+  # Alternative models: "phi3", "gemma:2b", "llama2"
+  
+  # Timeout for classification inference (seconds)
+  timeout_seconds: 5
+  
+  # Few-shot learning: number of examples to include in prompt
+  few_shot_examples: 3

@@ -1,0 +1,31 @@
+along with this check if "Agentic Layer (Bonus)
+•
+If confidence < threshold → escalate
+•
+If repeated issue → suggest automation
+Evaluation
+•
+Accuracy & F1 Score
+•
+Solution design
+•
+Functional Value and Usability ( ease of use )
+•
+Feasibility
+•
+Security
+•
+innovation
+•
+Semantic similarity scoring
+•
+LLM-as-judge evaluation" can be provided when tickets is created 
+
+
+Once the ticket is created it needs to be Retrieve similar past tickets
+•
+Suggest resolution steps, after looking in to the database for quick resolution.  and share the Evaluation matrix relevent to it and transfeer to teh relevent department.
+
+how can it be check if it is transferred to teh relevent department and the action is taken for the closure.
+
+Suggest the end to end life cycle for ticket analysis with example 

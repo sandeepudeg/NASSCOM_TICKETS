@@ -1,0 +1,762 @@
+{% extends "base.html" %}
+{% from 'macros/components.html' import ds_card, ds_button, ds_badge %}
+{% from 'macros/layout.html' import ds_container, ds_row, ds_col %}
+
+{% block title %}Dashboard - Tickets Admin{% endblock %}
+
+{% block head %}
+<!-- Enhanced Flask Admin CSS -->
+<link href="{{ url_for('static', filename='css/enhanced-flask.css') }}?v={{ asset_version }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<!-- Enhanced Dashboard with Demo-Quality Styling -->
+<div class="enhanced-dashboard">
+    <!-- Hero Header Section -->
+    <div class="enhanced-dashboard-header">
+        <div class="enhanced-hero-tag">
+            <i class="fas fa-rocket"></i> AI-Powered IT Operations
+        </div>
+        <h1 class="enhanced-dashboard-title">
+            Intelligent Ticket Management
+        </h1>
+        <p class="enhanced-dashboard-subtitle">
+            Real-time monitoring and AI-powered classification for enterprise IT operations
+        </p>
+    </div>
+
+    <!-- Enhanced Stats Section -->
+    <div class="enhanced-stats-section">
+        <div class="enhanced-stats-grid">
+            <div class="enhanced-card enhanced-card-stat">
+                <div class="stat-number">{{ total_folders }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-folder"></i> Folders
+                </div>
+            </div>
+            <div class="enhanced-card enhanced-card-stat">
+                <div class="stat-number" style="color: var(--warning);">{{ pending_escalations }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-exclamation-triangle"></i> Escalations
+                </div>
+            </div>
+            <div class="enhanced-card enhanced-card-stat">
+                <div class="stat-number" id="totalTickets" style="color: var(--success);">-</div>
+                <div class="stat-label">
+                    <i class="fas fa-ticket-alt"></i> Tickets
+                </div>
+            </div>
+            <div class="enhanced-card enhanced-card-stat" onclick="toggleHealthPanel()" style="cursor: pointer;">
+                <div class="stat-number" style="color: var(--success);">Online</div>
+                <div class="stat-label">
+                    <i class="fas fa-heartbeat"></i> System
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Main Content Tabs -->
+    <div class="enhanced-tabs">
+        <div class="enhanced-tab-nav">
+            <button class="enhanced-tab-button active" data-tab="overview">
+                <i class="fas fa-chart-line"></i> Overview
+            </button>
+            <button class="enhanced-tab-button" data-tab="tickets">
+                <i class="fas fa-ticket-alt"></i> Tickets
+            </button>
+            <button class="enhanced-tab-button" data-tab="folders">
+                <i class="fas fa-folder"></i> Folders
+            </button>
+            <button class="enhanced-tab-button" data-tab="classify">
+                <i class="fas fa-robot"></i> Classify
+            </button>
+        </div>
+
+        <div class="enhanced-tab-content">
+            <!-- Overview Tab -->
+            <div class="enhanced-tab-pane active" id="overview">
+                <div class="enhanced-grid enhanced-grid-cols-2">
+                    <!-- Recent Activity -->
+                    <div class="enhanced-card">
+                        <div class="enhanced-card-header">
+                            <h3 class="enhanced-card-title">Recent Activity</h3>
+                            <div class="enhanced-card-actions">
+                                <button class="enhanced-btn enhanced-btn-outline enhanced-btn-sm" onclick="refreshActivity()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="activityFeed" class="enhanced-activity-feed">
+                            <div class="enhanced-activity-item">
+                                <div class="enhanced-activity-icon enhanced-activity-icon-success">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div class="enhanced-activity-content">
+                                    <div class="enhanced-activity-text">System initialized</div>
+                                    <div class="enhanced-activity-time">Just now</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="enhanced-card">
+                        <div class="enhanced-card-header">
+                            <h3 class="enhanced-card-title">Quick Actions</h3>
+                        </div>
+                        <div class="enhanced-grid enhanced-grid-cols-1" style="gap: 1rem;">
+                            <button class="enhanced-btn enhanced-btn-success" onclick="showQuickTicket()">
+                                <i class="fas fa-plus"></i> New Ticket
+                            </button>
+                            <button class="enhanced-btn enhanced-btn-primary" onclick="showQuickFolder()">
+                                <i class="fas fa-folder-plus"></i> New Folder
+                            </button>
+                            <button class="enhanced-btn enhanced-btn-warning" onclick="showQuickClassify()">
+                                <i class="fas fa-robot"></i> Test Classify
+                            </button>
+                            <hr style="border-color: var(--border); margin: 0.5rem 0;">
+                            <button class="enhanced-btn enhanced-btn-outline" onclick="exportData()">
+                                <i class="fas fa-download"></i> Export Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tickets Tab -->
+            <div class="enhanced-tab-pane" id="tickets">
+                <div class="enhanced-card">
+                    <div class="enhanced-card-header">
+                        <h3 class="enhanced-card-title">All Tickets</h3>
+                        <div class="enhanced-card-actions">
+                            <input type="text" class="enhanced-input" style="width: 250px; margin-right: 1rem;"
+                                   placeholder="Search tickets..." id="ticketSearch">
+                            <button class="enhanced-btn enhanced-btn-success enhanced-btn-sm" onclick="showQuickTicket()">
+                                <i class="fas fa-plus"></i> New
+                            </button>
+                        </div>
+                    </div>
+                    <div class="enhanced-table-container">
+                        <table class="enhanced-table" id="ticketsTable">
+                            <thead>
+                                <tr>
+                                    <th width="5%">
+                                        <input type="checkbox" id="selectAllTickets">
+                                    </th>
+                                    <th>Title</th>
+                                    <th>Folder</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th width="10%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ticketsTableBody">
+                                <tr>
+                                    <td colspan="7" class="enhanced-text-center">
+                                        <div class="enhanced-loading">
+                                            <i class="fas fa-spinner"></i> Loading tickets...
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folders Tab -->
+            <div class="enhanced-tab-pane" id="folders">
+                <div class="enhanced-card">
+                    <div class="enhanced-card-header">
+                        <h3 class="enhanced-card-title">Folders ({{ folders|length }})</h3>
+                        <div class="enhanced-card-actions">
+                            <input type="text" class="enhanced-input" style="width: 250px; margin-right: 1rem;"
+                                   placeholder="Search folders..." id="folderSearch">
+                            <button class="enhanced-btn enhanced-btn-primary enhanced-btn-sm" onclick="showQuickFolder()">
+                                <i class="fas fa-plus"></i> New
+                            </button>
+                        </div>
+                    </div>
+                    <div class="enhanced-grid enhanced-grid-cols-3" id="foldersGrid">
+                        {% for folder in folders %}
+                        <div class="enhanced-card" data-folder-id="{{ folder.id }}" style="cursor: pointer;">
+                            <div class="enhanced-card-header">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <i class="fas fa-folder" style="color: var(--primary); font-size: 1.25rem;"></i>
+                                    <h4 style="margin: 0; font-size: 1rem; font-weight: 600;">{{ folder.name }}</h4>
+                                </div>
+                                <div class="enhanced-card-actions">
+                                    <button class="enhanced-btn enhanced-btn-outline enhanced-btn-sm" 
+                                            onclick="addTicketToFolder('{{ folder.id }}')" title="Add Ticket">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button class="enhanced-btn enhanced-btn-outline enhanced-btn-sm" 
+                                            onclick="editFolder('{{ folder.id }}')" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <p style="color: var(--muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                                    {{ folder.description|truncate(80) if folder.description else 'No description' }}
+                                </p>
+                                <div>
+                                    <span class="enhanced-badge enhanced-badge-secondary">
+                                        {{ folder.ticket_count|default(0) }} tickets
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Add New Folder Card -->
+                        <div class="enhanced-card" onclick="showQuickFolder()" 
+                             style="cursor: pointer; border-style: dashed; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                            <div>
+                                <i class="fas fa-plus" style="font-size: 2rem; color: var(--muted); margin-bottom: 1rem;"></i>
+                                <h4 style="color: var(--muted); margin: 0;">Add Folder</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classify Tab -->
+            <div class="enhanced-tab-pane" id="classify">
+                <div class="enhanced-grid enhanced-grid-cols-2">
+                    <div class="enhanced-card">
+                        <div class="enhanced-card-header">
+                            <h3 class="enhanced-card-title">Classification Test</h3>
+                        </div>
+                        <form id="classifyForm">
+                            <div class="enhanced-form-group">
+                                <textarea class="enhanced-textarea" id="classifyInput" rows="6" 
+                                          placeholder="Enter text to classify..."></textarea>
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="enhanced-btn enhanced-btn-warning" onclick="classifyText()">
+                                    <i class="fas fa-robot"></i> Classify
+                                </button>
+                                <button type="button" class="enhanced-btn enhanced-btn-outline" onclick="clearClassify()">
+                                    Clear
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="enhanced-card">
+                        <div class="enhanced-card-header">
+                            <h3 class="enhanced-card-title">Results</h3>
+                        </div>
+                        <div id="classifyResults">
+                            <div class="enhanced-empty-state">
+                                <i class="fas fa-robot"></i>
+                                <p>Enter text and click classify to see results</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Health Panel (Collapsible) -->
+    <div class="enhanced-card" id="healthPanel" style="display: none; margin-top: 2rem;">
+        <div class="enhanced-card-header">
+            <h3 class="enhanced-card-title">System Health</h3>
+            <button class="enhanced-btn enhanced-btn-outline enhanced-btn-sm" onclick="toggleHealthPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="enhanced-grid enhanced-grid-cols-4">
+            <div class="enhanced-text-center">
+                <div class="enhanced-activity-icon enhanced-activity-icon-success" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: var(--text);">Flask Admin</div>
+                    <div style="color: var(--success); font-size: 0.875rem;">Running</div>
+                </div>
+            </div>
+            <div class="enhanced-text-center">
+                <div class="enhanced-activity-icon enhanced-activity-icon-info" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: var(--text);">API Backend</div>
+                    <div id="apiStatus" style="color: var(--warning); font-size: 0.875rem;">Checking...</div>
+                </div>
+            </div>
+            <div class="enhanced-text-center">
+                <div class="enhanced-activity-icon enhanced-activity-icon-success" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-hdd"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: var(--text);">Database</div>
+                    <div style="color: var(--success); font-size: 0.875rem;">Healthy</div>
+                </div>
+            </div>
+            <div class="enhanced-text-center">
+                <div class="enhanced-activity-icon enhanced-activity-icon-success" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: var(--text);">ML Service</div>
+                    <div style="color: var(--success); font-size: 0.875rem;">Ready</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Design System Dashboard JavaScript
+let refreshInterval = null;
+let fabOpen = false;
+let settingsOpen = false;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    setupAutoRefresh();
+    setupKeyboardShortcuts();
+    setupTabs();
+});
+
+// Tab functionality
+function setupTabs() {
+    const tabButtons = document.querySelectorAll('.ds-tab-button');
+    const tabPanes = document.querySelectorAll('.ds-tab-pane');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+            
+            // Remove active class from all buttons and panes
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanes.forEach(pane => pane.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding pane
+            button.classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
+        });
+    });
+}
+
+// Load all dashboard data
+function loadDashboardData() {
+    loadTickets();
+    loadFolders();
+    checkSystemHealth();
+}
+
+// Auto-refresh functionality
+function setupAutoRefresh() {
+    const interval = localStorage.getItem('refreshInterval') || 60;
+    if (interval > 0) {
+        refreshInterval = setInterval(loadDashboardData, interval * 1000);
+    }
+}
+
+// Keyboard shortcuts
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key) {
+                case 't':
+                    e.preventDefault();
+                    showQuickTicket();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    showQuickFolder();
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    refreshData();
+                    break;
+            }
+        }
+    });
+}
+
+// FAB functionality
+function toggleFAB() {
+    const menu = document.getElementById('fabMenu');
+    fabOpen = !fabOpen;
+    menu.style.display = fabOpen ? 'block' : 'none';
+}
+
+// Settings panel
+function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    settingsOpen = !settingsOpen;
+    panel.classList.toggle('ds-sidebar-show', settingsOpen);
+}
+
+// Quick actions
+function showQuickTicket() {
+    loadFoldersForSelect();
+    showModal('quickTicketModal');
+}
+
+function showQuickFolder() {
+    showModal('quickFolderModal');
+}
+
+function showQuickClassify() {
+    showModal('quickClassifyModal');
+}
+
+// Load data functions
+function loadTickets() {
+    fetch('/api/tickets')
+        .then(response => response.json())
+        .then(tickets => {
+            const tbody = document.getElementById('ticketsTableBody');
+            if (tickets && tickets.length > 0) {
+                tbody.innerHTML = tickets.map(ticket => `
+                    <tr>
+                        <td><input type="checkbox" class="ds-checkbox-input"></td>
+                        <td>${ticket.title || 'Untitled'}</td>
+                        <td>${ticket.folder || 'General'}</td>
+                        <td><span class="ds-badge ds-badge-primary">${ticket.category || 'Uncategorized'}</span></td>
+                        <td><span class="ds-badge ds-badge-warning">${ticket.status || 'Open'}</span></td>
+                        <td>${new Date(ticket.created_at || Date.now()).toLocaleString()}</td>
+                        <td>
+                            <button class="ds-btn ds-btn-outline ds-btn-sm" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                document.getElementById('totalTickets').textContent = tickets.length;
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="ds-table-empty">
+                            <i class="fas fa-inbox"></i>
+                            <p>No tickets found</p>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('totalTickets').textContent = '0';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tickets:', error);
+            const tbody = document.getElementById('ticketsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="ds-table-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading tickets</p>
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function loadFolders() {
+    // Folders are already loaded from server-side template
+    console.log('Folders loaded from server');
+}
+
+function checkSystemHealth() {
+    // Simulate health check
+    setTimeout(() => {
+        const apiStatus = document.getElementById('apiStatus');
+        if (apiStatus) {
+            apiStatus.textContent = 'Connected';
+            apiStatus.className = 'ds-health-value ds-health-success';
+        }
+    }, 1000);
+}
+
+// Form submissions
+function submitQuickTicket() {
+    const title = document.getElementById('quickTitle').value;
+    const description = document.getElementById('quickDescription').value;
+    const folderId = document.getElementById('quickFolder').value;
+    
+    if (!title || !description) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    const ticketData = {
+        title: title,
+        description: description,
+        folder_id: folderId
+    };
+    
+    fetch('/api/quick-ticket', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ticketData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Ticket created successfully!', 'success');
+            closeModal('quickTicketModal');
+            loadTickets();
+            // Clear form
+            document.getElementById('quickTitle').value = '';
+            document.getElementById('quickDescription').value = '';
+            document.getElementById('quickFolder').value = '';
+        } else {
+            showToast(data.message || 'Failed to create ticket', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating ticket:', error);
+        showToast('Error creating ticket', 'danger');
+    });
+}
+
+function submitQuickFolder() {
+    const name = document.getElementById('folderName').value;
+    const description = document.getElementById('folderDescription').value;
+    
+    if (!name) {
+        showToast('Please enter a folder name', 'warning');
+        return;
+    }
+    
+    const folderData = {
+        name: name,
+        description: description
+    };
+    
+    fetch('/api/quick-folder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(folderData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Folder created successfully!', 'success');
+            closeModal('quickFolderModal');
+            // Clear form
+            document.getElementById('folderName').value = '';
+            document.getElementById('folderDescription').value = '';
+            // Reload page to show new folder
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.message || 'Failed to create folder', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating folder:', error);
+        showToast('Error creating folder', 'danger');
+    });
+}
+
+function submitQuickClassify() {
+    const text = document.getElementById('classifyText').value;
+    const results = document.getElementById('classifyResults');
+    
+    if (!text) {
+        showToast('Please enter text to classify', 'warning');
+        return;
+    }
+    
+    // Show loading state
+    results.innerHTML = `
+        <div class="ds-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Classifying text...</p>
+        </div>
+    `;
+    
+    fetch('/api/quick-classify', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const classification = data.classification;
+            results.innerHTML = `
+                <div class="ds-classification-result">
+                    <h6>Classification Result:</h6>
+                    <div class="ds-result-item">
+                        <strong>Category:</strong> 
+                        <span class="ds-badge ds-badge-primary">${classification.category || 'Unknown'}</span>
+                    </div>
+                    <div class="ds-result-item">
+                        <strong>Confidence:</strong>
+                        <div class="ds-progress">
+                            <div class="ds-progress-bar" style="width: ${(classification.confidence || 0) * 100}%">
+                                ${Math.round((classification.confidence || 0) * 100)}%
+                            </div>
+                        </div>
+                    </div>
+                    ${data.cached ? '<small class="ds-text-muted">Result from cache</small>' : ''}
+                </div>
+            `;
+        } else {
+            results.innerHTML = `
+                <div class="ds-error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>${data.message || 'Classification failed'}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error classifying text:', error);
+        results.innerHTML = `
+            <div class="ds-error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error classifying text</p>
+            </div>
+        `;
+    });
+}
+
+// Utility functions
+function refreshData() {
+    showToast('Refreshing data...', 'info');
+    loadDashboardData();
+}
+
+function toggleHealthPanel() {
+    const panel = document.getElementById('healthPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('flashContainer');
+    const toast = document.createElement('div');
+    toast.className = `ds-toast ds-toast-${type}`;
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="ds-toast-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+function loadFoldersForSelect() {
+    const select = document.getElementById('quickFolder');
+    select.innerHTML = '<option value="">Select folder...</option>';
+    
+    // Add folders from template data (if available)
+    fetch('/api/folders')
+        .then(response => response.json())
+        .then(folders => {
+            folders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = folder.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading folders for select:', error);
+        });
+}
+
+// Search functionality
+document.getElementById('globalSearch')?.addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    // Implement global search logic
+    console.log('Global search:', query);
+});
+
+document.getElementById('ticketSearch')?.addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    // Implement ticket search logic
+    console.log('Ticket search:', query);
+});
+
+document.getElementById('folderSearch')?.addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    // Implement folder search logic
+    console.log('Folder search:', query);
+});
+
+// Classification functions
+function classifyText() {
+    const input = document.getElementById('classifyInput');
+    const text = input.value.trim();
+    
+    if (!text) {
+        showToast('Please enter text to classify', 'warning');
+        return;
+    }
+    
+    // Set the text in the modal and show it
+    document.getElementById('classifyText').value = text;
+    showQuickClassify();
+}
+
+function clearClassify() {
+    document.getElementById('classifyInput').value = '';
+    document.getElementById('classifyResults').innerHTML = `
+        <div class="ds-empty-state">
+            <i class="fas fa-robot fa-2x"></i>
+            <p>Enter text and click classify to see results</p>
+        </div>
+    `;
+}
+
+// Export function
+function exportData() {
+    showToast('Export functionality coming soon...', 'info');
+}
+
+// Folder management functions
+function addTicketToFolder(folderId) {
+    console.log('Add ticket to folder:', folderId);
+    showQuickTicket();
+    // Pre-select the folder
+    setTimeout(() => {
+        const folderSelect = document.getElementById('quickFolder');
+        if (folderSelect) {
+            folderSelect.value = folderId;
+        }
+    }, 100);
+}
+
+function editFolder(folderId) {
+    console.log('Edit folder:', folderId);
+    showToast('Folder editing coming soon...', 'info');
+}
+
+function refreshActivity() {
+    const feed = document.getElementById('activityFeed');
+    feed.innerHTML = `
+        <div class="ds-activity-item">
+            <div class="ds-activity-icon ds-activity-icon-info">
+                <i class="fas fa-sync-alt"></i>
+            </div>
+            <div class="ds-activity-content">
+                <div class="ds-activity-text">Activity refreshed</div>
+                <div class="ds-activity-time">Just now</div>
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

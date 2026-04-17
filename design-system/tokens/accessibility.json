@@ -1,0 +1,73 @@
+{
+  "accessibility": {
+    "focus": {
+      "outlineWidth": { "value": "3px" },
+      "outlineOffset": { "value": "2px" },
+      "outlineStyle": { "value": "solid" },
+      "outlineColor": { "value": "{color.primary}" },
+      "ringWidth": { "value": "3px" },
+      "ringOpacity": { "value": "0.2" }
+    },
+    "touchTarget": {
+      "minSize": { "value": "44px" },
+      "minSizeSmall": { "value": "32px" },
+      "spacing": { "value": "8px" }
+    },
+    "contrast": {
+      "ratioAA": { "value": "4.5" },
+      "ratioAALarge": { "value": "3" },
+      "ratioAAA": { "value": "7" },
+      "ratioAAALarge": { "value": "4.5" }
+    },
+    "motion": {
+      "reducedDuration": { "value": "0.01ms" },
+      "reducedIterations": { "value": "1" }
+    },
+    "fontSize": {
+      "minimum": { "value": "16px" },
+      "large": { "value": "18px" },
+      "extraLarge": { "value": "24px" }
+    },
+    "lineHeight": {
+      "minimum": { "value": "1.5" },
+      "comfortable": { "value": "1.6" },
+      "spacious": { "value": "1.8" }
+    },
+    "spacing": {
+      "textMinimum": { "value": "0.12em" },
+      "paragraphMinimum": { "value": "1.5em" }
+    }
+  },
+  "screenReader": {
+    "position": {
+      "offscreen": { "value": "absolute" },
+      "left": { "value": "-10000px" },
+      "width": { "value": "1px" },
+      "height": { "value": "1px" },
+      "overflow": { "value": "hidden" }
+    }
+  },
+  "highContrast": {
+    "colors": {
+      "text": { "value": "#000000" },
+      "background": { "value": "#ffffff" },
+      "link": { "value": "#0000ff" },
+      "visited": { "value": "#800080" },
+      "focus": { "value": "#ff0000" },
+      "border": { "value": "currentColor" }
+    },
+    "borderWidth": {
+      "minimum": { "value": "2px" },
+      "focus": { "value": "4px" }
+    }
+  },
+  "forcedColors": {
+    "properties": {
+      "text": { "value": "ButtonText" },
+      "background": { "value": "ButtonFace" },
+      "border": { "value": "ButtonText" },
+      "focus": { "value": "Highlight" },
+      "disabled": { "value": "GrayText" }
+    }
+  }
+}

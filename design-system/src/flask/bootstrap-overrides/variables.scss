@@ -1,0 +1,102 @@
+// Bootstrap 5 Variable Overrides for TicketIQ Design System
+// This file overrides Bootstrap's default variables with design system tokens
+
+// Import design tokens as SCSS variables
+@import '../tokens/scss-variables';
+
+// Color System Overrides
+$primary: var(--color-primary);
+$secondary: var(--color-text-secondary);
+$success: var(--color-success);
+$info: var(--color-accent);
+$warning: var(--color-warning);
+$danger: var(--color-danger);
+$light: var(--color-background-secondary);
+$dark: var(--color-background-primary);
+
+// Typography Overrides
+$font-family-sans-serif: var(--font-family-sans);
+$font-size-base: var(--font-size-base);
+$font-weight-normal: var(--font-weight-normal);
+$font-weight-bold: var(--font-weight-bold);
+$line-height-base: var(--font-line-height-normal);
+
+// Spacing Overrides
+$spacer: 1rem; // Base spacing unit
+$spacers: (
+  0: 0,
+  1: var(--spacing-1),
+  2: var(--spacing-2),
+  3: var(--spacing-3),
+  4: var(--spacing-4),
+  5: var(--spacing-5),
+  6: var(--spacing-6),
+  8: var(--spacing-8)
+);
+
+// Border Radius Overrides
+$border-radius: var(--border-radius-md);
+$border-radius-sm: var(--border-radius-sm);
+$border-radius-lg: var(--border-radius-lg);
+$border-radius-xl: var(--border-radius-xl);
+
+// Shadow Overrides
+$box-shadow: var(--shadow-md);
+$box-shadow-sm: var(--shadow-sm);
+$box-shadow-lg: var(--shadow-lg);
+
+// Component Specific Overrides
+$btn-padding-y: var(--spacing-3);
+$btn-padding-x: var(--spacing-4);
+$btn-font-size: var(--font-size-base);
+$btn-border-radius: var(--border-radius-md);
+$btn-transition: all var(--transition-duration-fast) var(--transition-easing-ease);
+
+$input-padding-y: var(--spacing-3);
+$input-padding-x: var(--spacing-4);
+$input-font-size: var(--font-size-base);
+$input-border-radius: var(--border-radius-md);
+$input-border-color: var(--color-border-primary);
+$input-focus-border-color: var(--color-border-focus);
+$input-bg: var(--color-background-surface);
+$input-color: var(--color-text-primary);
+
+$card-border-radius: var(--border-radius-lg);
+$card-bg: var(--color-background-surface);
+$card-border-color: var(--color-border-primary);
+$card-spacer-y: var(--spacing-4);
+$card-spacer-x: var(--spacing-4);
+
+$modal-content-bg: var(--color-background-surface);
+$modal-content-border-color: var(--color-border-primary);
+$modal-backdrop-bg: rgba(0, 0, 0, 0.5);
+
+$navbar-bg: var(--color-background-secondary);
+$navbar-brand-color: var(--color-text-primary);
+$navbar-nav-link-color: var(--color-text-primary);
+
+// Grid System
+$grid-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px
+);
+
+$container-max-widths: (
+  sm: 540px,
+  md: 720px,
+  lg: 960px,
+  xl: 1140px,
+  xxl: 1320px
+);
+
+// Enable/Disable Features
+$enable-shadows: true;
+$enable-gradients: false;
+$enable-transitions: true;
+$enable-reduced-motion: true;
+$enable-grid-classes: true;
+$enable-container-classes: true;

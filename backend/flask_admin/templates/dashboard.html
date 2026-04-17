@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Tickets Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_folders }}</h4>
+                        <p class="card-text">Total Folders</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-folder fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ pending_escalations }}</h4>
+                        <p class="card-text">Pending Escalations</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Active</h4>
+                        <p class="card-text">System Status</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-heartbeat fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ folders|length }}</h4>
+                        <p class="card-text">Recent Folders</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Folders Overview -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-folder"></i> Recent Folders
+                </h5>
+                <a href="{{ url_for('folders') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Manage Folders
+                </a>
+            </div>
+            <div class="card-body">
+                {% if folders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Tickets</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for folder in folders[:5] %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ folder.name }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ folder.description|truncate(50) if folder.description else '-' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ folder.ticket_count or 0 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ folder.created_at.strftime('%Y-%m-%d') if folder.created_at else 'N/A' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('create_ticket') }}?folder_id={{ folder.id }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-plus"></i> Add Ticket
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if folders|length > 5 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('folders') }}" class="btn btn-outline-primary">
+                                View All {{ folders|length }} Folders
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No folders found</h5>
+                        <p class="text-muted">Create your first folder to get started.</p>
+                        <a href="{{ url_for('folders') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Folder
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('tickets') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-ticket-alt"></i> View All Tickets
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('create_ticket') }}" class="btn btn-success w-100">
+                            <i class="fas fa-plus-circle"></i> Create Ticket
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('folders') }}" class="btn btn-info w-100">
+                            <i class="fas fa-folder"></i> Manage Folders
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('classify_test') }}" class="btn btn-warning w-100">
+                            <i class="fas fa-robot"></i> Test Classification
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('system_health') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-heartbeat"></i> System Health
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

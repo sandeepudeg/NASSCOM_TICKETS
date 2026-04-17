@@ -1,0 +1,248 @@
+/* TicketIQ Design System - Theme System */
+
+/* Base theme variables (default to dark theme) */
+:root {
+  /* Default to dark theme */
+  --color-theme-text: #e2e8f0;
+  --color-theme-text-muted: #94a3b8;
+  --color-theme-background: #0f0f1a;
+  --color-theme-background-secondary: #16162a;
+  --color-theme-background-tertiary: #1e1e35;
+  --color-theme-border: #2e2e4a;
+  --color-theme-surface: #1a1a2e;
+  --color-theme-overlay: rgba(15, 15, 26, 0.92);
+  
+  /* Dark theme badge colors */
+  --component-badge-green-background: rgba(16, 185, 129, 0.15);
+  --component-badge-green-color: #6ee7b7;
+  --component-badge-amber-background: rgba(245, 158, 11, 0.15);
+  --component-badge-amber-color: #fcd34d;
+  --component-badge-red-background: rgba(239, 68, 68, 0.15);
+  --component-badge-red-color: #fca5a5;
+  --component-badge-blue-background: rgba(79, 70, 229, 0.15);
+  --component-badge-blue-color: #a5b4fc;
+  --component-badge-cyan-background: rgba(6, 182, 212, 0.15);
+  --component-badge-cyan-color: #67e8f9;
+}
+
+/* Light theme override */
+:root.theme-light,
+[data-theme="light"] {
+  /* Light theme specific tokens */
+  --color-theme-text: #0f172a;
+  --color-theme-text-muted: #475569;
+  --color-theme-background: #ffffff;
+  --color-theme-background-secondary: #f8fafc;
+  --color-theme-background-tertiary: #f1f5f9;
+  --color-theme-border: #e2e8f0;
+  --color-theme-surface: #ffffff;
+  --color-theme-overlay: rgba(255, 255, 255, 0.92);
+  
+  /* Light theme badge colors */
+  --component-badge-green-background: rgba(16, 185, 129, 0.1);
+  --component-badge-green-color: #059669;
+  --component-badge-amber-background: rgba(245, 158, 11, 0.1);
+  --component-badge-amber-color: #d97706;
+  --component-badge-red-background: rgba(239, 68, 68, 0.1);
+  --component-badge-red-color: #dc2626;
+  --component-badge-blue-background: rgba(79, 70, 229, 0.1);
+  --component-badge-blue-color: #4338ca;
+  --component-badge-cyan-background: rgba(6, 182, 212, 0.1);
+  --component-badge-cyan-color: #0891b2;
+}
+
+/* Dark theme (explicit) */
+:root.theme-dark,
+[data-theme="dark"] {
+  /* Dark theme specific tokens */
+  --color-theme-text: #e2e8f0;
+  --color-theme-text-muted: #94a3b8;
+  --color-theme-background: #0f0f1a;
+  --color-theme-background-secondary: #16162a;
+  --color-theme-background-tertiary: #1e1e35;
+  --color-theme-border: #2e2e4a;
+  --color-theme-surface: #1a1a2e;
+  --color-theme-overlay: rgba(15, 15, 26, 0.92);
+  
+  /* Dark theme badge colors */
+  --component-badge-green-background: rgba(16, 185, 129, 0.15);
+  --component-badge-green-color: #6ee7b7;
+  --component-badge-amber-background: rgba(245, 158, 11, 0.15);
+  --component-badge-amber-color: #fcd34d;
+  --component-badge-red-background: rgba(239, 68, 68, 0.15);
+  --component-badge-red-color: #fca5a5;
+  --component-badge-blue-background: rgba(79, 70, 229, 0.15);
+  --component-badge-blue-color: #a5b4fc;
+  --component-badge-cyan-background: rgba(6, 182, 212, 0.15);
+  --component-badge-cyan-color: #67e8f9;
+}
+
+/* Theme transition animations */
+:root {
+  --theme-transition-duration: 0.2s;
+  --theme-transition-easing: ease-in-out;
+}
+
+/* Apply smooth transitions to theme-dependent properties */
+*,
+*::before,
+*::after {
+  transition: 
+    background-color var(--theme-transition-duration) var(--theme-transition-easing),
+    border-color var(--theme-transition-duration) var(--theme-transition-easing),
+    color var(--theme-transition-duration) var(--theme-transition-easing),
+    box-shadow var(--theme-transition-duration) var(--theme-transition-easing);
+}
+
+/* Disable transitions during theme initialization to prevent flash */
+.theme-transitioning * {
+  transition: none !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-theme-border: currentColor;
+  }
+  
+  :root.theme-light {
+    --color-theme-text: #000000;
+    --color-theme-background: #ffffff;
+    --color-theme-border: #000000;
+  }
+  
+  :root.theme-dark {
+    --color-theme-text: #ffffff;
+    --color-theme-background: #000000;
+    --color-theme-border: #ffffff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles - force light theme */
+@media print {
+  :root {
+    --color-theme-text: #000000 !important;
+    --color-theme-text-muted: #666666 !important;
+    --color-theme-background: #ffffff !important;
+    --color-theme-background-secondary: #f8f9fa !important;
+    --color-theme-background-tertiary: #e9ecef !important;
+    --color-theme-border: #dee2e6 !important;
+    --color-theme-surface: #ffffff !important;
+  }
+}
+
+/* Focus indicators that work in both themes */
+:focus-visible {
+  outline: 2px solid var(--color-theme-primary);
+  outline-offset: 2px;
+}
+
+/* Selection colors that work in both themes */
+::selection {
+  background-color: var(--color-theme-primary);
+  color: var(--color-primitive-white);
+}
+
+/* Scrollbar styling for both themes */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-theme-background-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-theme-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-theme-text-muted);
+}
+
+/* Theme-aware component utilities */
+.theme-surface {
+  background-color: var(--color-theme-surface);
+  border: 1px solid var(--color-theme-border);
+}
+
+.theme-text {
+  color: var(--color-theme-text);
+}
+
+.theme-text-muted {
+  color: var(--color-theme-text-muted);
+}
+
+.theme-background {
+  background-color: var(--color-theme-background);
+}
+
+.theme-border {
+  border-color: var(--color-theme-border);
+}
+
+/* Theme toggle button styles */
+.theme-toggle {
+  background: var(--color-theme-surface);
+  border: 1px solid var(--color-theme-border);
+  color: var(--color-theme-text);
+  border-radius: var(--borderRadius-md);
+  padding: var(--spacing-2) var(--spacing-3);
+  cursor: pointer;
+  transition: all var(--theme-transition-duration) var(--theme-transition-easing);
+}
+
+.theme-toggle:hover {
+  background: var(--color-theme-background-secondary);
+  border-color: var(--color-theme-primary);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--color-theme-primary);
+  outline-offset: 2px;
+}
+
+/* Theme indicator icons */
+.theme-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-block;
+}
+
+.theme-icon-sun {
+  display: none;
+}
+
+.theme-icon-moon {
+  display: inline-block;
+}
+
+:root.theme-light .theme-icon-sun {
+  display: inline-block;
+}
+
+:root.theme-light .theme-icon-moon {
+  display: none;
+}
+
+/* Auto theme indicator */
+.theme-auto-indicator {
+  opacity: 0.7;
+  font-size: 0.75rem;
+}
+
+.theme-auto-indicator::before {
+  content: "Auto";
+}

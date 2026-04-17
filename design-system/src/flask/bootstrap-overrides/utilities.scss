@@ -1,0 +1,187 @@
+// Utility Class Overrides for Bootstrap 5
+// Extends Bootstrap utilities with design system tokens
+
+// Background Utilities
+.bg-surface {
+  background-color: var(--color-background-surface) !important;
+}
+
+.bg-secondary-surface {
+  background-color: var(--color-background-secondary) !important;
+}
+
+.bg-tertiary-surface {
+  background-color: var(--color-background-tertiary) !important;
+}
+
+// Text Color Utilities
+.text-primary-custom {
+  color: var(--color-primary) !important;
+}
+
+.text-accent {
+  color: var(--color-accent) !important;
+}
+
+.text-muted-custom {
+  color: var(--color-text-secondary) !important;
+}
+
+// Border Utilities
+.border-primary-custom {
+  border-color: var(--color-border-primary) !important;
+}
+
+.border-focus {
+  border-color: var(--color-border-focus) !important;
+}
+
+// Spacing Utilities (extending Bootstrap's system)
+.p-xs { padding: var(--spacing-1) !important; }
+.p-sm { padding: var(--spacing-2) !important; }
+.p-md { padding: var(--spacing-4) !important; }
+.p-lg { padding: var(--spacing-6) !important; }
+.p-xl { padding: var(--spacing-8) !important; }
+
+.m-xs { margin: var(--spacing-1) !important; }
+.m-sm { margin: var(--spacing-2) !important; }
+.m-md { margin: var(--spacing-4) !important; }
+.m-lg { margin: var(--spacing-6) !important; }
+.m-xl { margin: var(--spacing-8) !important; }
+
+// Padding Top/Bottom
+.pt-xs { padding-top: var(--spacing-1) !important; }
+.pt-sm { padding-top: var(--spacing-2) !important; }
+.pt-md { padding-top: var(--spacing-4) !important; }
+.pt-lg { padding-top: var(--spacing-6) !important; }
+.pt-xl { padding-top: var(--spacing-8) !important; }
+
+.pb-xs { padding-bottom: var(--spacing-1) !important; }
+.pb-sm { padding-bottom: var(--spacing-2) !important; }
+.pb-md { padding-bottom: var(--spacing-4) !important; }
+.pb-lg { padding-bottom: var(--spacing-6) !important; }
+.pb-xl { padding-bottom: var(--spacing-8) !important; }
+
+// Padding Left/Right
+.pl-xs, .ps-xs { padding-left: var(--spacing-1) !important; }
+.pl-sm, .ps-sm { padding-left: var(--spacing-2) !important; }
+.pl-md, .ps-md { padding-left: var(--spacing-4) !important; }
+.pl-lg, .ps-lg { padding-left: var(--spacing-6) !important; }
+.pl-xl, .ps-xl { padding-left: var(--spacing-8) !important; }
+
+.pr-xs, .pe-xs { padding-right: var(--spacing-1) !important; }
+.pr-sm, .pe-sm { padding-right: var(--spacing-2) !important; }
+.pr-md, .pe-md { padding-right: var(--spacing-4) !important; }
+.pr-lg, .pe-lg { padding-right: var(--spacing-6) !important; }
+.pr-xl, .pe-xl { padding-right: var(--spacing-8) !important; }
+
+// Margin Top/Bottom
+.mt-xs { margin-top: var(--spacing-1) !important; }
+.mt-sm { margin-top: var(--spacing-2) !important; }
+.mt-md { margin-top: var(--spacing-4) !important; }
+.mt-lg { margin-top: var(--spacing-6) !important; }
+.mt-xl { margin-top: var(--spacing-8) !important; }
+
+.mb-xs { margin-bottom: var(--spacing-1) !important; }
+.mb-sm { margin-bottom: var(--spacing-2) !important; }
+.mb-md { margin-bottom: var(--spacing-4) !important; }
+.mb-lg { margin-bottom: var(--spacing-6) !important; }
+.mb-xl { margin-bottom: var(--spacing-8) !important; }
+
+// Margin Left/Right
+.ml-xs, .ms-xs { margin-left: var(--spacing-1) !important; }
+.ml-sm, .ms-sm { margin-left: var(--spacing-2) !important; }
+.ml-md, .ms-md { margin-left: var(--spacing-4) !important; }
+.ml-lg, .ms-lg { margin-left: var(--spacing-6) !important; }
+.ml-xl, .ms-xl { margin-left: var(--spacing-8) !important; }
+
+.mr-xs, .me-xs { margin-right: var(--spacing-1) !important; }
+.mr-sm, .me-sm { margin-right: var(--spacing-2) !important; }
+.mr-md, .me-md { margin-right: var(--spacing-4) !important; }
+.mr-lg, .me-lg { margin-right: var(--spacing-6) !important; }
+.mr-xl, .me-xl { margin-right: var(--spacing-8) !important; }
+
+// Border Radius Utilities
+.rounded-xs { border-radius: var(--border-radius-sm) !important; }
+.rounded-sm-custom { border-radius: var(--border-radius-sm) !important; }
+.rounded-md { border-radius: var(--border-radius-md) !important; }
+.rounded-lg-custom { border-radius: var(--border-radius-lg) !important; }
+.rounded-xl-custom { border-radius: var(--border-radius-xl) !important; }
+
+// Shadow Utilities
+.shadow-xs { box-shadow: var(--shadow-sm) !important; }
+.shadow-sm-custom { box-shadow: var(--shadow-sm) !important; }
+.shadow-md { box-shadow: var(--shadow-md) !important; }
+.shadow-lg-custom { box-shadow: var(--shadow-lg) !important; }
+.shadow-xl-custom { box-shadow: var(--shadow-xl) !important; }
+
+// Typography Utilities
+.font-weight-medium { font-weight: var(--font-weight-medium) !important; }
+.font-weight-semibold { font-weight: var(--font-weight-semibold) !important; }
+
+.font-size-xs { font-size: var(--font-size-xs) !important; }
+.font-size-sm { font-size: var(--font-size-sm) !important; }
+.font-size-base { font-size: var(--font-size-base) !important; }
+.font-size-lg { font-size: var(--font-size-lg) !important; }
+.font-size-xl { font-size: var(--font-size-xl) !important; }
+
+// Transition Utilities
+.transition-fast {
+  transition: all var(--transition-duration-fast) var(--transition-easing-ease) !important;
+}
+
+.transition-normal {
+  transition: all var(--transition-duration-normal) var(--transition-easing-ease) !important;
+}
+
+.transition-slow {
+  transition: all var(--transition-duration-slow) var(--transition-easing-ease) !important;
+}
+
+// Hover Effects
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+// Focus Utilities
+.focus-ring:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+// Accessibility Utilities
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+// Responsive Utilities
+@media (max-width: 576px) {
+  .sm-p-xs { padding: var(--spacing-1) !important; }
+  .sm-m-xs { margin: var(--spacing-1) !important; }
+  .sm-text-center { text-align: center !important; }
+}
+
+@media (max-width: 768px) {
+  .md-p-xs { padding: var(--spacing-1) !important; }
+  .md-m-xs { margin: var(--spacing-1) !important; }
+  .md-text-center { text-align: center !important; }
+}
+
+@media (max-width: 992px) {
+  .lg-p-xs { padding: var(--spacing-1) !important; }
+  .lg-m-xs { margin: var(--spacing-1) !important; }
+  .lg-text-center { text-align: center !important; }
+}

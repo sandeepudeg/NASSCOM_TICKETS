@@ -1,0 +1,6 @@
+# Development Dependencies
+# Testing and Coverage
+pytest-cov==5.0.0
+
+# Code Quality and Linting (moved from main requirements for dev-only usage)
+# Note: These are kept in main requirements.txt for CI/CD pipeline compatibility

@@ -1,0 +1,84 @@
+// Main Bootstrap Override File for TicketIQ Design System
+// This file imports Bootstrap with our custom variables and component overrides
+
+// 1. Import design system tokens
+@import '../tokens/scss-variables';
+
+// 2. Import our variable overrides
+@import 'variables';
+
+// 3. Import Bootstrap (assumes Bootstrap is installed via npm or CDN)
+// Note: In production, you would import from node_modules/bootstrap/scss/bootstrap
+// For now, we'll assume Bootstrap CSS is loaded separately and just provide overrides
+
+// 4. Import our component overrides
+@import 'components';
+
+// 5. Import utility overrides
+@import 'utilities';
+
+// 6. Global theme application
+body {
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+}
+
+// Dark theme specific adjustments for Bootstrap components
+.bg-light {
+  background-color: var(--color-background-secondary) !important;
+}
+
+.bg-dark {
+  background-color: var(--color-background-primary) !important;
+}
+
+.text-dark {
+  color: var(--color-text-primary) !important;
+}
+
+.text-light {
+  color: var(--color-text-secondary) !important;
+}
+
+.text-muted {
+  color: var(--color-text-secondary) !important;
+}
+
+.border {
+  border-color: var(--color-border-primary) !important;
+}
+
+.border-top {
+  border-top-color: var(--color-border-primary) !important;
+}
+
+.border-bottom {
+  border-bottom-color: var(--color-border-primary) !important;
+}
+
+.border-left {
+  border-left-color: var(--color-border-primary) !important;
+}
+
+.border-right {
+  border-right-color: var(--color-border-primary) !important;
+}
+
+// Focus states for accessibility
+*:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

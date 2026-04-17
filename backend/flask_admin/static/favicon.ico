@@ -1,0 +1,19 @@
+# Flask Admin Favicon
+# This is a placeholder for the favicon.ico file
+# In production, this should be replaced with a proper 16x16, 32x32, and 48x48 pixel ICO file
+# 
+# The favicon represents a ticket/admin interface with:
+# - Blue gradient background representing the primary brand color
+# - White ticket shape with perforations
+# - Simple line elements suggesting text/content
+#
+# To generate a proper favicon.ico from the SVG:
+# 1. Use the favicon.svg file as source
+# 2. Convert to ICO format with multiple sizes (16x16, 32x32, 48x48)
+# 3. Tools: favicon.io, realfavicongenerator.net, or ImageMagick
+#
+# Example ImageMagick command:
+# convert favicon.svg -resize 16x16 favicon-16.png
+# convert favicon.svg -resize 32x32 favicon-32.png  
+# convert favicon.svg -resize 48x48 favicon-48.png
+# convert favicon-16.png favicon-32.png favicon-48.png favicon.ico

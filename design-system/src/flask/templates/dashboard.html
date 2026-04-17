@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <!-- Import macros -->
+    {% from 'macros/components.html' import ds_card, ds_button, ds_badge, ds_alert %}
+    {% from 'macros/layout.html' import ds_container, ds_row, ds_col, ds_section %}
+    
+    {% call ds_container(class='py-4') %}
+        <!-- Page Header -->
+        {% call ds_section(title='Dashboard', subtitle='Welcome to the TicketIQ Admin Panel') %}
+        {% endcall %}
+        
+        <!-- Stats Cards -->
+        {% call ds_row(class='mb-4') %}
+            {% call ds_col(md='3', sm='6') %}
+                {% call ds_card(class='text-center h-100') %}
+                    <h3 class="text-primary-custom mb-2">1,234</h3>
+                    <p class="text-muted-custom mb-0">Total Tickets</p>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(md='3', sm='6') %}
+                {% call ds_card(class='text-center h-100') %}
+                    <h3 class="text-success mb-2">856</h3>
+                    <p class="text-muted-custom mb-0">Resolved</p>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(md='3', sm='6') %}
+                {% call ds_card(class='text-center h-100') %}
+                    <h3 class="text-warning mb-2">234</h3>
+                    <p class="text-muted-custom mb-0">In Progress</p>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(md='3', sm='6') %}
+                {% call ds_card(class='text-center h-100') %}
+                    <h3 class="text-danger mb-2">144</h3>
+                    <p class="text-muted-custom mb-0">Open</p>
+                {% endcall %}
+            {% endcall %}
+        {% endcall %}
+        
+        <!-- Recent Activity -->
+        {% call ds_row() %}
+            {% call ds_col(lg='8') %}
+                {% call ds_card(title='Recent Tickets') %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>#1001</td>
+                                    <td>Login issue with mobile app</td>
+                                    <td>{{ ds_badge('Open', variant='danger') }}</td>
+                                    <td>{{ ds_badge('High', variant='warning') }}</td>
+                                    <td>2 hours ago</td>
+                                    <td>
+                                        {{ ds_button('View', variant='outline', size='small') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>#1002</td>
+                                    <td>Payment processing error</td>
+                                    <td>{{ ds_badge('In Progress', variant='warning') }}</td>
+                                    <td>{{ ds_badge('Critical', variant='danger') }}</td>
+                                    <td>4 hours ago</td>
+                                    <td>
+                                        {{ ds_button('View', variant='outline', size='small') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>#1003</td>
+                                    <td>Feature request: Dark mode</td>
+                                    <td>{{ ds_badge('Resolved', variant='success') }}</td>
+                                    <td>{{ ds_badge('Low', variant='info') }}</td>
+                                    <td>1 day ago</td>
+                                    <td>
+                                        {{ ds_button('View', variant='outline', size='small') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>#1004</td>
+                                    <td>Database connection timeout</td>
+                                    <td>{{ ds_badge('Open', variant='danger') }}</td>
+                                    <td>{{ ds_badge('High', variant='warning') }}</td>
+                                    <td>2 days ago</td>
+                                    <td>
+                                        {{ ds_button('View', variant='outline', size='small') }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        {{ ds_button('View All Tickets', variant='primary') }}
+                    </div>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(lg='4') %}
+                <!-- Quick Actions -->
+                {% call ds_card(title='Quick Actions', class='mb-4') %}
+                    <div class="d-grid gap-2">
+                        {{ ds_button('Create New Ticket', variant='primary', class='w-100') }}
+                        {{ ds_button('Bulk Update', variant='secondary', class='w-100') }}
+                        {{ ds_button('Export Data', variant='outline', class='w-100') }}
+                        {{ ds_button('System Settings', variant='outline', class='w-100') }}
+                    </div>
+                {% endcall %}
+                
+                <!-- System Status -->
+                {% call ds_card(title='System Status') %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>API Status</span>
+                            {{ ds_badge('Online', variant='success') }}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Database</span>
+                            {{ ds_badge('Healthy', variant='success') }}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Email Service</span>
+                            {{ ds_badge('Warning', variant='warning') }}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Storage</span>
+                            {{ ds_badge('85% Used', variant='info') }}
+                        </div>
+                    </div>
+                    
+                    {{ ds_alert('Email service experiencing delays. Investigating...', type='warning', dismissible=false) }}
+                {% endcall %}
+            {% endcall %}
+        {% endcall %}
+    {% endcall %}
+{% endblock %}

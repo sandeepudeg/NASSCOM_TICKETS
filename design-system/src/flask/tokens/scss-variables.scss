@@ -1,0 +1,121 @@
+// SCSS Variables for TicketIQ Design System
+// Generated from design tokens for use in SCSS files
+
+// Color Tokens
+$color-primitive-indigo-400: #4f46e5;
+$color-primitive-indigo-600: #3730a3;
+$color-primitive-cyan-500: #06b6d4;
+$color-primitive-emerald-500: #10b981;
+$color-primitive-amber-500: #f59e0b;
+$color-primitive-red-500: #ef4444;
+$color-primitive-slate-50: #f8fafc;
+$color-primitive-slate-100: #f1f5f9;
+$color-primitive-slate-200: #e2e8f0;
+$color-primitive-slate-400: #94a3b8;
+$color-primitive-slate-600: #475569;
+$color-primitive-slate-700: #334155;
+$color-primitive-slate-800: #1e293b;
+$color-primitive-slate-900: #0f172a;
+$color-primitive-gray-500: #1a1a2e;
+$color-primitive-gray-600: #2e2e4a;
+$color-primitive-gray-700: #1e1e35;
+$color-primitive-gray-800: #16162a;
+$color-primitive-gray-900: #0f0f1a;
+$color-primitive-white: #ffffff;
+$color-primitive-black: #000000;
+
+// Semantic Color Tokens
+$color-primary: $color-primitive-indigo-400;
+$color-primary-dark: $color-primitive-indigo-600;
+$color-accent: $color-primitive-cyan-500;
+$color-success: $color-primitive-emerald-500;
+$color-warning: $color-primitive-amber-500;
+$color-danger: $color-primitive-red-500;
+$color-text-primary: $color-primitive-slate-200;
+$color-text-secondary: $color-primitive-slate-400;
+$color-background-primary: $color-primitive-gray-900;
+$color-background-secondary: $color-primitive-gray-800;
+$color-background-tertiary: $color-primitive-gray-700;
+$color-background-surface: $color-primitive-gray-500;
+$color-border-primary: $color-primitive-gray-600;
+$color-border-focus: $color-primitive-indigo-400;
+
+// Typography Tokens
+$font-family-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+$font-size-xs: 0.7rem;
+$font-size-sm: 0.8rem;
+$font-size-base: 0.875rem;
+$font-size-md: 0.9rem;
+$font-size-lg: 0.95rem;
+$font-size-xl: 1rem;
+$font-size-2xl: 1.1rem;
+$font-size-3xl: 1.125rem;
+$font-size-4xl: 1.25rem;
+$font-size-5xl: 1.5rem;
+$font-size-6xl: 1.8rem;
+$font-size-7xl: 2rem;
+$font-size-8xl: 2.2rem;
+$font-size-9xl: 3.5rem;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-extrabold: 800;
+$font-line-height-tight: 1.15;
+$font-line-height-normal: 1.6;
+
+// Spacing Tokens
+$spacing-0: 0;
+$spacing-1: 0.25rem;
+$spacing-2: 0.5rem;
+$spacing-3: 0.75rem;
+$spacing-4: 1rem;
+$spacing-5: 1.25rem;
+$spacing-6: 1.5rem;
+$spacing-8: 2rem;
+$spacing-10: 2.5rem;
+$spacing-12: 3rem;
+$spacing-16: 4rem;
+$spacing-20: 5rem;
+$spacing-24: 6rem;
+$spacing-32: 8rem;
+
+// Component Spacing
+$spacing-component-xs: 0.25rem;
+$spacing-component-sm: 0.5rem;
+$spacing-component-md: 1rem;
+$spacing-component-lg: 1.5rem;
+$spacing-component-xl: 2rem;
+
+// Layout Spacing
+$spacing-layout-xs: 1.5rem;
+$spacing-layout-sm: 2rem;
+$spacing-layout-md: 3rem;
+$spacing-layout-lg: 4rem;
+$spacing-layout-xl: 5rem;
+$spacing-layout-2xl: 6rem;
+$spacing-layout-3xl: 8rem;
+
+// Border Radius Tokens
+$border-radius-none: 0;
+$border-radius-sm: 6px;
+$border-radius-md: 8px;
+$border-radius-lg: 12px;
+$border-radius-xl: 16px;
+$border-radius-full: 999px;
+
+// Shadow Tokens
+$shadow-none: none;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+// Transition Tokens
+$transition-duration-fast: 150ms;
+$transition-duration-normal: 250ms;
+$transition-duration-slow: 400ms;
+$transition-easing-ease: ease;
+$transition-easing-ease-in: ease-in;
+$transition-easing-ease-out: ease-out;
+$transition-easing-ease-in-out: ease-in-out;

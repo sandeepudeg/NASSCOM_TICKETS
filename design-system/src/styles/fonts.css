@@ -1,0 +1,41 @@
+/* TicketIQ Design System - Optimized Font Loading */
+
+/* Font Display Optimization */
+@supports (font-display: swap) {
+  * {
+    font-display: swap;
+  }
+}
+
+/* Optimized System Font Stacks */
+:root {
+  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-family-mono: Monaco, Inconsolata, Roboto Mono, Consolas, Courier New, monospace;
+}
+
+/* Font Loading Performance */
+body {
+  font-family: var(--font-family-sans);
+  font-display: swap;
+  text-rendering: optimizeSpeed;
+}
+
+/* Prevent Layout Shift */
+.font-loading {
+  visibility: hidden;
+}
+
+.font-loaded {
+  visibility: visible;
+}
+
+/* Size Adjust for Fallback Fonts */
+@font-face {
+  font-family: 'Segoe UI Fallback';
+  src: local('system-ui');
+  size-adjust: 100%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+

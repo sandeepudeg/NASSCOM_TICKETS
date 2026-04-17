@@ -1,0 +1,54 @@
+# Ignore all local dependencies and environments
+node_modules/
+.venv*/
+venv*/
+env*/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore local build artifacts
+dist/
+build/
+*.egg-info/
+.next/
+.turbo/
+.vite
+
+# Ignore Git
+.git
+.github
+
+# Ignore sensitive data
+.env
+.env.*.local
+*.db
+*.sqlite
+*.sqlite3
+tickets.db
+
+# Ignore logs
+*.log
+logs/
+seeding_log.txt
+seeding_error.txt
+logs_archive/
+
+# Ignore local editor settings
+.vscode/
+.idea/
+.DS_Store
+
+# Ignore large datasets not needed for the build
+data/*.csv
+data/*.xlsx
+data/*.jsonl
+
+# Keep files needed for build
+!backend/
+!frontend/
+!design-system/
+!requirements.txt
+!alembic/
+!.gitignore

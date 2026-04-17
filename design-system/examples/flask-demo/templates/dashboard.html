@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <!-- Import macros -->
+    {% from 'macros/components.html' import ds_card, ds_button, ds_badge, ds_alert %}
+    {% from 'macros/layout.html' import ds_container, ds_row, ds_col, ds_section %}
+    
+    {% call ds_container(class='py-4') %}
+        <!-- Page Header -->
+        {% call ds_section(title='Dashboard', subtitle='Welcome to the TicketIQ Design System Flask Demo') %}
+        {% endcall %}
+        
+        <!-- Stats Cards -->
+        {% call ds_row(class='mb-4') %}
+            {% call ds_col(md='3', sm='6', class='mb-3') %}
+                {% call ds_card(class='text-center h-100 hover-lift') %}
+                    <h3 class="text-primary-custom mb-2">{{ stats.total }}</h3>
+                    <p class="text-muted-custom mb-0">Total Tickets</p>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(md='3', sm='6', class='mb-3') %}
+                {% call ds_card(class='text-center h-100 hover-lift') %}
+                    <h3 class="text-success mb-2">{{ stats.resolved }}</h3>
+                    <p class="text-muted-custom mb-0">Resolved</p>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(md='3', sm='6', class='mb-3') %}
+                {% call ds_card(class='text-center h-100 hover-lift') %}
+                    <h3 class="text-warning mb-2">{{ stats.in_progress }}</h3>
+                    <p class="text-muted-custom mb-0">In Progress</p>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(md='3', sm='6', class='mb-3') %}
+                {% call ds_card(class='text-center h-100 hover-lift') %}
+                    <h3 class="text-danger mb-2">{{ stats.open }}</h3>
+                    <p class="text-muted-custom mb-0">Open</p>
+                {% endcall %}
+            {% endcall %}
+        {% endcall %}
+        
+        <!-- Recent Activity -->
+        {% call ds_row() %}
+            {% call ds_col(lg='8') %}
+                {% call ds_card(title='Recent Tickets') %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticket in tickets %}
+                                <tr>
+                                    <td>#{{ ticket.id }}</td>
+                                    <td>{{ ticket.subject }}</td>
+                                    <td>
+                                        {% if ticket.status == 'open' %}
+                                            {{ ds_badge('Open', variant='danger') }}
+                                        {% elif ticket.status == 'in_progress' %}
+                                            {{ ds_badge('In Progress', variant='warning') }}
+                                        {% elif ticket.status == 'resolved' %}
+                                            {{ ds_badge('Resolved', variant='success') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if ticket.priority == 'critical' %}
+                                            {{ ds_badge('Critical', variant='danger') }}
+                                        {% elif ticket.priority == 'high' %}
+                                            {{ ds_badge('High', variant='warning') }}
+                                        {% elif ticket.priority == 'low' %}
+                                            {{ ds_badge('Low', variant='info') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ ticket.created }}</td>
+                                    <td>
+                                        <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
+                                            {{ ds_button('View', variant='outline', size='small') }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('tickets') }}">
+                            {{ ds_button('View All Tickets', variant='primary') }}
+                        </a>
+                    </div>
+                {% endcall %}
+            {% endcall %}
+            
+            {% call ds_col(lg='4') %}
+                <!-- Quick Actions -->
+                {% call ds_card(title='Quick Actions', class='mb-4') %}
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('new_ticket') }}">
+                            {{ ds_button('Create New Ticket', variant='primary', class='w-100') }}
+                        </a>
+                        {{ ds_button('Bulk Update', variant='secondary', class='w-100') }}
+                        {{ ds_button('Export Data', variant='outline', class='w-100') }}
+                        <a href="{{ url_for('settings') }}">
+                            {{ ds_button('System Settings', variant='outline', class='w-100') }}
+                        </a>
+                    </div>
+                {% endcall %}
+                
+                <!-- System Status -->
+                {% call ds_card(title='System Status') %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>API Status</span>
+                            {{ ds_badge('Online', variant='success') }}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Database</span>
+                            {{ ds_badge('Healthy', variant='success') }}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Flask Server</span>
+                            {{ ds_badge('Running', variant='success') }}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Design System</span>
+                            {{ ds_badge('Active', variant='info') }}
+                        </div>
+                    </div>
+                    
+                    {{ ds_alert('Flask integration is working perfectly! All design system components are loaded.', type='success', dismissible=false) }}
+                {% endcall %}
+                
+                <!-- Design System Info -->
+                {% call ds_card(title='Design System Features', class='mt-4') %}
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">✅ Bootstrap 5 Integration</li>
+                        <li class="mb-2">✅ Dark/Light Theme Support</li>
+                        <li class="mb-2">✅ Jinja2 Component Macros</li>
+                        <li class="mb-2">✅ Responsive Design</li>
+                        <li class="mb-2">✅ Accessibility Features</li>
+                        <li class="mb-0">✅ Server-Side Rendering</li>
+                    </ul>
+                {% endcall %}
+            {% endcall %}
+        {% endcall %}
+    {% endcall %}
+{% endblock %}

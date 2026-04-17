@@ -1,0 +1,42 @@
+graph TD
+    %% Define external actors and systems
+    subgraph Sources ["Information Sources & Event Triggers"]
+        Email[IT Support Email Inbox]
+        UserPortal[Internal User Portal]
+        Monitoring[Prometheus / Grafana Alerts]
+        Observability[OpenTelemetry Traces / ECS Logs]
+        LegacyITSM[Existing ITSM Tool (e.g., Jira, Zendesk) via Webhook]
+    end
+
+    subgraph ExternalServices ["Self-Hosted External Dependencies"]
+        Auth[Keycloak / Authentik (OAuth2/OIDC/RBAC)]
+        MinIO[MinIO (S3-Compatible Object Storage)]
+        Kaggle[Kaggle API (Dataset Downloads)]
+        SMTP[Internal SMTP Server (Notifications)]
+    end
+
+    subgraph Solution ["🎫 TicketIQ Solution Boundary"]
+        CoreAPI[TicketIQ Core API]
+    end
+
+    subgraph Stakeholders
+        User[End User (Submits Ticket)]
+        Agent[IT Support Agent (Human Review)]
+        DevOps[DevOps/Platform Team (System Admin)]
+    end
+
+    %% Define interactions
+    User -- "Submits issues via" --> Sources
+    Sources -- "Plain Text / JSON / Webhooks" --> CoreAPI
+    Agent -- "Uses Web UI for review" --> CoreAPI
+    DevOps -- "Manages system" --> CoreAPI
+
+    CoreAPI -- "Validates User/RBAC" --> Auth
+    CoreAPI -- "Stores/Retrieves Artifacts" --> MinIO
+    CoreAPI -- "Downloads Datasets" --> Kaggle
+    CoreAPI -- "Sends Notifications" --> SMTP
+
+    style Solution fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    style CoreAPI fill:#e3f2fd,stroke:#1565c0;
+    style Agent fill:#e8f5e9,stroke:#2e7d32;
+    style Sources fill:#fff3e0,stroke:#ef6c00;

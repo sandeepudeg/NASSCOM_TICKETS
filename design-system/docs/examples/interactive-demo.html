@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketIQ Design System - Interactive Demo</title>
+    <link rel="stylesheet" href="../dist/ticketiq-design-system.css">
+    <style>
+        .demo-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-bg-2);
+        }
+        
+        .demo-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+        }
+        
+        .demo-description {
+            margin-bottom: 1.5rem;
+            color: var(--color-text-muted);
+        }
+        
+        .demo-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .demo-preview {
+            padding: 2rem;
+            border: 1px solid var(--color-border-light);
+            border-radius: 6px;
+            background: var(--color-bg);
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .color-swatch {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            margin: 0.5rem;
+            border: 2px solid var(--color-border);
+            position: relative;
+        }
+        
+        .color-info {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+        
+        .typography-sample {
+            margin: 1rem 0;
+            color: var(--color-text);
+        }
+        
+        .spacing-demo {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        
+        .spacing-box {
+            background: var(--color-primary);
+            opacity: 0.3;
+            margin-right: 1rem;
+        }
+        
+        .component-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="ds-theme-dark">
+    <div class="theme-toggle">
+        <button id="themeToggle" class="ds-button ds-button--outline">
+            🌙 Toggle Theme
+        </button>
+    </div>
+
+    <div class="ds-container" style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
+        <header style="text-align: center; margin-bottom: 3rem;">
+            <h1 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-text);">
+                TicketIQ Design System
+            </h1>
+            <p style="font-size: 1.25rem; color: var(--color-text-muted);">
+                Interactive demonstration of components, tokens, and patterns
+            </p>
+        </header>
+
+        <!-- Color System Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Color System</h2>
+            <p class="demo-description">
+                Our color palette is built on semantic tokens that adapt to different themes while maintaining proper contrast ratios.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem; color: var(--color-text);">Primary Colors</h3>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <div class="color-swatch" style="background: var(--color-primary);">
+                            <div class="color-info">Primary</div>
+                        </div>
+                        <div class="color-swatch" style="background: var(--color-primary-hover);">
+                            <div class="color-info">Hover</div>
+                        </div>
+                        <div class="color-swatch" style="background: var(--color-primary-active);">
+                            <div class="color-info">Active</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 style="margin-bottom: 1rem; color: var(--color-text);">Status Colors</h3>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <div class="color-swatch" style="background: var(--color-success);">
+                            <div class="color-info">Success</div>
+                        </div>
+                        <div class="color-swatch" style="background: var(--color-warning);">
+                            <div class="color-info">Warning</div>
+                        </div>
+                        <div class="color-swatch" style="background: var(--color-danger);">
+                            <div class="color-info">Danger</div>
+                        </div>
+                        <div class="color-swatch" style="background: var(--color-info);">
+                            <div class="color-info">Info</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Typography Scale</h2>
+            <p class="demo-description">
+                Consistent typography hierarchy with proper line heights and spacing relationships.
+            </p>
+            
+            <div class="typography-sample" style="font-size: 2.25rem; line-height: 2.5rem; font-weight: 700;">
+                Heading 1 - Page Title
+            </div>
+            <div class="typography-sample" style="font-size: 1.875rem; line-height: 2.25rem; font-weight: 600;">
+                Heading 2 - Section Title
+            </div>
+            <div class="typography-sample" style="font-size: 1.5rem; line-height: 2rem; font-weight: 600;">
+                Heading 3 - Subsection Title
+            </div>
+            <div class="typography-sample" style="font-size: 1rem; line-height: 1.5rem; font-weight: 400;">
+                Body text with optimal readability and line height for comfortable reading across all devices and screen sizes.
+            </div>
+            <div class="typography-sample" style="font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; color: var(--color-text-muted);">
+                Small text for secondary information, captions, and helper text.
+            </div>
+        </section>
+
+        <!-- Spacing System Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Spacing System</h2>
+            <p class="demo-description">
+                Mathematical spacing scale based on 4px increments for consistent layouts.
+            </p>
+            
+            <div class="spacing-demo">
+                <div class="spacing-box" style="width: 4px; height: 20px;"></div>
+                <span>1 unit (4px)</span>
+            </div>
+            <div class="spacing-demo">
+                <div class="spacing-box" style="width: 8px; height: 20px;"></div>
+                <span>2 units (8px)</span>
+            </div>
+            <div class="spacing-demo">
+                <div class="spacing-box" style="width: 16px; height: 20px;"></div>
+                <span>4 units (16px)</span>
+            </div>
+            <div class="spacing-demo">
+                <div class="spacing-box" style="width: 24px; height: 20px;"></div>
+                <span>6 units (24px)</span>
+            </div>
+            <div class="spacing-demo">
+                <div class="spacing-box" style="width: 32px; height: 20px;"></div>
+                <span>8 units (32px)</span>
+            </div>
+            <div class="spacing-demo">
+                <div class="spacing-box" style="width: 48px; height: 20px;"></div>
+                <span>12 units (48px)</span>
+            </div>
+        </section>
+
+        <!-- Button Component Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Button Components</h2>
+            <p class="demo-description">
+                Interactive buttons with multiple variants, sizes, and states.
+            </p>
+            
+            <div class="demo-controls">
+                <label>
+                    Variant:
+                    <select id="buttonVariant" class="ds-select">
+                        <option value="primary">Primary</option>
+                        <option value="secondary">Secondary</option>
+                        <option value="outline">Outline</option>
+                        <option value="ghost">Ghost</option>
+                        <option value="link">Link</option>
+                        <option value="success">Success</option>
+                        <option value="warning">Warning</option>
+                        <option value="danger">Danger</option>
+                    </select>
+                </label>
+                
+                <label>
+                    Size:
+                    <select id="buttonSize" class="ds-select">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </label>
+                
+                <label>
+                    <input type="checkbox" id="buttonDisabled"> Disabled
+                </label>
+                
+                <label>
+                    <input type="checkbox" id="buttonLoading"> Loading
+                </label>
+            </div>
+            
+            <div class="demo-preview">
+                <button id="demoButton" class="ds-button ds-button--primary ds-button--medium">
+                    Demo Button
+                </button>
+            </div>
+        </section>
+
+        <!-- Input Component Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Input Components</h2>
+            <p class="demo-description">
+                Form inputs with validation states and accessibility features.
+            </p>
+            
+            <div class="demo-controls">
+                <label>
+                    State:
+                    <select id="inputState" class="ds-select">
+                        <option value="normal">Normal</option>
+                        <option value="error">Error</option>
+                        <option value="success">Success</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                </label>
+                
+                <label>
+                    Size:
+                    <select id="inputSize" class="ds-select">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </label>
+            </div>
+            
+            <div class="demo-preview">
+                <div class="ds-form-field" style="max-width: 300px;">
+                    <label for="demoInput" class="ds-form-label">Demo Input</label>
+                    <input id="demoInput" type="text" class="ds-input ds-input--medium" placeholder="Enter some text">
+                    <div id="inputHelp" class="ds-form-help">This is helper text for the input field.</div>
+                    <div id="inputError" class="ds-form-error" style="display: none;">This field has an error.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card Component Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Card Components</h2>
+            <p class="demo-description">
+                Content containers with consistent styling and spacing.
+            </p>
+            
+            <div class="component-showcase">
+                <div class="ds-card">
+                    <div class="ds-card__header">
+                        <h3 class="ds-card__title">Basic Card</h3>
+                    </div>
+                    <div class="ds-card__content">
+                        <p>This is a basic card with header and content sections. Cards provide consistent spacing and visual hierarchy.</p>
+                    </div>
+                </div>
+                
+                <div class="ds-card">
+                    <div class="ds-card__content">
+                        <h3 style="margin-bottom: 1rem;">Card without Header</h3>
+                        <p>Cards can also be used without headers for simpler content containers.</p>
+                        <div style="margin-top: 1rem;">
+                            <button class="ds-button ds-button--primary ds-button--small">Action</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alert Component Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Alert Components</h2>
+            <p class="demo-description">
+                Status messages and notifications with proper semantic meaning.
+            </p>
+            
+            <div style="display: grid; gap: 1rem;">
+                <div class="ds-alert ds-alert--success">
+                    <div class="ds-alert__icon">✓</div>
+                    <div class="ds-alert__content">Success! Your changes have been saved successfully.</div>
+                </div>
+                
+                <div class="ds-alert ds-alert--warning">
+                    <div class="ds-alert__icon">⚠</div>
+                    <div class="ds-alert__content">Warning: Please review your input before proceeding.</div>
+                </div>
+                
+                <div class="ds-alert ds-alert--danger">
+                    <div class="ds-alert__icon">✕</div>
+                    <div class="ds-alert__content">Error: Unable to process your request. Please try again.</div>
+                </div>
+                
+                <div class="ds-alert ds-alert--info">
+                    <div class="ds-alert__icon">ℹ</div>
+                    <div class="ds-alert__content">Info: This feature is currently in beta testing.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Demo -->
+        <section class="demo-section">
+            <h2 class="demo-title">Navigation Components</h2>
+            <p class="demo-description">
+                Navigation patterns for consistent wayfinding and user orientation.
+            </p>
+            
+            <div class="ds-nav" style="background: var(--color-bg-2); border-radius: 8px; padding: 1rem;">
+                <div class="ds-nav__container">
+                    <div class="ds-nav__brand">
+                        <span style="font-weight: 600; color: var(--color-text);">TicketIQ</span>
+                    </div>
+                    <div class="ds-nav__menu">
+                        <a href="#" class="ds-nav__link ds-nav__link--active">Dashboard</a>
+                        <a href="#" class="ds-nav__link">Tickets</a>
+                        <a href="#" class="ds-nav__link">Users</a>
+                        <a href="#" class="ds-nav__link">Settings</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="../dist/ticketiq-design-system.js"></script>
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const body = document.body;
+        
+        let currentTheme = 'dark';
+        
+        themeToggle.addEventListener('click', () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', currentTheme);
+            body.className = `ds-theme-${currentTheme}`;
+            themeToggle.textContent = currentTheme === 'dark' ? '☀️ Toggle Theme' : '🌙 Toggle Theme';
+        });
+        
+        // Button demo controls
+        const buttonVariant = document.getElementById('buttonVariant');
+        const buttonSize = document.getElementById('buttonSize');
+        const buttonDisabled = document.getElementById('buttonDisabled');
+        const buttonLoading = document.getElementById('buttonLoading');
+        const demoButton = document.getElementById('demoButton');
+        
+        function updateButton() {
+            const variant = buttonVariant.value;
+            const size = buttonSize.value;
+            const disabled = buttonDisabled.checked;
+            const loading = buttonLoading.checked;
+            
+            demoButton.className = `ds-button ds-button--${variant} ds-button--${size}`;
+            
+            if (loading) {
+                demoButton.classList.add('ds-button--loading');
+                demoButton.innerHTML = '<span class="ds-spinner"></span> Loading...';
+            } else {
+                demoButton.classList.remove('ds-button--loading');
+                demoButton.textContent = 'Demo Button';
+            }
+            
+            demoButton.disabled = disabled || loading;
+        }
+        
+        buttonVariant.addEventListener('change', updateButton);
+        buttonSize.addEventListener('change', updateButton);
+        buttonDisabled.addEventListener('change', updateButton);
+        buttonLoading.addEventListener('change', updateButton);
+        
+        // Input demo controls
+        const inputState = document.getElementById('inputState');
+        const inputSize = document.getElementById('inputSize');
+        const demoInput = document.getElementById('demoInput');
+        const inputHelp = document.getElementById('inputHelp');
+        const inputError = document.getElementById('inputError');
+        
+        function updateInput() {
+            const state = inputState.value;
+            const size = inputSize.value;
+            
+            demoInput.className = `ds-input ds-input--${size}`;
+            
+            // Reset states
+            inputHelp.style.display = 'block';
+            inputError.style.display = 'none';
+            demoInput.disabled = false;
+            
+            switch (state) {
+                case 'error':
+                    demoInput.classList.add('ds-input--error');
+                    inputHelp.style.display = 'none';
+                    inputError.style.display = 'block';
+                    break;
+                case 'success':
+                    demoInput.classList.add('ds-input--success');
+                    break;
+                case 'disabled':
+                    demoInput.disabled = true;
+                    break;
+            }
+        }
+        
+        inputState.addEventListener('change', updateInput);
+        inputSize.addEventListener('change', updateInput);
+        
+        // Initialize
+        updateButton();
+        updateInput();
+        
+        // Add some interactive behavior
+        document.querySelectorAll('.ds-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (!button.disabled) {
+                    button.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        button.style.transform = '';
+                    }, 150);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

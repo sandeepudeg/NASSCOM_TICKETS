@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - Tickets Admin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="error-page">
+            <i class="fas fa-exclamation-triangle fa-5x text-danger mb-4"></i>
+            <h1 class="display-4 text-danger">500</h1>
+            <h2 class="mb-3">Internal Server Error</h2>
+            <p class="lead text-muted mb-4">
+                Something went wrong on our end. We're working to fix it.
+            </p>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>What happened?</strong> The server encountered an unexpected error 
+                while processing your request. This has been logged for investigation.
+            </div>
+            
+            <div class="mb-4">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-home"></i> Return to Dashboard
+                </a>
+                <button class="btn btn-outline-secondary" onclick="location.reload()">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Troubleshooting</h6>
+                    <ul class="list-unstyled text-start">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Check the <a href="{{ url_for('system_health') }}">system health</a> page
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Try refreshing the page in a few moments
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Contact support if the problem persists
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

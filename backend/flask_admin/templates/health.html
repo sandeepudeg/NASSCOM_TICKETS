@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - Tickets Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-heartbeat"></i> System Health
+            </h1>
+            <button class="btn btn-outline-primary" onclick="refreshHealth()" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Overall Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-1">
+                            {% if health and health.status == 'healthy' %}
+                                <i class="fas fa-check-circle text-success"></i> System Operational
+                            {% else %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i> System Issues Detected
+                            {% endif %}
+                        </h4>
+                        <p class="text-muted mb-0">
+                            Last checked: 
+                            {% if health and health.timestamp %}
+                                {{ health.timestamp }}
+                            {% else %}
+                                {{ current_time.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-info" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
+                                <i class="fas fa-clock"></i> Auto Refresh: Off
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Component Status -->
+<div class="row">
+    <!-- Flask Admin Service -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-server fa-2x text-success mb-2"></i>
+                <h6>Flask Admin</h6>
+                <span class="badge bg-success">Healthy</span>
+                <div class="mt-2">
+                    <small class="text-muted">Current Service</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- FastAPI Backend -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if health and health.api == 'reachable' %}
+                    <i class="fas fa-database fa-2x text-success mb-2"></i>
+                    <h6>FastAPI Backend</h6>
+                    <span class="badge bg-success">Reachable</span>
+                {% else %}
+                    <i class="fas fa-database fa-2x text-danger mb-2"></i>
+                    <h6>FastAPI Backend</h6>
+                    <span class="badge bg-danger">Unreachable</span>
+                {% endif %}
+                <div class="mt-2">
+                    <small class="text-muted">{{ api_base_url }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Database -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if health and health.components and health.components.database == 'healthy' %}
+                    <i class="fas fa-hdd fa-2x text-success mb-2"></i>
+                    <h6>Database</h6>
+                    <span class="badge bg-success">Healthy</span>
+                {% else %}
+                    <i class="fas fa-hdd fa-2x text-warning mb-2"></i>
+                    <h6>Database</h6>
+                    <span class="badge bg-warning">Unknown</span>
+                {% endif %}
+                <div class="mt-2">
+                    <small class="text-muted">PostgreSQL</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ML Service -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if health and health.components and health.components.ollama == 'healthy' %}
+                    <i class="fas fa-robot fa-2x text-success mb-2"></i>
+                    <h6>ML Service</h6>
+                    <span class="badge bg-success">Healthy</span>
+                {% else %}
+                    <i class="fas fa-robot fa-2x text-warning mb-2"></i>
+                    <h6>ML Service</h6>
+                    <span class="badge bg-warning">Unknown</span>
+                {% endif %}
+                <div class="mt-2">
+                    <small class="text-muted">Ollama</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Health Information -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Service Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td><strong>Flask Admin Status:</strong></td>
+                            <td><span class="badge bg-success">Running</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>API Base URL:</strong></td>
+                            <td><code>{{ api_base_url }}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Environment:</strong></td>
+                            <td>{{ 'HF Spaces' if 'hf.space' in api_base_url else 'Local Docker' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Last Health Check:</strong></td>
+                            <td>
+                                {% if health and health.timestamp %}
+                                    {{ health.timestamp }}
+                                {% else %}
+                                    Just now
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i> Health Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if health %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>API Connectivity:</span>
+                            <span class="badge {% if health.api == 'reachable' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ health.api|title }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if health.components %}
+                        {% for component, status in health.components.items() %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ component|title }}:</span>
+                                    <span class="badge {% if status == 'healthy' %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ status|title }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i>
+                        <p class="text-muted">No health data available</p>
+                        <button class="btn btn-primary btn-sm" onclick="refreshHealth()">
+                            <i class="fas fa-sync-alt"></i> Check Health
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health History (Placeholder) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> Recent Health Events
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">System Healthy</h6>
+                            <p class="timeline-text">All services operational</p>
+                            <small class="text-muted">{{ current_time.strftime('%H:%M:%S') }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let autoRefreshInterval = null;
+let isAutoRefreshing = false;
+
+function refreshHealth() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const originalContent = refreshBtn.innerHTML;
+    
+    // Show loading state
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    refreshBtn.disabled = true;
+    
+    // Reload the page to get fresh health data
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+function toggleAutoRefresh() {
+    const btn = document.getElementById('autoRefreshBtn');
+    
+    if (isAutoRefreshing) {
+        // Stop auto refresh
+        clearInterval(autoRefreshInterval);
+        isAutoRefreshing = false;
+        btn.innerHTML = '<i class="fas fa-clock"></i> Auto Refresh: Off';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-info');
+    } else {
+        // Start auto refresh (every 30 seconds)
+        autoRefreshInterval = setInterval(refreshHealth, 30000);
+        isAutoRefreshing = true;
+        btn.innerHTML = '<i class="fas fa-clock"></i> Auto Refresh: On';
+        btn.classList.remove('btn-outline-info');
+        btn.classList.add('btn-success');
+    }
+}
+
+// Add some basic timeline styling
+const style = document.createElement('style');
+style.textContent = `
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 3px solid #28a745;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.timeline-text {
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: #6c757d;
+}
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

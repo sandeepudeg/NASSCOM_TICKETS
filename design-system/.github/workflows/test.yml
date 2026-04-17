@@ -1,0 +1,397 @@
+name: TicketIQ Design System - Test & Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Linting & Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: design-system/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: design-system
+      run: npm ci
+      
+    - name: Build design system
+      working-directory: design-system
+      run: npm run build
+      
+    - name: Run TypeScript check
+      working-directory: design-system
+      run: npm run type-check
+      
+    - name: Run ESLint
+      working-directory: design-system
+      run: npm run lint
+      
+    - name: Run Stylelint
+      working-directory: design-system
+      run: npm run lint:css
+      
+    - name: Run accessibility linting
+      working-directory: design-system
+      run: npm run lint:accessibility
+      
+    - name: Run design system validation
+      working-directory: design-system
+      run: npm run lint:design-system
+      
+    - name: Upload lint reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lint-reports
+        path: design-system/test-results/
+        retention-days: 7
+
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: design-system/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: design-system
+      run: npm ci
+      
+    - name: Build design system
+      working-directory: design-system
+      run: npm run build
+      
+    - name: Run unit tests
+      working-directory: design-system
+      run: npm run test:coverage
+      
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        directory: design-system/coverage
+        flags: unittests
+        name: design-system-coverage
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unit-test-results
+        path: design-system/coverage/
+        retention-days: 7
+
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: design-system/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: design-system
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      working-directory: design-system
+      run: npx playwright install --with-deps
+      
+    - name: Build design system
+      working-directory: design-system
+      run: npm run build
+      
+    - name: Run accessibility tests
+      working-directory: design-system
+      run: npm run test:accessibility
+      
+    - name: Upload accessibility reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: accessibility-reports
+        path: design-system/test-results/
+        retention-days: 7
+
+  visual-tests:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: design-system/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: design-system
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      working-directory: design-system
+      run: npx playwright install --with-deps
+      
+    - name: Build design system
+      working-directory: design-system
+      run: npm run build
+      
+    - name: Run visual regression tests
+      working-directory: design-system
+      run: npm run test:visual
+      
+    - name: Upload visual test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: visual-test-results
+        path: |
+          design-system/test-results/visual-report/
+          design-system/tests/visual/*.png
+        retention-days: 7
+
+  cross-browser-tests:
+    name: Cross-Browser Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: design-system/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: design-system
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      working-directory: design-system
+      run: npx playwright install --with-deps
+      
+    - name: Build design system
+      working-directory: design-system
+      run: npm run build
+      
+    - name: Run cross-browser tests
+      working-directory: design-system
+      run: npm run test:cross-browser
+      
+    - name: Upload cross-browser test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: cross-browser-results
+        path: design-system/test-results/cross-browser-report/
+        retention-days: 7
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: design-system/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: design-system
+      run: npm ci
+      
+    - name: Build design system
+      working-directory: design-system
+      run: npm run build
+      
+    - name: Run performance tests
+      working-directory: design-system
+      run: npm run test:performance
+      
+    - name: Upload performance reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-reports
+        path: design-system/test-results/performance-*.json
+        retention-days: 7
+
+  build-validation:
+    name: Build & Distribution Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: design-system/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: design-system
+      run: npm ci
+      
+    - name: Build design system
+      working-directory: design-system
+      run: npm run build
+      
+    - name: Validate build outputs
+      working-directory: design-system
+      run: |
+        # Check that all required files exist
+        test -f dist/styles.css
+        test -f dist/styles.min.css
+        test -f dist/index.js
+        test -f dist/index.esm.js
+        test -f dist/json/tokens.json
+        test -f dist/css/variables.css
+        
+        # Check file sizes (should not be empty)
+        test -s dist/styles.css
+        test -s dist/styles.min.css
+        test -s dist/index.js
+        
+        # Check CSS minification worked
+        ORIGINAL_SIZE=$(wc -c < dist/styles.css)
+        MINIFIED_SIZE=$(wc -c < dist/styles.min.css)
+        if [ $MINIFIED_SIZE -ge $ORIGINAL_SIZE ]; then
+          echo "Error: Minified CSS is not smaller than original"
+          exit 1
+        fi
+        
+        echo "Build validation passed"
+        
+    - name: Test npm package
+      working-directory: design-system
+      run: |
+        # Pack the package
+        npm pack
+        
+        # Test installation in a temporary directory
+        mkdir -p /tmp/test-install
+        cd /tmp/test-install
+        npm init -y
+        npm install $GITHUB_WORKSPACE/design-system/ticketiq-design-system-*.tgz
+        
+        # Test that package can be imported
+        node -e "
+          const pkg = require('@ticketiq/design-system');
+          console.log('Package imported successfully');
+          
+          // Test CSS import
+          const fs = require('fs');
+          const cssPath = require.resolve('@ticketiq/design-system/css');
+          const css = fs.readFileSync(cssPath, 'utf8');
+          if (!css.includes('--color-primary')) {
+            throw new Error('CSS tokens not found');
+          }
+          console.log('CSS tokens validated');
+        "
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          design-system/dist/
+          design-system/*.tgz
+        retention-days: 7
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests, accessibility-tests, visual-tests, cross-browser-tests, performance-tests, build-validation]
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      
+    - name: Generate test summary
+      run: |
+        echo "# TicketIQ Design System - Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check job results
+        LINT_STATUS="${{ needs.lint.result }}"
+        UNIT_STATUS="${{ needs.unit-tests.result }}"
+        A11Y_STATUS="${{ needs.accessibility-tests.result }}"
+        VISUAL_STATUS="${{ needs.visual-tests.result }}"
+        BROWSER_STATUS="${{ needs.cross-browser-tests.result }}"
+        PERF_STATUS="${{ needs.performance-tests.result }}"
+        BUILD_STATUS="${{ needs.build-validation.result }}"
+        
+        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Linting & Validation | $([[ $LINT_STATUS == 'success' ]] && echo '✅ Passed' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+        echo "| Unit Tests | $([[ $UNIT_STATUS == 'success' ]] && echo '✅ Passed' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+        echo "| Accessibility Tests | $([[ $A11Y_STATUS == 'success' ]] && echo '✅ Passed' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+        echo "| Visual Regression | $([[ $VISUAL_STATUS == 'success' ]] && echo '✅ Passed' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+        echo "| Cross-Browser Tests | $([[ $BROWSER_STATUS == 'success' ]] && echo '✅ Passed' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+        echo "| Performance Tests | $([[ $PERF_STATUS == 'success' ]] && echo '✅ Passed' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build Validation | $([[ $BUILD_STATUS == 'success' ]] && echo '✅ Passed' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Overall status
+        if [[ $LINT_STATUS == 'success' && $UNIT_STATUS == 'success' && $A11Y_STATUS == 'success' && $VISUAL_STATUS == 'success' && $BROWSER_STATUS == 'success' && $PERF_STATUS == 'success' && $BUILD_STATUS == 'success' ]]; then
+          echo "## 🎉 All tests passed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The design system is ready for deployment." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ⚠️ Some tests failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the failed test suites and fix any issues before merging." >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- 📊 Test reports and coverage data are available in the job artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- 🎨 Visual regression test results include screenshot comparisons" >> $GITHUB_STEP_SUMMARY
+        echo "- ♿ Accessibility reports detail WCAG compliance status" >> $GITHUB_STEP_SUMMARY
+        echo "- 🚀 Performance reports include Lighthouse scores and metrics" >> $GITHUB_STEP_SUMMARY
+        echo "- 🌐 Cross-browser compatibility results cover all supported browsers" >> $GITHUB_STEP_SUMMARY

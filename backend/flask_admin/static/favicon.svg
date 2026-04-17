@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="ticketGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d6efd;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0056b3;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="url(#ticketGradient)" stroke="#fff" stroke-width="1"/>
+  
+  <!-- Ticket icon -->
+  <rect x="8" y="10" width="16" height="12" rx="2" fill="#fff" opacity="0.9"/>
+  
+  <!-- Ticket perforations -->
+  <circle cx="8" cy="16" r="1.5" fill="url(#ticketGradient)"/>
+  <circle cx="24" cy="16" r="1.5" fill="url(#ticketGradient)"/>
+  
+  <!-- Ticket text lines -->
+  <rect x="10" y="13" width="8" height="1" fill="url(#ticketGradient)" opacity="0.7"/>
+  <rect x="10" y="15" width="6" height="1" fill="url(#ticketGradient)" opacity="0.7"/>
+  <rect x="10" y="17" width="7" height="1" fill="url(#ticketGradient)" opacity="0.7"/>
+  <rect x="10" y="19" width="5" height="1" fill="url(#ticketGradient)" opacity="0.7"/>
+</svg>

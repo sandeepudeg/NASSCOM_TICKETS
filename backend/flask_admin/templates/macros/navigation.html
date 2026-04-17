@@ -1,0 +1,266 @@
+{# TicketIQ Design System - Navigation Macros #}
+{# This file provides navigation-related Jinja2 macros #}
+
+{# Navbar Component #}
+{% macro ds_navbar(brand='', brand_url='#', class='', id='') %}
+  {% set navbar_classes = ['navbar'] %}
+  {% if class %}
+    {% set _ = navbar_classes.append(class) %}
+  {% endif %}
+  
+  <nav class="{{ navbar_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if brand %}
+      <a class="navbar-brand" href="{{ brand_url }}">{{ brand }}</a>
+    {% endif %}
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    
+    <div class="navbar-nav collapse" id="navbarNav">
+      {{ caller() }}
+    </div>
+  </nav>
+{% endmacro %}
+
+{# Nav Item Component #}
+{% macro ds_nav_item(text, url='#', active=false, class='', id='') %}
+  {% set item_classes = ['nav-item'] %}
+  {% if class %}
+    {% set _ = item_classes.append(class) %}
+  {% endif %}
+  
+  <li class="{{ item_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    <a class="nav-link {% if active %}active{% endif %}" 
+       href="{{ url }}"
+       {% if active %}aria-current="page"{% endif %}>
+      {{ text }}
+    </a>
+  </li>
+{% endmacro %}
+
+{# Sidebar Component #}
+{% macro ds_sidebar(brand='', brand_url='#', show=false, class='', id='') %}
+  {% set sidebar_classes = ['sidebar'] %}
+  {% if show %}
+    {% set _ = sidebar_classes.append('show') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = sidebar_classes.append(class) %}
+  {% endif %}
+  
+  <nav class="{{ sidebar_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if brand %}
+      <div class="sidebar-header">
+        <a class="sidebar-brand" href="{{ brand_url }}">{{ brand }}</a>
+      </div>
+    {% endif %}
+    
+    <div class="sidebar-nav">
+      {{ caller() }}
+    </div>
+  </nav>
+  
+  {% if show %}
+    <div class="sidebar-overlay show"></div>
+  {% endif %}
+{% endmacro %}
+
+{# Sidebar Nav Item Component #}
+{% macro ds_sidebar_item(text, url='#', icon='', active=false, class='', id='') %}
+  <a class="nav-link {% if active %}active{% endif %} {% if class %}{{ class }}{% endif %}" 
+     href="{{ url }}"
+     {% if id %}id="{{ id }}"{% endif %}
+     {% if active %}aria-current="page"{% endif %}>
+    {% if icon %}
+      <span class="nav-icon">{{ icon | safe }}</span>
+    {% endif %}
+    {{ text }}
+  </a>
+{% endmacro %}
+
+{# Tab Navigation Component #}
+{% macro ds_tabs(class='', id='') %}
+  {% set tab_classes = ['nav-tabs'] %}
+  {% if class %}
+    {% set _ = tab_classes.append(class) %}
+  {% endif %}
+  
+  <ul class="{{ tab_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %} role="tablist">
+    {{ caller() }}
+  </ul>
+{% endmacro %}
+
+{# Tab Item Component #}
+{% macro ds_tab_item(text, target, active=false, class='', id='') %}
+  {% set item_classes = ['nav-item'] %}
+  {% if class %}
+    {% set _ = item_classes.append(class) %}
+  {% endif %}
+  
+  <li class="{{ item_classes | join(' ') }}" role="presentation">
+    <button class="nav-link {% if active %}active{% endif %}" 
+            {% if id %}id="{{ id }}"{% endif %}
+            data-bs-toggle="tab" 
+            data-bs-target="#{{ target }}" 
+            type="button" 
+            role="tab" 
+            aria-controls="{{ target }}" 
+            aria-selected="{% if active %}true{% else %}false{% endif %}">
+      {{ text }}
+    </button>
+  </li>
+{% endmacro %}
+
+{# Pills Navigation Component #}
+{% macro ds_pills(class='', id='') %}
+  {% set pill_classes = ['nav-pills'] %}
+  {% if class %}
+    {% set _ = pill_classes.append(class) %}
+  {% endif %}
+  
+  <ul class="{{ pill_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </ul>
+{% endmacro %}
+
+{# Pill Item Component #}
+{% macro ds_pill_item(text, url='#', active=false, class='', id='') %}
+  {% set item_classes = ['nav-item'] %}
+  {% if class %}
+    {% set _ = item_classes.append(class) %}
+  {% endif %}
+  
+  <li class="{{ item_classes | join(' ') }}">
+    <a class="nav-link {% if active %}active{% endif %}" 
+       href="{{ url }}"
+       {% if id %}id="{{ id }}"{% endif %}
+       {% if active %}aria-current="page"{% endif %}>
+      {{ text }}
+    </a>
+  </li>
+{% endmacro %}
+
+{# Breadcrumb Component #}
+{% macro ds_breadcrumb(items, class='', id='') %}
+  {% set breadcrumb_classes = ['breadcrumb'] %}
+  {% if class %}
+    {% set _ = breadcrumb_classes.append(class) %}
+  {% endif %}
+  
+  <nav aria-label="breadcrumb" {% if id %}id="{{ id }}"{% endif %}>
+    <ol class="{{ breadcrumb_classes | join(' ') }}">
+      {% for item in items %}
+        <li class="breadcrumb-item {% if loop.last %}active{% endif %}"
+            {% if loop.last %}aria-current="page"{% endif %}>
+          {% if not loop.last and item.url %}
+            <a href="{{ item.url }}">{{ item.text }}</a>
+          {% else %}
+            {{ item.text }}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+{% endmacro %}
+
+{# Dropdown Component #}
+{% macro ds_dropdown(text, class='', id='') %}
+  {% set dropdown_classes = ['dropdown'] %}
+  {% if class %}
+    {% set _ = dropdown_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ dropdown_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      {{ text }}
+    </button>
+    <ul class="dropdown-menu">
+      {{ caller() }}
+    </ul>
+  </div>
+{% endmacro %}
+
+{# Dropdown Item Component #}
+{% macro ds_dropdown_item(text, url='#', class='', id='') %}
+  <li>
+    <a class="dropdown-item {% if class %}{{ class }}{% endif %}" 
+       href="{{ url }}"
+       {% if id %}id="{{ id }}"{% endif %}>
+      {{ text }}
+    </a>
+  </li>
+{% endmacro %}
+
+{# Dropdown Divider Component #}
+{% macro ds_dropdown_divider() %}
+  <li><hr class="dropdown-divider"></li>
+{% endmacro %}
+
+{# Skip Navigation Link for Accessibility #}
+{% macro ds_skip_nav(target='#main-content', text='Skip to main content') %}
+  <a class="skip-nav" href="{{ target }}">{{ text }}</a>
+{% endmacro %}
+
+{# Mobile Drawer Component #}
+{% macro ds_mobile_drawer(brand='', brand_url='#', show=false, class='', id='') %}
+  {% set drawer_classes = ['mobile-drawer'] %}
+  {% if show %}
+    {% set _ = drawer_classes.append('show') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = drawer_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ drawer_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    <div class="mobile-drawer-header">
+      {% if brand %}
+        <a class="sidebar-brand" href="{{ brand_url }}">{{ brand }}</a>
+      {% endif %}
+      <button class="mobile-drawer-close" type="button" aria-label="Close navigation">
+        ×
+      </button>
+    </div>
+    
+    <div class="sidebar-nav">
+      {{ caller() }}
+    </div>
+  </div>
+{% endmacro %}
+
+{# Main Content Area Component #}
+{% macro ds_main_content(sidebar_open=false, class='', id='') %}
+  {% set main_classes = ['main-content'] %}
+  {% if sidebar_open %}
+    {% set _ = main_classes.append('sidebar-open') %}
+  {% endif %}
+  {% if class %}
+    {% set _ = main_classes.append(class) %}
+  {% endif %}
+  
+  <main class="{{ main_classes | join(' ') }}" 
+        {% if id %}id="{{ id }}"{% else %}id="main-content"{% endif %}>
+    {{ caller() }}
+  </main>
+{% endmacro %}
+
+{# Navigation Layout Wrapper #}
+{% macro ds_nav_layout(nav_type='navbar', brand='', brand_url='#', sidebar_open=false, class='', id='') %}
+  <div class="{% if class %}{{ class }}{% endif %}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if nav_type == 'navbar' %}
+      {% call ds_navbar(brand=brand, brand_url=brand_url) %}
+        {{ caller('nav') }}
+      {% endcall %}
+      {% call ds_main_content() %}
+        {{ caller('main') }}
+      {% endcall %}
+    {% elif nav_type == 'sidebar' %}
+      {% call ds_sidebar(brand=brand, brand_url=brand_url, show=sidebar_open) %}
+        {{ caller('nav') }}
+      {% endcall %}
+      {% call ds_main_content(sidebar_open=sidebar_open) %}
+        {{ caller('main') }}
+      {% endcall %}
+    {% endif %}
+  </div>
+{% endmacro %}

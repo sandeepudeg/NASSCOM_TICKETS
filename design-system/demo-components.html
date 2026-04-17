@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketIQ Design System - Component Demo</title>
+  <link rel="stylesheet" href="dist/css/design-system.css">
+  <style>
+    .demo-section {
+      margin-bottom: 3rem;
+      padding: 2rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+    }
+    
+    .demo-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+    
+    .demo-grid {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .demo-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme Toggle -->
+  <button class="ds-button ds-button--primary theme-toggle" onclick="toggleTheme()">
+    🌓 Toggle Theme
+  </button>
+
+  <!-- Navigation Demo -->
+  <nav class="ds-navigation">
+    <div class="ds-navigation__logo">🎫 Ticket<span>IQ</span></div>
+    <ul class="ds-navigation__links">
+      <li><a href="#buttons">Buttons</a></li>
+      <li><a href="#cards">Cards</a></li>
+      <li><a href="#forms">Forms</a></li>
+      <li><a href="#badges">Badges</a></li>
+    </ul>
+    <div>
+      <span class="ds-badge ds-badge--primary">Design System</span>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <div class="ds-hero">
+    <div class="ds-hero__tag">🎨 Design System Demo</div>
+    <h1 class="ds-hero__title">TicketIQ <em>Design System</em></h1>
+    <p class="ds-hero__subtitle">A unified design system extracted from the demo page, built with Style Dictionary for multi-platform consistency across React and Flask applications.</p>
+    <div class="ds-flex ds-flex--gap-md ds-flex--wrap ds-flex--center">
+      <button class="ds-button ds-button--primary">Primary Action</button>
+      <button class="ds-button ds-button--secondary">Secondary Action</button>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="ds-stats">
+    <div class="ds-stat">
+      <div class="ds-stat__value">50+</div>
+      <div class="ds-stat__label">Design Tokens</div>
+    </div>
+    <div class="ds-stat">
+      <div class="ds-stat__value">15+</div>
+      <div class="ds-stat__label">Components</div>
+    </div>
+    <div class="ds-stat">
+      <div class="ds-stat__value">2</div>
+      <div class="ds-stat__label">Themes</div>
+    </div>
+    <div class="ds-stat">
+      <div class="ds-stat__value">100%</div>
+      <div class="ds-stat__label">Accessible</div>
+    </div>
+  </div>
+
+  <hr class="ds-divider">
+
+  <div class="ds-section">
+    <!-- Buttons Demo -->
+    <div class="demo-section" id="buttons">
+      <h2 class="demo-title">Buttons</h2>
+      <div class="demo-row">
+        <button class="ds-button ds-button--primary">Primary Button</button>
+        <button class="ds-button ds-button--secondary">Secondary Button</button>
+        <button class="ds-button ds-button--primary" disabled>Disabled Button</button>
+      </div>
+    </div>
+
+    <!-- Cards Demo -->
+    <div class="demo-section" id="cards">
+      <h2 class="demo-title">Cards</h2>
+      <div class="ds-grid ds-grid--3">
+        <div class="ds-card">
+          <div class="ds-card__title">Feature Card</div>
+          <div class="ds-card__content">This is a basic card component with hover effects and consistent styling.</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-card__title">Another Card</div>
+          <div class="ds-card__content">Cards can contain any content and maintain consistent spacing and styling.</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-card__title">Third Card</div>
+          <div class="ds-card__content">All cards follow the same design patterns from the demo page.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Cards Demo -->
+    <div class="demo-section">
+      <h2 class="demo-title">Feature Cards</h2>
+      <div class="ds-feature-grid">
+        <div class="ds-feature-card">
+          <div class="ds-feature-card__icon">🤖</div>
+          <div class="ds-feature-card__title">AI Classification</div>
+          <div class="ds-feature-card__description">Automatically classifies tickets using machine learning algorithms with high accuracy and confidence scoring.</div>
+        </div>
+        <div class="ds-feature-card">
+          <div class="ds-feature-card__icon">🔍</div>
+          <div class="ds-feature-card__title">Smart Search</div>
+          <div class="ds-feature-card__description">Semantic search capabilities that understand context and find relevant information quickly.</div>
+        </div>
+        <div class="ds-feature-card">
+          <div class="ds-feature-card__icon">📊</div>
+          <div class="ds-feature-card__title">Analytics Dashboard</div>
+          <div class="ds-feature-card__description">Comprehensive analytics and reporting tools for tracking performance and insights.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forms Demo -->
+    <div class="demo-section" id="forms">
+      <h2 class="demo-title">Form Elements</h2>
+      <div class="demo-grid">
+        <div>
+          <label for="demo-input" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Text Input</label>
+          <input type="text" id="demo-input" class="ds-input" placeholder="Enter some text...">
+        </div>
+        <div>
+          <label for="demo-textarea" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Textarea</label>
+          <textarea id="demo-textarea" class="ds-input" rows="4" placeholder="Enter a longer message..."></textarea>
+        </div>
+        <div>
+          <label for="demo-select" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Select</label>
+          <select id="demo-select" class="ds-input">
+            <option>Choose an option...</option>
+            <option>Option 1</option>
+            <option>Option 2</option>
+            <option>Option 3</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badges Demo -->
+    <div class="demo-section" id="badges">
+      <h2 class="demo-title">Badges</h2>
+      <div class="demo-row">
+        <span class="ds-badge ds-badge--primary">Primary</span>
+        <span class="ds-badge ds-badge--success">Success</span>
+        <span class="ds-badge ds-badge--warning">Warning</span>
+        <span class="ds-badge ds-badge--danger">Danger</span>
+        <span class="ds-badge ds-badge--accent">Accent</span>
+      </div>
+    </div>
+
+    <!-- Layout Demo -->
+    <div class="demo-section">
+      <h2 class="demo-title">Layout System</h2>
+      <div class="ds-section__tag">Grid System</div>
+      <div class="ds-grid ds-grid--4">
+        <div class="ds-card">
+          <div class="ds-card__title">Grid Item 1</div>
+          <div class="ds-card__content">Responsive grid system</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-card__title">Grid Item 2</div>
+          <div class="ds-card__content">Auto-fit columns</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-card__title">Grid Item 3</div>
+          <div class="ds-card__content">Consistent spacing</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-card__title">Grid Item 4</div>
+          <div class="ds-card__content">Mobile responsive</div>
+        </div>
+      </div>
+      
+      <div class="ds-section__tag ds-mt-12">Flexbox Utilities</div>
+      <div class="ds-flex ds-flex--between ds-p-6" style="border: 1px solid var(--border); border-radius: var(--radius-md);">
+        <span>Left aligned</span>
+        <span>Right aligned</span>
+      </div>
+    </div>
+
+    <!-- Typography Demo -->
+    <div class="demo-section">
+      <h2 class="demo-title">Typography</h2>
+      <div class="demo-grid">
+        <h1 style="font-size: var(--font-size-9xl); font-weight: 800;">Heading 1</h1>
+        <h2 style="font-size: var(--font-size-7xl); font-weight: 700;">Heading 2</h2>
+        <h3 style="font-size: var(--font-size-4xl); font-weight: 600;">Heading 3</h3>
+        <h4 style="font-size: var(--font-size-3xl); font-weight: 600;">Heading 4</h4>
+        <p style="font-size: var(--font-size-xl);">Body Large - Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        <p style="font-size: var(--font-size-base);">Body Text - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        <p style="font-size: var(--font-size-sm); color: var(--muted);">Small Text - Ut enim ad minim veniam, quis nostrud exercitation.</p>
+      </div>
+    </div>
+
+    <!-- Color Palette Demo -->
+    <div class="demo-section">
+      <h2 class="demo-title">Color Palette</h2>
+      <div class="ds-grid ds-grid--4">
+        <div class="ds-card" style="background: var(--primary); color: white;">
+          <div class="ds-card__title">Primary</div>
+          <div class="ds-card__content">#4f46e5</div>
+        </div>
+        <div class="ds-card" style="background: var(--accent); color: white;">
+          <div class="ds-card__title">Accent</div>
+          <div class="ds-card__content">#06b6d4</div>
+        </div>
+        <div class="ds-card" style="background: var(--success); color: white;">
+          <div class="ds-card__title">Success</div>
+          <div class="ds-card__content">#10b981</div>
+        </div>
+        <div class="ds-card" style="background: var(--warning); color: white;">
+          <div class="ds-card__title">Warning</div>
+          <div class="ds-card__content">#f59e0b</div>
+        </div>
+        <div class="ds-card" style="background: var(--danger); color: white;">
+          <div class="ds-card__title">Danger</div>
+          <div class="ds-card__content">#ef4444</div>
+        </div>
+        <div class="ds-card" style="background: var(--bg2);">
+          <div class="ds-card__title">Background 2</div>
+          <div class="ds-card__content">#16162a</div>
+        </div>
+        <div class="ds-card" style="background: var(--bg3);">
+          <div class="ds-card__title">Background 3</div>
+          <div class="ds-card__content">#1e1e35</div>
+        </div>
+        <div class="ds-card" style="border: 2px solid var(--border);">
+          <div class="ds-card__title">Border</div>
+          <div class="ds-card__content">#2e2e4a</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      
+      // Update button text
+      const button = document.querySelector('.theme-toggle');
+      button.textContent = newTheme === 'dark' ? '🌓 Toggle Theme' : '☀️ Toggle Theme';
+    }
+    
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('.ds-navigation__links a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketIQ Design System - Performance Demo</title>
+    
+    <!-- Critical CSS (inline for fastest loading) -->
+    <style>
+        /* Critical above-the-fold styles */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .demo-section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .btn-skeleton {
+            height: 2.5rem;
+            width: 6rem;
+            margin: 0.5rem;
+        }
+        
+        .text-skeleton {
+            height: 1.2em;
+            width: 100%;
+            margin-bottom: 0.5em;
+        }
+        
+        .text-skeleton.short { width: 60%; }
+        
+        .aspect-ratio {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .performance-metrics {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" as="style" href="dist/critical.min.css">
+    <link rel="preload" as="script" href="dist/font-loader.min.js">
+    
+    <!-- Critical CSS -->
+    <link rel="stylesheet" href="dist/critical.min.css">
+</head>
+<body>
+    <!-- Performance Metrics Display -->
+    <div class="performance-metrics" id="metrics">
+        <div>Loading performance metrics...</div>
+    </div>
+
+    <h1>TicketIQ Design System - Performance Demo</h1>
+    
+    <!-- Critical Content (Above the fold) -->
+    <div class="demo-section">
+        <h2>Critical CSS Demo</h2>
+        <p>This content uses critical CSS and loads immediately.</p>
+        <div class="btn-skeleton skeleton" data-component="button"></div>
+        <div class="btn-skeleton skeleton" data-component="button"></div>
+    </div>
+    
+    <!-- Font Loading Demo -->
+    <div class="demo-section">
+        <h2>Font Loading Optimization</h2>
+        <p class="font-loading">This text will show with fallback fonts first, then switch to optimized fonts.</p>
+        <div id="font-status">Font loading status: <span id="font-state">Loading...</span></div>
+    </div>
+    
+    <!-- Layout Shift Prevention Demo -->
+    <div class="demo-section">
+        <h2>Layout Shift Prevention</h2>
+        <div class="text-skeleton skeleton"></div>
+        <div class="text-skeleton skeleton short"></div>
+        <div class="text-skeleton skeleton"></div>
+        
+        <h3>Image with Aspect Ratio</h3>
+        <div class="aspect-ratio">
+            <span>📷 Image placeholder (prevents layout shift)</span>
+        </div>
+    </div>
+    
+    <!-- Lazy Loading Demo -->
+    <div class="demo-section">
+        <h2>Lazy Loading Demo</h2>
+        <p>Non-critical components below will load when they enter the viewport:</p>
+        
+        <div style="height: 100vh; background: #222; display: flex; align-items: center; justify-content: center;">
+            <p>Scroll down to see lazy loading in action...</p>
+        </div>
+        
+        <div class="skeleton card-skeleton" data-component="modal" style="height: 200px; margin: 1rem 0;">
+            Modal component will load here
+        </div>
+        
+        <div class="skeleton card-skeleton" data-component="toast" style="height: 100px; margin: 1rem 0;">
+            Toast component will load here
+        </div>
+    </div>
+
+    <!-- Font Loading Script -->
+    <script src="dist/font-loader.min.js"></script>
+    
+    <!-- Lazy Loading Script -->
+    <script src="dist/lazy-load.min.js"></script>
+    
+    <!-- Performance Monitoring Script -->
+    <script>
+        // Performance monitoring
+        const metricsEl = document.getElementById('metrics');
+        const fontStateEl = document.getElementById('font-state');
+        
+        // Monitor font loading
+        document.addEventListener('fontsloaded', (event) => {
+            fontStateEl.textContent = 'Loaded: ' + event.detail.loadedFonts.join(', ');
+            document.body.classList.add('fonts-loaded');
+        });
+        
+        // Monitor component loading
+        document.addEventListener('componentLoaded', (event) => {
+            console.log('Component loaded:', event.detail.componentName);
+        });
+        
+        // Performance metrics
+        function updateMetrics() {
+            const metrics = [];
+            
+            // Paint timing
+            if ('performance' in window) {
+                const paintEntries = performance.getEntriesByType('paint');
+                paintEntries.forEach(entry => {
+                    metrics.push(`${entry.name}: ${Math.round(entry.startTime)}ms`);
+                });
+                
+                // Navigation timing
+                const navTiming = performance.getEntriesByType('navigation')[0];
+                if (navTiming) {
+                    metrics.push(`DOM Content Loaded: ${Math.round(navTiming.domContentLoadedEventEnd - navTiming.navigationStart)}ms`);
+                    metrics.push(`Load Complete: ${Math.round(navTiming.loadEventEnd - navTiming.navigationStart)}ms`);
+                }
+            }
+            
+            // Bundle size info
+            metrics.push('');
+            metrics.push('Bundle Sizes:');
+            metrics.push('Critical CSS: ~51KB');
+            metrics.push('Non-critical CSS: ~28KB');
+            metrics.push('Font Loader: ~3KB');
+            metrics.push('Lazy Loader: ~2KB');
+            
+            metricsEl.innerHTML = metrics.map(m => `<div>${m}</div>`).join('');
+        }
+        
+        // Update metrics when page loads
+        if (document.readyState === 'complete') {
+            updateMetrics();
+        } else {
+            window.addEventListener('load', updateMetrics);
+        }
+        
+        // Layout shift monitoring
+        if ('PerformanceObserver' in window) {
+            const observer = new PerformanceObserver((list) => {
+                let clsValue = 0;
+                for (const entry of list.getEntries()) {
+                    if (!entry.hadRecentInput) {
+                        clsValue += entry.value;
+                    }
+                }
+                if (clsValue > 0) {
+                    console.warn('Cumulative Layout Shift:', clsValue);
+                    const clsEl = document.createElement('div');
+                    clsEl.textContent = `CLS: ${clsValue.toFixed(4)}`;
+                    clsEl.style.color = clsValue > 0.1 ? '#ff6b6b' : '#51cf66';
+                    metricsEl.appendChild(clsEl);
+                }
+            });
+            
+            observer.observe({ entryTypes: ['layout-shift'] });
+        }
+        
+        // Simulate component loading after delay
+        setTimeout(() => {
+            document.querySelectorAll('.skeleton[data-component]').forEach(el => {
+                el.classList.remove('skeleton');
+                el.textContent = `✅ ${el.getAttribute('data-component')} loaded`;
+                el.style.background = '#2d5a27';
+                el.style.color = '#ffffff';
+                el.style.display = 'flex';
+                el.style.alignItems = 'center';
+                el.style.justifyContent = 'center';
+            });
+        }, 2000);
+    </script>
+</body>
+</html>

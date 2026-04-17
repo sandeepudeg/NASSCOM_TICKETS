@@ -1,0 +1,282 @@
+{# TicketIQ Design System - Form Macros #}
+{# This file provides form-related Jinja2 macros #}
+
+{# Form Group Component #}
+{% macro ds_form_group(class='', id='') %}
+  {% set group_classes = ['mb-3'] %}
+  {% if class %}
+    {% set _ = group_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ group_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Checkbox Component #}
+{% macro ds_checkbox(name, value='1', label='', checked=false, disabled=false, class='', id='', help_text='') %}
+  {% set checkbox_id = id or (name + '_checkbox') %}
+  {% set checkbox_classes = ['form-check-input'] %}
+  {% if class %}
+    {% set _ = checkbox_classes.append(class) %}
+  {% endif %}
+  
+  <div class="form-check">
+    <input 
+      type="checkbox"
+      class="{{ checkbox_classes | join(' ') }}"
+      id="{{ checkbox_id }}"
+      name="{{ name }}"
+      value="{{ value }}"
+      {% if checked %}checked{% endif %}
+      {% if disabled %}disabled{% endif %}
+      aria-describedby="{% if help_text %}{{ checkbox_id }}_help{% endif %}"
+    />
+    {% if label %}
+      <label class="form-check-label" for="{{ checkbox_id }}">
+        {{ label }}
+      </label>
+    {% endif %}
+    
+    {% if help_text %}
+      <div id="{{ checkbox_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Radio Button Component #}
+{% macro ds_radio(name, value, label='', checked=false, disabled=false, class='', id='', help_text='') %}
+  {% set radio_id = id or (name + '_' + value|string + '_radio') %}
+  {% set radio_classes = ['form-check-input'] %}
+  {% if class %}
+    {% set _ = radio_classes.append(class) %}
+  {% endif %}
+  
+  <div class="form-check">
+    <input 
+      type="radio"
+      class="{{ radio_classes | join(' ') }}"
+      id="{{ radio_id }}"
+      name="{{ name }}"
+      value="{{ value }}"
+      {% if checked %}checked{% endif %}
+      {% if disabled %}disabled{% endif %}
+      aria-describedby="{% if help_text %}{{ radio_id }}_help{% endif %}"
+    />
+    {% if label %}
+      <label class="form-check-label" for="{{ radio_id }}">
+        {{ label }}
+      </label>
+    {% endif %}
+    
+    {% if help_text %}
+      <div id="{{ radio_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Radio Group Component #}
+{% macro ds_radio_group(name, options, selected='', label='', help_text='', required=false, disabled=false, class='', id='') %}
+  {% set group_id = id or (name + '_group') %}
+  
+  <fieldset class="mb-3" {% if id %}id="{{ group_id }}"{% endif %}>
+    {% if label %}
+      <legend class="form-label">
+        {{ label }}
+        {% if required %}<span class="text-danger">*</span>{% endif %}
+      </legend>
+    {% endif %}
+    
+    {% for option in options %}
+      {% if option is mapping %}
+        {{ ds_radio(name, option.value, option.label, (option.value == selected), disabled, class) }}
+      {% else %}
+        {{ ds_radio(name, option, option, (option == selected), disabled, class) }}
+      {% endif %}
+    {% endfor %}
+    
+    {% if help_text %}
+      <div class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </fieldset>
+{% endmacro %}
+
+{# File Input Component #}
+{% macro ds_file_input(name, label='', help_text='', required=false, disabled=false, multiple=false, accept='', class='', id='') %}
+  {% set file_id = id or (name + '_file') %}
+  {% set file_classes = ['form-control'] %}
+  {% if class %}
+    {% set _ = file_classes.append(class) %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ file_id }}" class="form-label">
+        {{ label }}
+        {% if required %}<span class="text-danger">*</span>{% endif %}
+      </label>
+    {% endif %}
+    
+    <input 
+      type="file"
+      class="{{ file_classes | join(' ') }}"
+      id="{{ file_id }}"
+      name="{{ name }}"
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if multiple %}multiple{% endif %}
+      {% if accept %}accept="{{ accept }}"{% endif %}
+      aria-describedby="{% if help_text %}{{ file_id }}_help{% endif %}"
+    />
+    
+    {% if help_text %}
+      <div id="{{ file_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Form Validation Component #}
+{% macro ds_form_validation(errors=[], success_message='', class='', id='') %}
+  {% if errors or success_message %}
+    <div class="{% if class %}{{ class }}{% endif %}" {% if id %}id="{{ id }}"{% endif %}>
+      {% if success_message %}
+        <div class="alert alert-success" role="alert">
+          {{ success_message }}
+        </div>
+      {% endif %}
+      
+      {% if errors %}
+        <div class="alert alert-danger" role="alert">
+          {% if errors|length == 1 %}
+            {{ errors[0] }}
+          {% else %}
+            <ul class="mb-0">
+              {% for error in errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{# Input Group Component #}
+{% macro ds_input_group(prepend='', append='', class='', id='') %}
+  {% set group_classes = ['input-group'] %}
+  {% if class %}
+    {% set _ = group_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ group_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if prepend %}
+      <span class="input-group-text">{{ prepend }}</span>
+    {% endif %}
+    
+    {{ caller() }}
+    
+    {% if append %}
+      <span class="input-group-text">{{ append }}</span>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Form Actions Component #}
+{% macro ds_form_actions(align='start', class='', id='') %}
+  {% set actions_classes = ['d-flex'] %}
+  
+  {% if align == 'center' %}
+    {% set _ = actions_classes.append('justify-content-center') %}
+  {% elif align == 'end' %}
+    {% set _ = actions_classes.append('justify-content-end') %}
+  {% elif align == 'between' %}
+    {% set _ = actions_classes.append('justify-content-between') %}
+  {% endif %}
+  
+  {% set _ = actions_classes.append('gap-2') %}
+  
+  {% if class %}
+    {% set _ = actions_classes.append(class) %}
+  {% endif %}
+  
+  <div class="{{ actions_classes | join(' ') }}" {% if id %}id="{{ id }}"{% endif %}>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{# Switch Component (Toggle) #}
+{% macro ds_switch(name, value='1', label='', checked=false, disabled=false, class='', id='', help_text='') %}
+  {% set switch_id = id or (name + '_switch') %}
+  {% set switch_classes = ['form-check-input'] %}
+  {% if class %}
+    {% set _ = switch_classes.append(class) %}
+  {% endif %}
+  
+  <div class="form-check form-switch">
+    <input 
+      type="checkbox"
+      class="{{ switch_classes | join(' ') }}"
+      role="switch"
+      id="{{ switch_id }}"
+      name="{{ name }}"
+      value="{{ value }}"
+      {% if checked %}checked{% endif %}
+      {% if disabled %}disabled{% endif %}
+      aria-describedby="{% if help_text %}{{ switch_id }}_help{% endif %}"
+    />
+    {% if label %}
+      <label class="form-check-label" for="{{ switch_id }}">
+        {{ label }}
+      </label>
+    {% endif %}
+    
+    {% if help_text %}
+      <div id="{{ switch_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Range Input Component #}
+{% macro ds_range(name, min=0, max=100, step=1, value=50, label='', help_text='', disabled=false, class='', id='') %}
+  {% set range_id = id or (name + '_range') %}
+  {% set range_classes = ['form-range'] %}
+  {% if class %}
+    {% set _ = range_classes.append(class) %}
+  {% endif %}
+  
+  <div class="mb-3">
+    {% if label %}
+      <label for="{{ range_id }}" class="form-label">{{ label }}</label>
+    {% endif %}
+    
+    <input 
+      type="range"
+      class="{{ range_classes | join(' ') }}"
+      id="{{ range_id }}"
+      name="{{ name }}"
+      min="{{ min }}"
+      max="{{ max }}"
+      step="{{ step }}"
+      value="{{ value }}"
+      {% if disabled %}disabled{% endif %}
+      aria-describedby="{% if help_text %}{{ range_id }}_help{% endif %}"
+    />
+    
+    {% if help_text %}
+      <div id="{{ range_id }}_help" class="form-text">{{ help_text }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# Form Layout - Horizontal #}
+{% macro ds_form_horizontal(label_cols=3, input_cols=9) %}
+  <div class="row mb-3">
+    <div class="col-sm-{{ label_cols }}">
+      {{ caller('label') }}
+    </div>
+    <div class="col-sm-{{ input_cols }}">
+      {{ caller('input') }}
+    </div>
+  </div>
+{% endmacro %}

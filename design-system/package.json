@@ -1,0 +1,164 @@
+{
+  "name": "@ticketiq/design-system",
+  "version": "1.0.0",
+  "description": "TicketIQ unified design system with design tokens and components",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "tokens/",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run build:tokens && npm run build:css && npm run build:critical && npm run build:js && npm run build:tree-shaking && npm run build:cdn && npm run build:flask",
+    "build:tokens": "node scripts/build-tokens.js",
+    "build:css": "postcss src/styles/index.css -o dist/styles.css && npm run build:css:minified",
+    "build:css:minified": "postcss dist/styles.css -o dist/styles.min.css --config postcss.minify.config.js",
+    "build:performance": "npm run build:critical && npm run build:font-optimization && npm run build:tree-shaking-setup",
+    "build:critical": "node scripts/build-critical-css.js",
+    "build:font-optimization": "node scripts/build-font-optimization.js",
+    "build:tree-shaking-setup": "node scripts/build-tree-shaking.js",
+    "build:js": "rollup -c",
+    "build:tree-shaking": "rollup -c rollup.tree-shaking.config.js",
+    "build:flask": "node scripts/build-flask.js",
+    "build:cdn": "npm run build:cdn:css && npm run build:cdn:js",
+    "build:cdn:css": "node -e \"const fs=require('fs'); const path=require('path'); const cdnDir=path.join('dist','cdn'); if(!fs.existsSync(cdnDir)) fs.mkdirSync(cdnDir, {recursive:true}); fs.copyFileSync('dist/styles.css', 'dist/cdn/ticketiq-design-system.css'); fs.copyFileSync('dist/styles.min.css', 'dist/cdn/ticketiq-design-system.min.css');\"",
+    "build:cdn:js": "node -e \"const fs=require('fs'); const path=require('path'); const cdnDir=path.join('dist','cdn'); if(!fs.existsSync(cdnDir)) fs.mkdirSync(cdnDir, {recursive:true}); fs.copyFileSync('dist/index.js', 'dist/cdn/ticketiq-design-system.js'); fs.copyFileSync('dist/index.esm.js', 'dist/cdn/ticketiq-design-system.esm.js');\"",
+    "dev": "npm run build:tokens && npm run build:css -- --watch",
+    "clean": "rimraf dist/",
+    "serve:test": "node scripts/test-server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:accessibility": "jest --testPathPattern=accessibility",
+    "test:visual": "playwright test --config=playwright.config.js",
+    "test:visual:update": "playwright test --config=playwright.config.js --update-snapshots",
+    "test:performance": "node scripts/test-performance.js",
+    "test:cross-browser": "playwright test --config=playwright.cross-browser.config.js",
+    "test:all": "npm run test && npm run test:accessibility && npm run test:visual && npm run test:performance && npm run test:cross-browser",
+    "lint": "eslint src/ --ext .ts,.tsx",
+    "lint:css": "stylelint 'src/**/*.css' 'dist/**/*.css'",
+    "lint:accessibility": "node scripts/lint-accessibility.js",
+    "lint:design-system": "node scripts/validate-design-system.js",
+    "lint:all": "npm run lint && npm run lint:css && npm run lint:accessibility && npm run lint:design-system",
+    "type-check": "tsc --noEmit",
+    "version": "npm run build && npm run changelog && git add -A",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "prepublishOnly": "npm run build && npm run test:all && npm run lint:all",
+    "release": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "antd": "^5.13.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.59.1",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/jest": "^29.5.14",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "autoprefixer": "^10.4.16",
+    "axe-core": "^4.8.3",
+    "chrome-launcher": "^1.1.0",
+    "conventional-changelog-cli": "^4.1.0",
+    "cssnano": "^6.0.1",
+    "eslint": "^8.54.0",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-axe": "^8.0.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "jsdom": "^23.0.1",
+    "lighthouse": "^11.4.0",
+    "pixelmatch": "^5.3.0",
+    "playwright": "^1.40.1",
+    "pngjs": "^7.0.0",
+    "postcss": "^8.4.31",
+    "postcss-cli": "^10.1.0",
+    "postcss-import": "^16.1.1",
+    "puppeteer": "^21.6.1",
+    "rimraf": "^5.0.5",
+    "rollup": "^4.6.1",
+    "style-dictionary": "^3.9.2",
+    "stylelint": "^16.0.2",
+    "stylelint-config-standard": "^36.0.0",
+    "ts-jest": "^29.4.9",
+    "typescript": "^5.2.2"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "keywords": [
+    "design-system",
+    "design-tokens",
+    "react",
+    "typescript",
+    "css",
+    "ui-components"
+  ],
+  "author": "TicketIQ Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ticketiq/design-system.git"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./modular": {
+      "import": "./dist/modular.esm.js",
+      "require": "./dist/modular.js",
+      "types": "./dist/modular/modular.d.ts"
+    },
+    "./core": {
+      "import": "./dist/categories/core.esm.js",
+      "require": "./dist/categories/core.js",
+      "types": "./dist/categories/core.d.ts"
+    },
+    "./animation": {
+      "import": "./dist/categories/animation.esm.js",
+      "require": "./dist/categories/animation.js",
+      "types": "./dist/categories/animation.d.ts"
+    },
+    "./feedback": {
+      "import": "./dist/categories/feedback.esm.js",
+      "require": "./dist/categories/feedback.js",
+      "types": "./dist/categories/feedback.d.ts"
+    },
+    "./utilities": {
+      "import": "./dist/categories/utilities.esm.js",
+      "require": "./dist/categories/utilities.js",
+      "types": "./dist/categories/utilities.d.ts"
+    },
+    "./tokens": {
+      "import": "./dist/js/tokens.js",
+      "require": "./dist/js/tokens.js",
+      "types": "./dist/ts/tokens.d.ts"
+    },
+    "./css": "./dist/styles.css",
+    "./css/critical": "./dist/critical.css",
+    "./css/non-critical": "./dist/non-critical.css"
+  },
+  "sideEffects": [
+    "*.css",
+    "dist/css/*.css",
+    "dist/styles.css",
+    "dist/critical.css",
+    "dist/non-critical.css"
+  ]
+}
