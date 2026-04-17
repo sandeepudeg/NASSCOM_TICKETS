@@ -22,13 +22,13 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     bind = op.get_bind()
 
-    # Idempotency guard: if tables already exist (e.g. Neon DB from prior deploy),
-    # skip DDL entirely. Alembic will still stamp the revision as applied.
+    # Idempotency guard: if enums already exist (e.g. Neon DB from prior deploy),
+    # skip all DDL and let alembic stamp the revision.
     if bind.dialect.name == "postgresql":
         result = bind.execute(sa.text(
-            "SELECT to_regclass('public.tickets')"
+            "SELECT EXISTS(SELECT 1 FROM pg_type WHERE typname = 'category_enum')"
         ))
-        if result.scalar() is not None:
+        if result.scalar():
             return
 
     # Enable pgvector extension (PostgreSQL only)
@@ -124,12 +124,13 @@ def upgrade() -> None:
                 "Network",
                 "Access Management",
                 name="category_enum",
+                create_type=False,
             ),
             nullable=True,
         ),
         sa.Column(
             "status",
-            sa.Enum("open", "in_progress", "resolved", "closed", name="status_enum"),
+            sa.Enum("open", "in_progress", "resolved", "closed", name="status_enum", create_type=False),
             nullable=False,
             server_default="open",
         ),
@@ -141,6 +142,7 @@ def upgrade() -> None:
                 "escalated",
                 "reviewed",
                 name="routing_status_enum",
+                create_type=False,
             ),
             nullable=False,
             server_default="pending_classification",
@@ -227,6 +229,7 @@ def upgrade() -> None:
                 "Network",
                 "Access Management",
                 name="similar_category_enum",
+                create_type=False,
             ),
             nullable=False,
         ),
@@ -264,6 +267,7 @@ def upgrade() -> None:
                 "webhook_delivery_failed",
                 "retrain_skipped_concurrent",
                 name="audit_action_enum",
+                create_type=False,
             ),
             nullable=False,
         ),
@@ -294,6 +298,7 @@ def upgrade() -> None:
                 "Network",
                 "Access Management",
                 name="pattern_category_enum",
+                create_type=False,
             ),
             nullable=False,
         ),
@@ -307,6 +312,7 @@ def upgrade() -> None:
                 "dismissed",
                 "acknowledged",
                 name="pattern_status_enum",
+                create_type=False,
             ),
             nullable=False,
             server_default="active",
@@ -335,6 +341,7 @@ def upgrade() -> None:
                 "Network",
                 "Access Management",
                 name="override_original_category_enum",
+                create_type=False,
             ),
             nullable=False,
         ),
@@ -349,6 +356,7 @@ def upgrade() -> None:
                 "Network",
                 "Access Management",
                 name="override_corrected_category_enum",
+                create_type=False,
             ),
             nullable=False,
         ),
@@ -411,3 +419,4 @@ def downgrade() -> None:
 
     # Drop pgvector extension
     op.execute("DROP EXTENSION IF EXISTS vector")
+
