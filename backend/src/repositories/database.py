@@ -8,6 +8,19 @@ from src.schemas.settings import settings
 
 is_sqlite = settings.database_url.startswith("sqlite")
 
+# Normalize the DB URL to always use the correct async driver.
+# HuggingFace Secrets often store DATABASE_URL as plain `postgresql://` or `postgres://`
+# which loads psycopg2 (sync) and crashes create_async_engine.
+_raw_url = settings.database_url
+_async_url = (
+    _raw_url
+    .replace("postgres://", "postgresql+asyncpg://")
+    .replace("postgresql://", "postgresql+asyncpg://")
+)
+# Avoid double-replacing if it already has the right scheme
+if "postgresql+asyncpg+asyncpg" in _async_url:
+    _async_url = _async_url.replace("postgresql+asyncpg+asyncpg", "postgresql+asyncpg")
+
 if is_sqlite:
     engine = create_async_engine(
         settings.database_url.replace("sqlite+aiosqlite", "sqlite+aiosqlite"),
@@ -16,7 +29,7 @@ if is_sqlite:
     )
 else:
     engine = create_async_engine(
-        settings.database_url,
+        _async_url,
         pool_size=settings.database_pool_size,
         max_overflow=settings.database_max_overflow,
         echo=settings.debug,
