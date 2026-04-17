@@ -107,5 +107,7 @@ design-system/dist/
 frontend/node_modules/
 # frontend/dist is intentionally committed so HuggingFace skips the Node build stage
 # frontend/dist/
+# But exclude large sourcemap files (>10MB, rejected by HF)
+frontend/dist/**/*.map
 backend/__pycache__/
 backend/.pytest_cache/
