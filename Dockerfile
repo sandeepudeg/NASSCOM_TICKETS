@@ -40,4 +40,4 @@ LABEL description="TicketIQ Unified Intelligence Hub"
 # Multi-stage startup:
 # 1. Run migrations (Neon)
 # 2. Start Unified FastAPI (React + Intelligence Hub)
-CMD alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7860
+CMD alembic -c config/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port 7860
