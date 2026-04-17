@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 # Add scripts/ml to path for importing
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "ml"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "scripts" / "ml"))
 
 from evaluate_classifier import (
     EQUITABLE_RECALL_THRESHOLD,

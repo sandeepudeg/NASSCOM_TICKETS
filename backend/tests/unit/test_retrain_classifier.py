@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 # Add scripts/ml to path for importing
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "ml"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "scripts" / "ml"))
 
 import retrain_classifier as rc
 

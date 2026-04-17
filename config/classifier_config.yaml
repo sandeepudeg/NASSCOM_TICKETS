@@ -1,0 +1,15 @@
+categories:
+  - name: Infrastructure
+    description: Hardware, servers, data centers, networks, virtualization.
+  - name: Application
+    description: Software, web applications, mobile apps, bug reports, feature requests.
+  - name: Security
+    description: Vulnerabilities, access breaches, malware, phishing.
+  - name: Database
+    description: Databases, SQL queries, backups, performance.
+  - name: Storage
+    description: Hard drives, cloud storage, SAN, NAS, object storage.
+  - name: Network
+    description: Routers, switches, firewalls, VPN, DNS.
+  - name: Access Management
+    description: Passwords, accounts, SSO, MFA, permissions.
