@@ -2,6 +2,7 @@ import re
 import ssl as _ssl
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse, urlunparse
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -11,36 +12,31 @@ from src.schemas.settings import settings
 is_sqlite = settings.database_url.startswith("sqlite")
 
 # Normalize the DB URL to always use the async asyncpg driver.
-# Neon / HuggingFace Secrets often provide URLs like:
-#   postgres://user:pass@host/db?sslmode=require
-# asyncpg does NOT support `sslmode` as a query param — it uses a Python
-# ssl.SSLContext passed via connect_args instead.
+# Neon provides URLs like: postgres://user:pass@host/db?sslmode=require&channel_binding=require
+# asyncpg does NOT support URL query params like sslmode/channel_binding —
+# SSL must be passed via connect_args using a Python ssl.SSLContext.
 _raw_url = settings.database_url
 
-# 1. Upgrade scheme to asyncpg
-_async_url = _raw_url
-for old, new in [
-    ("postgresql+asyncpg://", "postgresql+asyncpg://"),  # already correct, no-op
-    ("postgresql://", "postgresql+asyncpg://"),
-    ("postgres://", "postgresql+asyncpg://"),
-]:
-    if _async_url.startswith(old.split("+")[0] + "://") and "asyncpg" not in _async_url:
-        _async_url = _async_url.replace(old.split("+")[0] + "://", "postgresql+asyncpg://", 1)
-        break
+# 1. Upgrade scheme to asyncpg (handles postgres://, postgresql://, postgresql+asyncpg://)
+_parsed = urlparse(_raw_url)
+if _parsed.scheme in ("postgres", "postgresql"):
+    _parsed = _parsed._replace(scheme="postgresql+asyncpg")
+elif _parsed.scheme == "postgresql+asyncpg":
+    pass  # already correct
 
-# Fix double-replace edge case
-_async_url = re.sub(r"postgresql\+asyncpg\+asyncpg", "postgresql+asyncpg", _async_url)
+# 2. Detect SSL from the query string BEFORE stripping it
+_needs_ssl = (
+    "sslmode=require" in _raw_url
+    or "ssl=require" in _raw_url
+    or "channel_binding" in _raw_url
+    or ".neon.tech" in _raw_url
+)
 
-# 2. Detect SSL requirement before stripping sslmode from URL
-_needs_ssl = "sslmode=require" in _raw_url or "ssl=require" in _raw_url or ".neon.tech" in _raw_url
+# 3. Strip ALL query params — asyncpg doesn't understand them
+_parsed = _parsed._replace(query="")
+_async_url = urlunparse(_parsed)
 
-# 3. Strip sslmode/ssl query params — asyncpg rejects them as kwargs
-_async_url = re.sub(r"[?&]sslmode=[^&]*", "", _async_url)
-_async_url = re.sub(r"[?&]ssl=[^&]*", "", _async_url)
-# Clean up trailing ? if all params were removed
-_async_url = _async_url.rstrip("?")
-
-# 4. Build connect_args
+# 4. Build connect_args with SSL context if needed
 _connect_args: dict = {}
 if not is_sqlite and _needs_ssl:
     _ssl_ctx = _ssl.create_default_context()
