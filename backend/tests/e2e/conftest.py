@@ -4,8 +4,14 @@ Pytest configuration for E2E tests with Playwright.
 Provides fixtures and setup for end-to-end testing.
 """
 
+import sys
+import pathlib
 import pytest
-from playwright.config import PLAYWRIGHT_CONFIG, get_browser_config
+
+# Add root directory to sys.path to ensure playwright_setup can be imported
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent.parent))
+
+from playwright_setup import PLAYWRIGHT_CONFIG, get_browser_config
 from playwright.sync_api import Page
 
 
