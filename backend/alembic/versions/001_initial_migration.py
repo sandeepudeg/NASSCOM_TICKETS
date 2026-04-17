@@ -20,48 +20,74 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+
+    # Idempotency guard: if tables already exist (e.g. Neon DB from prior deploy),
+    # skip DDL entirely. Alembic will still stamp the revision as applied.
+    if bind.dialect.name == "postgresql":
+        result = bind.execute(sa.text(
+            "SELECT to_regclass('public.tickets')"
+        ))
+        if result.scalar() is not None:
+            return
+
     # Enable pgvector extension (PostgreSQL only)
-    if op.get_bind().dialect.name == "postgresql":
+    if bind.dialect.name == "postgresql":
         op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-    # Create enum types (PostgreSQL only)
-    if op.get_bind().dialect.name == "postgresql":
+    # Create enum types (PostgreSQL only) - idempotent
+    if bind.dialect.name == "postgresql":
         op.execute("""
-            CREATE TYPE category_enum AS ENUM (
-                'Infrastructure', 'Application', 'Security',
-                'Database', 'Storage', 'Network', 'Access Management'
-            )
+            DO $$ BEGIN
+                CREATE TYPE category_enum AS ENUM (
+                    'Infrastructure', 'Application', 'Security',
+                    'Database', 'Storage', 'Network', 'Access Management'
+                );
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
         """)
 
         op.execute("""
-            CREATE TYPE status_enum AS ENUM (
-                'open', 'in_progress', 'resolved', 'closed'
-            )
+            DO $$ BEGIN
+                CREATE TYPE status_enum AS ENUM (
+                    'open', 'in_progress', 'resolved', 'closed'
+                );
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
         """)
 
         op.execute("""
-            CREATE TYPE routing_status_enum AS ENUM (
-                'pending_classification', 'classified', 'escalated', 'reviewed'
-            )
+            DO $$ BEGIN
+                CREATE TYPE routing_status_enum AS ENUM (
+                    'pending_classification', 'classified', 'escalated', 'reviewed'
+                );
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
         """)
 
         op.execute("""
-            CREATE TYPE audit_action_enum AS ENUM (
-                'folder_create', 'folder_rename', 'folder_delete',
-                'ticket_assign', 'ticket_unassign', 'ticket_bulk_assign',
-                'ticket_create', 'ticket_delete', 'ticket_classify',
-                'ticket_escalate', 'ticket_override',
-                'pattern_alert_create', 'pattern_alert_dismiss',
-                'pattern_alert_snooze', 'pattern_alert_acknowledge',
-                'model_promote', 'webhook_delivery_failed',
-                'retrain_skipped_concurrent'
-            )
+            DO $$ BEGIN
+                CREATE TYPE audit_action_enum AS ENUM (
+                    'folder_create', 'folder_rename', 'folder_delete',
+                    'ticket_assign', 'ticket_unassign', 'ticket_bulk_assign',
+                    'ticket_create', 'ticket_delete', 'ticket_classify',
+                    'ticket_escalate', 'ticket_override',
+                    'pattern_alert_create', 'pattern_alert_dismiss',
+                    'pattern_alert_snooze', 'pattern_alert_acknowledge',
+                    'model_promote', 'webhook_delivery_failed',
+                    'retrain_skipped_concurrent'
+                );
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
         """)
 
         op.execute("""
-            CREATE TYPE pattern_status_enum AS ENUM (
-                'active', 'snoozed', 'dismissed', 'acknowledged'
-            )
+            DO $$ BEGIN
+                CREATE TYPE pattern_status_enum AS ENUM (
+                    'active', 'snoozed', 'dismissed', 'acknowledged'
+                );
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
         """)
 
     # Create folders table
