@@ -63,17 +63,27 @@ async_session_maker = async_sessionmaker(
     expire_on_commit=False,
 )
 
-
 async def init_db() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        if is_sqlite:
-            from sqlalchemy import text
+    import logging
+    _log = logging.getLogger(__name__)
 
-            await conn.execute(text("PRAGMA journal_mode=WAL"))
+    # Try to create any missing tables. This is a no-op if they exist.
+    # On Neon, enum types may already exist from a prior migration, which
+    # causes create_all to raise ProgrammingError — catch it and continue.
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            if is_sqlite:
+                from sqlalchemy import text
+                await conn.execute(text("PRAGMA journal_mode=WAL"))
+    except Exception as e:
+        _log.warning(f"init_db: create_all skipped (schema likely already exists): {e}")
 
-        # Seeding logic: Ensure departmental folders exist for 'admin'
+    # Seed departmental folders — best-effort, never crash startup
+    try:
         await seed_department_folders()
+    except Exception as e:
+        _log.warning(f"init_db: seed_department_folders skipped: {e}")
 
 
 async def seed_department_folders() -> None:
