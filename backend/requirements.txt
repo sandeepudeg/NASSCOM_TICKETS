@@ -106,4 +106,5 @@ Flask-Caching==2.1.0
 flask-cors==4.0.0
 gunicorn==21.2.0
 pandas==2.2.0
+openpyxl==3.1.2
 plotly==5.18.0

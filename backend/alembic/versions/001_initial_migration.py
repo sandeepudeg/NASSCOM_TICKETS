@@ -19,47 +19,49 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enable pgvector extension
-    op.execute('CREATE EXTENSION IF NOT EXISTS vector')
+    # Enable pgvector extension (PostgreSQL only)
+    if op.get_bind().dialect.name == 'postgresql':
+        op.execute('CREATE EXTENSION IF NOT EXISTS vector')
     
-    # Create enum types
-    op.execute("""
-        CREATE TYPE category_enum AS ENUM (
-            'Infrastructure', 'Application', 'Security', 
-            'Database', 'Storage', 'Network', 'Access Management'
-        )
-    """)
-    
-    op.execute("""
-        CREATE TYPE status_enum AS ENUM (
-            'open', 'in_progress', 'resolved', 'closed'
-        )
-    """)
-    
-    op.execute("""
-        CREATE TYPE routing_status_enum AS ENUM (
-            'pending_classification', 'classified', 'escalated', 'reviewed'
-        )
-    """)
-    
-    op.execute("""
-        CREATE TYPE audit_action_enum AS ENUM (
-            'folder_create', 'folder_rename', 'folder_delete',
-            'ticket_assign', 'ticket_unassign', 'ticket_bulk_assign',
-            'ticket_create', 'ticket_delete', 'ticket_classify',
-            'ticket_escalate', 'ticket_override',
-            'pattern_alert_create', 'pattern_alert_dismiss',
-            'pattern_alert_snooze', 'pattern_alert_acknowledge',
-            'model_promote', 'webhook_delivery_failed',
-            'retrain_skipped_concurrent'
-        )
-    """)
-    
-    op.execute("""
-        CREATE TYPE pattern_status_enum AS ENUM (
-            'active', 'snoozed', 'dismissed', 'acknowledged'
-        )
-    """)
+    # Create enum types (PostgreSQL only)
+    if op.get_bind().dialect.name == 'postgresql':
+        op.execute("""
+            CREATE TYPE category_enum AS ENUM (
+                'Infrastructure', 'Application', 'Security', 
+                'Database', 'Storage', 'Network', 'Access Management'
+            )
+        """)
+        
+        op.execute("""
+            CREATE TYPE status_enum AS ENUM (
+                'open', 'in_progress', 'resolved', 'closed'
+            )
+        """)
+        
+        op.execute("""
+            CREATE TYPE routing_status_enum AS ENUM (
+                'pending_classification', 'classified', 'escalated', 'reviewed'
+            )
+        """)
+        
+        op.execute("""
+            CREATE TYPE audit_action_enum AS ENUM (
+                'folder_create', 'folder_rename', 'folder_delete',
+                'ticket_assign', 'ticket_unassign', 'ticket_bulk_assign',
+                'ticket_create', 'ticket_delete', 'ticket_classify',
+                'ticket_escalate', 'ticket_override',
+                'pattern_alert_create', 'pattern_alert_dismiss',
+                'pattern_alert_snooze', 'pattern_alert_acknowledge',
+                'model_promote', 'webhook_delivery_failed',
+                'retrain_skipped_concurrent'
+            )
+        """)
+        
+        op.execute("""
+            CREATE TYPE pattern_status_enum AS ENUM (
+                'active', 'snoozed', 'dismissed', 'acknowledged'
+            )
+        """)
     
     # Create folders table
     op.create_table(
@@ -142,14 +144,16 @@ def upgrade() -> None:
     )
     op.create_index('ix_embedding_ticket', 'ticket_embeddings', ['ticket_id'])
     
-    # Alter embedding column to use pgvector type (384 dimensions for all-MiniLM-L6-v2)
-    op.execute('ALTER TABLE ticket_embeddings ALTER COLUMN embedding TYPE vector(384) USING embedding::vector(384)')
-    
-    # Create pgvector ivfflat index for ANN search
-    op.execute("""
-        CREATE INDEX idx_embeddings_vector ON ticket_embeddings 
-        USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)
-    """)
+    # pgvector setup (PostgreSQL only)
+    if op.get_bind().dialect.name == 'postgresql':
+        # Alter embedding column to use pgvector type (384 dimensions for all-MiniLM-L6-v2)
+        op.execute('ALTER TABLE ticket_embeddings ALTER COLUMN embedding TYPE vector(384) USING embedding::vector(384)')
+        
+        # Create pgvector ivfflat index for ANN search
+        op.execute("""
+            CREATE INDEX idx_embeddings_vector ON ticket_embeddings 
+            USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)
+        """)
     
     # Create similar_tickets table
     op.create_table(

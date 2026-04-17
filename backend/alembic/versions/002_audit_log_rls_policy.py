@@ -30,32 +30,34 @@ def upgrade() -> None:
     
     Requirements: 28.2
     """
-    # Enable row-level security on audit_log table
-    op.execute('ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY')
-    
-    # Create policy to allow SELECT for all users
-    # This allows reading audit logs for compliance and investigation
-    op.execute("""
-        CREATE POLICY audit_log_select_policy
-        ON audit_log
-        FOR SELECT
-        USING (true)
-    """)
-    
-    # Create policy to allow INSERT for all users
-    # This allows writing new audit log entries
-    op.execute("""
-        CREATE POLICY audit_log_insert_policy
-        ON audit_log
-        FOR INSERT
-        WITH CHECK (true)
-    """)
-    
-    # No policies for UPDATE or DELETE - these operations will be blocked by RLS
-    # When RLS is enabled and no policy exists for an operation, that operation is denied
-    
-    # Force RLS even for table owner (superuser bypass disabled)
-    op.execute('ALTER TABLE audit_log FORCE ROW LEVEL SECURITY')
+    # PostgreSQL-specific RLS (Row Level Security)
+    if op.get_bind().dialect.name == 'postgresql':
+        # Enable row-level security on audit_log table
+        op.execute('ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY')
+        
+        # Create policy to allow SELECT for all users
+        # This allows reading audit logs for compliance and investigation
+        op.execute("""
+            CREATE POLICY audit_log_select_policy
+            ON audit_log
+            FOR SELECT
+            USING (true)
+        """)
+        
+        # Create policy to allow INSERT for all users
+        # This allows writing new audit log entries
+        op.execute("""
+            CREATE POLICY audit_log_insert_policy
+            ON audit_log
+            FOR INSERT
+            WITH CHECK (true)
+        """)
+        
+        # No policies for UPDATE or DELETE - these operations will be blocked by RLS
+        # When RLS is enabled and no policy exists for an operation, that operation is denied
+        
+        # Force RLS even for table owner (superuser bypass disabled)
+        op.execute('ALTER TABLE audit_log FORCE ROW LEVEL SECURITY')
 
 
 def downgrade() -> None:

@@ -301,4 +301,20 @@ class TicketEmbedding(Base):
     model_version = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    __table_args__ = (Index("ix_embedding_ticket", "ticket_id"),)
+
+class MappingConfig(Base):
+    __tablename__ = "mapping_configs"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String(255), nullable=False)
+    config_json = Column(Text, nullable=False)  # Stores {"source_col": "target_field"}
+    owner_id = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_mapping_config_owner", "owner_id"),
+        Index("ix_mapping_config_name", "name"),
+    )

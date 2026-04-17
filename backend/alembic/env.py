@@ -13,16 +13,19 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # Import models for autogenerate support
 from src.repositories.models import Base
 
+# Import settings for DB URL
+from src.schemas.settings import settings
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override sqlalchemy.url from environment variable if present
-database_url = os.getenv("DATABASE_URL")
-if database_url:
-    # Convert asyncpg URL to psycopg2 for Alembic
-    database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
-    config.set_main_option("sqlalchemy.url", database_url)
+# Set sqlalchemy.url from settings (loads from .env)
+database_url = settings.database_url
+# Convert asyncpg/aiosqlite URLs to synchronous drivers for Alembic
+database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
+database_url = database_url.replace("sqlite+aiosqlite", "sqlite")
+config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

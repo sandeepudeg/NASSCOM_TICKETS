@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
+import json
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from src.schemas.ticket import (
 )
 from src.schemas.errors import ProblemDetail
 from src.services.ticket_service import TicketService
+from src.services.import_service import ImportService
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -240,5 +242,79 @@ async def get_folder_tickets(
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
-    tickets = await service.get_folder_tickets(folder_id, x_user_id, params)
-    return TicketListResponse(tickets=tickets, next_cursor=None, total=len(tickets))
+
+
+@router.post("/import/analyze")
+async def analyze_import_file(
+    file: UploadFile = File(...),
+):
+    """
+    Extract headers and sample data from an uploaded file to assist in mapping.
+    """
+    try:
+        file_content = await file.read()
+        file_ext = file.filename.split(".")[-1]
+        
+        service = ImportService()
+        result = await service.analyze_file(file_content, file_ext)
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "File analysis failed"))
+            
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+async def import_tickets(
+    file: UploadFile = File(...),
+    mapping_json: str = Form(...),
+    x_user_id: str = Header(default="system"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Enterprise Data Ingestion: Bulk import tickets from CSV/Excel.
+    Applies PII scrubbing and AI feature extraction during the ETL process.
+    """
+    try:
+        mapping = json.loads(mapping_json)
+        file_content = await file.read()
+        file_ext = file.filename.split(".")[-1]
+        
+        service = ImportService()
+        result = await service.process_import(
+            file_content=file_content,
+            file_extension=file_ext,
+            mapping=mapping,
+            owner_id=x_user_id,
+            session=db
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Import failed"))
+            
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/import/mappings")
+async def get_import_mappings(
+    x_user_id: str = Header(default="system"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve saved field mapping templates for the current user."""
+    service = ImportService()
+    configs = await service.get_mapping_configs(x_user_id, db)
+    return [{"id": c.id, "name": c.name, "mapping": json.loads(c.config_json)} for c in configs]
+
+
+@router.post("/import/mappings")
+async def save_import_mapping(
+    name: str,
+    mapping: dict,
+    x_user_id: str = Header(default="system"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save a domain-specific field mapping template (e.g., 'Healthcare Import')."""
+    service = ImportService()
+    config = await service.save_mapping_config(name, mapping, x_user_id, db)
+    return {"id": config.id, "name": config.name}

@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { 
   Typography, 
   Card, 
@@ -30,6 +31,8 @@ import {
   LockOutlined,
 } from '@ant-design/icons'
 import { designSystemStyled } from '@ticketiq/design-system'
+import ImportWorkspace from '../workspaces/ImportWorkspace'
+import { HistoryOutlined } from '@ant-design/icons'
 
 const { Title, Text } = Typography
 
@@ -98,6 +101,14 @@ const SectionHeader = ({ icon, title, subtitle }: { icon: React.ReactNode, title
 )
 
 export default function SettingsPage() {
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState('intel')
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab) setActiveTab(tab)
+  }, [searchParams])
+
   const [intelForm] = Form.useForm()
   const [guardForm] = Form.useForm()
   const [alertForm] = Form.useForm()
@@ -116,6 +127,15 @@ export default function SettingsPage() {
   ]
 
   const tabs = [
+    {
+      key: 'ingestion',
+      label: <Space><HistoryOutlined />Data Ingestion</Space>,
+      children: (
+        <div style={{ padding: '24px' }}>
+          <ImportWorkspace />
+        </div>
+      )
+    },
     {
       key: 'intel',
       label: <Space><ThunderboltOutlined />Intelligence</Space>,
@@ -476,7 +496,8 @@ export default function SettingsPage() {
 
       <SettingsCard bodyStyle={{ padding: 0 }}>
         <Tabs 
-          defaultActiveKey="intel" 
+          activeKey={activeTab}
+          onChange={setActiveTab}
           items={tabs}
           tabBarExtraContent={
             <div style={{ padding: '0 24px' }}>

@@ -6,6 +6,11 @@ WORKDIR /app
 # Install build dependencies for design system (rimraf, etc.)
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
+# Optimize for HF Spirits: Skip heavy browser downloads during build
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    NPM_CONFIG_LOGLEVEL=error
+
 # Copy common design system first
 COPY design-system ./design-system
 WORKDIR /app/design-system

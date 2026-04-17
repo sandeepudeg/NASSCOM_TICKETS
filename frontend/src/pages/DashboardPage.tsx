@@ -9,7 +9,8 @@ import {
   SyncOutlined,
   ArrowUpOutlined,
   LeftOutlined,
-  RightOutlined
+  RightOutlined,
+  CloudUploadOutlined
 } from '@ant-design/icons'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList, PieChart, Pie } from 'recharts'
 import { Link } from 'react-router-dom'
@@ -195,7 +196,7 @@ const ActionWidget = () => (
       {[
         { label: 'SYNC ALL', icon: <SyncOutlined /> },
         { label: 'GEN REPORT', icon: <FileTextOutlined /> },
-        { label: 'BULK ROUTE', icon: <RocketOutlined /> },
+        { label: 'IMPORT DATA', icon: <CloudUploadOutlined onClick={() => window.location.href='/settings?tab=ingestion'} /> },
         { label: 'ESCALATE', icon: <WarningOutlined /> }
       ].map((action, i) => (
         <Col span={12} key={i}>
