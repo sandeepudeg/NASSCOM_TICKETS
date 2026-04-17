@@ -14,14 +14,16 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 # Copy common design system first
 COPY design-system ./design-system
 WORKDIR /app/design-system
-RUN npm install
+# RUN npm install
+RUN npm ci --legacy-peer-deps
 RUN npm run build
 
 # Copy and build the frontend
 WORKDIR /app
 COPY frontend ./frontend
 WORKDIR /app/frontend
-RUN npm install
+# RUN npm install
+RUN npm ci --legacy-peer-deps
 # Vite build will pick up the design-system from the parent directory link
 RUN npm run build
 
