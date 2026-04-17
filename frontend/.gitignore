@@ -8,7 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist is committed intentionally for HF deployment (Option A: prebuilt assets)
+# dist
 dist-ssr
 *.local
 

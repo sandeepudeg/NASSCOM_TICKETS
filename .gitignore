@@ -105,6 +105,7 @@ Thumbs.db
 design-system/node_modules/
 design-system/dist/
 frontend/node_modules/
-frontend/dist/
+# frontend/dist is intentionally committed so HuggingFace skips the Node build stage
+# frontend/dist/
 backend/__pycache__/
 backend/.pytest_cache/
