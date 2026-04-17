@@ -4,21 +4,29 @@ Unit tests for category distribution drift monitoring.
 Requirements: 15.4
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 
 from src.services.drift_monitor import DRIFT_THRESHOLD, DriftMonitor
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
 @pytest.fixture
 def mock_session():
-    """Mock AsyncSession."""
-    session = AsyncMock()
+    """Mock AsyncSession with mixed sync/async methods."""
+    # We use MagicMock so add() isn't async, but we'll mock async methods explicitly
+    session = MagicMock()
+    session.execute = AsyncMock()
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+    session.close = AsyncMock()
     return session
 
 
-@pytest.mark.asyncio
+
 async def test_get_production_distribution_empty(mock_session):
     """Test production distribution with no tickets."""
     mock_session.execute = AsyncMock(return_value=AsyncMock(fetchall=lambda: []))
@@ -29,7 +37,7 @@ async def test_get_production_distribution_empty(mock_session):
     assert dist == {}
 
 
-@pytest.mark.asyncio
+
 async def test_get_production_distribution_calculates_proportions(mock_session):
     """Test production distribution calculation."""
     # Mock 10 tickets: 5 Infrastructure, 3 Application, 2 Security
@@ -56,7 +64,7 @@ async def test_get_production_distribution_calculates_proportions(mock_session):
     assert dist["Security"] == 0.2
 
 
-@pytest.mark.asyncio
+
 async def test_check_drift_no_drift(mock_session):
     """Test drift check when distribution is within threshold."""
     training_dist = {
@@ -85,7 +93,7 @@ async def test_check_drift_no_drift(mock_session):
     assert details == []
 
 
-@pytest.mark.asyncio
+
 async def test_check_drift_detects_drift(mock_session):
     """Test drift detection when category deviates beyond threshold."""
     training_dist = {
@@ -120,7 +128,7 @@ async def test_check_drift_detects_drift(mock_session):
     assert infra_detail["threshold"] == DRIFT_THRESHOLD
 
 
-@pytest.mark.asyncio
+
 async def test_check_drift_multiple_categories(mock_session):
     """Test drift detection with multiple drifting categories."""
     training_dist = {
@@ -152,7 +160,7 @@ async def test_check_drift_multiple_categories(mock_session):
     # but not exceeding it, so it may or may not be flagged depending on > vs >=
 
 
-@pytest.mark.asyncio
+
 async def test_log_drift_event(mock_session):
     """Test drift event logging to audit log."""
     drift_details = [
@@ -173,7 +181,7 @@ async def test_log_drift_event(mock_session):
     mock_session.commit.assert_called_once()
 
 
-@pytest.mark.asyncio
+
 async def test_send_drift_alert_success(mock_session):
     """Test successful drift alert webhook delivery."""
     drift_details = [
@@ -186,7 +194,7 @@ async def test_send_drift_alert_success(mock_session):
         }
     ]
 
-    with patch("services.drift_monitor.settings") as mock_settings:
+    with patch("src.services.drift_monitor.settings") as mock_settings:
         mock_settings.observability_webhook_url = "http://localhost:9000/webhook"
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -203,12 +211,12 @@ async def test_send_drift_alert_success(mock_session):
             mock_client.return_value.__aenter__.return_value.post.assert_called_once()
 
 
-@pytest.mark.asyncio
+
 async def test_send_drift_alert_no_webhook_configured(mock_session, capsys):
     """Test drift alert when no webhook URL is configured."""
     drift_details = [{"category": "Infrastructure"}]
 
-    with patch("services.drift_monitor.settings") as mock_settings:
+    with patch("src.services.drift_monitor.settings") as mock_settings:
         mock_settings.observability_webhook_url = None
 
         monitor = DriftMonitor(mock_session)
@@ -218,7 +226,7 @@ async def test_send_drift_alert_no_webhook_configured(mock_session, capsys):
         assert "No observability webhook URL configured" in captured.out
 
 
-@pytest.mark.asyncio
+
 async def test_monitor_and_alert_triggers_alert(mock_session):
     """Test full monitor_and_alert workflow when drift is detected."""
     training_dist = {"Infrastructure": 0.20, "Application": 0.80}
@@ -228,7 +236,7 @@ async def test_monitor_and_alert_triggers_alert(mock_session):
     mock_result.fetchall = lambda: ([("Infrastructure",)] * 6 + [("Application",)] * 4)
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    with patch("services.drift_monitor.settings") as mock_settings:
+    with patch("src.services.drift_monitor.settings") as mock_settings:
         mock_settings.observability_webhook_url = "http://localhost:9000/webhook"
 
         with patch("httpx.AsyncClient") as mock_client:

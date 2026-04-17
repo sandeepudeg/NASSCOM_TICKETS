@@ -1,5 +1,8 @@
 import pytest
+import pytest_asyncio
 from opentelemetry import trace
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -17,7 +20,7 @@ from src.schemas.ticket import (
 from src.services.ticket_service import TicketService
 
 
-@pytest.mark.asyncio
+
 async def test_classify_to_escalate_produces_spans(monkeypatch):
     # OTEL in-memory setup
     real_provider = TracerProvider()

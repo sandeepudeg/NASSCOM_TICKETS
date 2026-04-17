@@ -1,4 +1,5 @@
 import asyncio
+
 from src.ml.embedding_service import embedding_service
 
 

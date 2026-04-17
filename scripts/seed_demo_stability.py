@@ -1,6 +1,6 @@
+import json
 import sqlite3
 import uuid
-import json
 from datetime import datetime
 
 DB_PATH = "tickets.db"

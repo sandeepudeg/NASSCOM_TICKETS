@@ -8,14 +8,31 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+import os
+import sys
+
 import pytest
 
+# Ensure project root is in path for scripts
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+if root_dir not in sys.path:
+    sys.path.append(root_dir)
 
-@pytest.mark.asyncio
+from scripts.db.archive_audit_logs import (
+    archive_audit_logs,
+    delete_archived_logs,
+    ensure_bucket_exists,
+    fetch_logs_to_archive,
+    upload_to_minio,
+)
+
+import pytest_asyncio
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
+
+
 async def test_fetch_logs_to_archive():
     """Test fetching audit logs older than cutoff date."""
-    from scripts.archive_audit_logs import fetch_logs_to_archive
-
     cutoff_date = datetime.now(UTC) - timedelta(days=365)
 
     # Mock database session
@@ -58,10 +75,10 @@ async def test_fetch_logs_to_archive():
     assert logs[1]["action_type"] == "ticket_assign"
 
 
-@pytest.mark.asyncio
+
 async def test_delete_archived_logs():
     """Test deleting archived logs from database."""
-    from scripts.archive_audit_logs import delete_archived_logs
+    from scripts.db.archive_audit_logs import delete_archived_logs
 
     # Mock database session
     mock_session = AsyncMock()
@@ -79,10 +96,10 @@ async def test_delete_archived_logs():
     assert mock_session.execute.call_count == 2  # SET row_security + DELETE
 
 
-@pytest.mark.asyncio
+
 async def test_delete_archived_logs_empty_list():
     """Test deleting with empty log ID list returns 0."""
-    from scripts.archive_audit_logs import delete_archived_logs
+    from scripts.db.archive_audit_logs import delete_archived_logs
 
     mock_session = AsyncMock()
 
@@ -96,7 +113,7 @@ async def test_delete_archived_logs_empty_list():
 
 def test_upload_to_minio():
     """Test uploading audit logs to MinIO."""
-    from scripts.archive_audit_logs import upload_to_minio
+    from scripts.db.archive_audit_logs import upload_to_minio
 
     # Mock MinIO client
     mock_client = MagicMock()
@@ -134,7 +151,7 @@ def test_upload_to_minio():
 
 def test_ensure_bucket_exists_creates_bucket():
     """Test bucket creation when it doesn't exist."""
-    from scripts.archive_audit_logs import ensure_bucket_exists
+    from scripts.db.archive_audit_logs import ensure_bucket_exists
 
     mock_client = MagicMock()
     mock_client.bucket_exists.return_value = False
@@ -149,7 +166,7 @@ def test_ensure_bucket_exists_creates_bucket():
 
 def test_ensure_bucket_exists_skips_existing():
     """Test bucket creation is skipped when bucket exists."""
-    from scripts.archive_audit_logs import ensure_bucket_exists
+    from scripts.db.archive_audit_logs import ensure_bucket_exists
 
     mock_client = MagicMock()
     mock_client.bucket_exists.return_value = True
@@ -162,22 +179,22 @@ def test_ensure_bucket_exists_skips_existing():
     mock_client.make_bucket.assert_not_called()
 
 
-@pytest.mark.asyncio
+
 async def test_archive_audit_logs_workflow():
     """Test archival workflow components are called correctly."""
-    from scripts.archive_audit_logs import archive_audit_logs
+    from scripts.db.archive_audit_logs import archive_audit_logs
 
     # This test verifies the workflow calls the right functions
     # Full integration testing requires a real database
 
-    with patch("scripts.archive_audit_logs.create_async_engine") as mock_engine, patch(
-        "scripts.archive_audit_logs.get_minio_client"
+    with patch("scripts.db.archive_audit_logs.create_async_engine") as mock_engine, patch(
+        "scripts.db.archive_audit_logs.get_minio_client"
     ) as mock_minio, patch(
-        "scripts.archive_audit_logs.ensure_bucket_exists"
+        "scripts.db.archive_audit_logs.ensure_bucket_exists"
     ) as mock_ensure, patch(
-        "scripts.archive_audit_logs.fetch_logs_to_archive"
+        "scripts.db.archive_audit_logs.fetch_logs_to_archive"
     ) as mock_fetch, patch(
-        "scripts.archive_audit_logs.upload_to_minio"
+        "scripts.db.archive_audit_logs.upload_to_minio"
     ):
 
         # Setup mocks - return empty logs to avoid transaction complexity
@@ -196,7 +213,7 @@ async def test_archive_audit_logs_workflow():
         mock_session_maker.return_value.__aexit__ = AsyncMock()
 
         with patch(
-            "scripts.archive_audit_logs.sessionmaker", return_value=mock_session_maker
+            "scripts.db.archive_audit_logs.sessionmaker", return_value=mock_session_maker
         ):
             # Execute
             stats = await archive_audit_logs()
@@ -212,17 +229,17 @@ async def test_archive_audit_logs_workflow():
         assert stats["minio_object"] is None
 
 
-@pytest.mark.asyncio
+
 async def test_archive_audit_logs_no_logs():
     """Test archival when no logs need archiving."""
-    from scripts.archive_audit_logs import archive_audit_logs
+    from scripts.db.archive_audit_logs import archive_audit_logs
 
-    with patch("scripts.archive_audit_logs.create_async_engine") as mock_engine, patch(
-        "scripts.archive_audit_logs.get_minio_client"
+    with patch("scripts.db.archive_audit_logs.create_async_engine") as mock_engine, patch(
+        "scripts.db.archive_audit_logs.get_minio_client"
     ), patch(
-        "scripts.archive_audit_logs.ensure_bucket_exists"
+        "scripts.db.archive_audit_logs.ensure_bucket_exists"
     ), patch(
-        "scripts.archive_audit_logs.fetch_logs_to_archive"
+        "scripts.db.archive_audit_logs.fetch_logs_to_archive"
     ) as mock_fetch:
 
         # Setup mocks
@@ -241,7 +258,7 @@ async def test_archive_audit_logs_no_logs():
         mock_session_maker.return_value.__aexit__ = AsyncMock()
 
         with patch(
-            "scripts.archive_audit_logs.sessionmaker", return_value=mock_session_maker
+            "scripts.db.archive_audit_logs.sessionmaker", return_value=mock_session_maker
         ):
             # Execute
             stats = await archive_audit_logs()

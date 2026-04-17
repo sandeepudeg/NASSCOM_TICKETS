@@ -1,9 +1,10 @@
-import sqlite3
-import pandas as pd
 import json
-import uuid
 import os
+import sqlite3
+import uuid
 from datetime import datetime
+
+import pandas as pd
 
 KAGGLE_PATH = (
     r"d:\Learning\Self_learning\Nasscom\Tickets\data\kaggle\multilingual_tickets.csv"

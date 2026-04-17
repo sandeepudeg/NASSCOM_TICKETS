@@ -1,16 +1,17 @@
 import asyncio
 import os
 import sys
-import pandas as pd
 from datetime import datetime
+
+import pandas as pd
 
 # Add project root to path
 sys.path.append(os.getcwd())
 
+from sqlalchemy import delete, func, select
 from src.repositories.database import async_session_maker
 from src.repositories.models import Ticket
 from src.schemas.ticket import RoutingStatus, TicketStatus
-from sqlalchemy import select, func, delete
 
 KAGGLE_PATH = (
     r"d:\Learning\Self_learning\Nasscom\Tickets\data\kaggle\multilingual_tickets.csv"

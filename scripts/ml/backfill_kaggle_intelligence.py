@@ -1,7 +1,7 @@
 import asyncio
 import json
-import sqlite3
 import os
+import sqlite3
 import sys
 
 # Add project root to path

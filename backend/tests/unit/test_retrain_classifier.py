@@ -15,6 +15,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "scripts" / 
 
 import retrain_classifier as rc
 
+import pytest_asyncio
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 def test_acquire_lock_blocks_second_run():
     base = Path("tests/tmp_retrain")
@@ -127,7 +130,7 @@ def test_map_dataset_fields():
     assert mapped4["owner_id"] == "system"
 
 
-@pytest.mark.asyncio
+
 async def test_retrain_happy_path(monkeypatch):
     base = Path("tests/tmp_retrain")
     base.mkdir(parents=True, exist_ok=True)
@@ -160,7 +163,7 @@ async def test_retrain_happy_path(monkeypatch):
     monkeypatch.setattr(rc, "save_model_artifacts", fake_save_model_artifacts)
 
     # stub evaluation to create metrics file and return pass
-    async def fake_run_eval(test_path, model_version, report_path):
+    async def fake_run_eval(test_data, model_version):
         metrics = {
             "macro_f1": 0.9,
             "semantic_similarity": 0.8,
@@ -168,11 +171,11 @@ async def test_retrain_happy_path(monkeypatch):
             "judge_resolution_score": 4.0,
             "equitable_recall_spread": 0.1,
             "per_category_f1": {c: 0.8 for c in rc.VALID_CATEGORIES},
+            "promotion_gate": {"passes": True},
         }
-        Path(report_path).write_text(json.dumps(metrics))
-        return True
+        return metrics
 
-    monkeypatch.setattr(rc, "_run_evaluation", fake_run_eval)
+    monkeypatch.setattr(rc, "evaluate_model", fake_run_eval)
 
     register_calls = {}
 

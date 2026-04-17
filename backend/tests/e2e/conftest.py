@@ -4,15 +4,19 @@ Pytest configuration for E2E tests with Playwright.
 Provides fixtures and setup for end-to-end testing.
 """
 
-import sys
 import pathlib
+import sys
+
 import pytest
 
 # Add root directory to sys.path to ensure playwright_setup can be imported
 sys.path.append(str(pathlib.Path(__file__).parent.parent.parent.parent))
 
-from playwright_setup import PLAYWRIGHT_CONFIG, get_browser_config
 from playwright.sync_api import Page
+from playwright_setup import PLAYWRIGHT_CONFIG, get_browser_config
+
+
+from playwright_setup import PLAYWRIGHT_CONFIG, get_browser_config
 
 
 @pytest.fixture(scope="session", params=PLAYWRIGHT_CONFIG["browsers"])
@@ -114,10 +118,7 @@ def clean_database():
 @pytest.fixture(scope="session")
 def base_url():
     """
-    Base URL for the frontend application.
-
-    Returns:
-        str: Base URL (default: http://localhost:5173 for Vite dev server)
+    Base URL for the web application.
     """
     return "http://localhost:5173"
 
@@ -126,9 +127,6 @@ def base_url():
 def api_base_url():
     """
     Base URL for the backend API.
-
-    Returns:
-        str: API base URL (default: http://localhost:8000)
     """
     return "http://localhost:8000"
 
@@ -155,11 +153,18 @@ def pytest_configure(config):
 def setup_test_environment(request):
     """
     Auto-use fixture to set up test environment.
-
-    This runs before each test to ensure proper environment setup.
     """
-    # Add any global setup here
-    # For example: set environment variables, start services, etc.
+    import socket
+
+    # Skip E2E tests if servers are not reachable
+    if "e2e" in request.keywords:
+        servers = [("localhost", 5173), ("localhost", 8000)]
+        for host, port in servers:
+            try:
+                with socket.create_connection((host, port), timeout=1.0):
+                    pass
+            except (ConnectionRefusedError, socket.timeout, OSError):
+                pytest.skip(f"E2E test skipped: {host}:{port} is unreachable")
 
     yield
 

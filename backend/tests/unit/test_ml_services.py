@@ -111,7 +111,7 @@ class TestPIIScrubber:
 
 class TestClassifierValidation:
     def test_category_definitions_complete(self):
-        from ml.classifier import CATEGORY_DEFINITIONS
+        from src.ml.classifier import CATEGORY_DEFINITIONS
 
         required_categories = [
             "Infrastructure",
@@ -129,14 +129,14 @@ class TestClassifierValidation:
 
 class TestRAGServiceValidation:
     def test_similarity_threshold_config(self):
-        from ml.rag_service import rag_service
+        from src.ml.rag_service import rag_service
 
         assert rag_service.similarity_threshold >= 0.0
         assert rag_service.similarity_threshold <= 1.0
         assert rag_service.similarity_threshold == 0.70
 
     def test_top_k_config(self):
-        from ml.rag_service import rag_service
+        from src.ml.rag_service import rag_service
 
         assert rag_service.top_k > 0
         assert rag_service.top_k == 5

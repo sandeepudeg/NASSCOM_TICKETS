@@ -9,7 +9,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.schemas.settings import settings
 
-
 # Try to import OpenTelemetry but don't fail if it's not available
 try:
     from opentelemetry import trace

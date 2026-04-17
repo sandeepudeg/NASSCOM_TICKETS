@@ -10,12 +10,11 @@ import asyncio
 import csv
 from pathlib import Path
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
-
-from src.schemas.settings import settings
-from src.repositories.models import Ticket
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from src.ml.pii_scrubber import PIIScrubber
+from src.repositories.models import Ticket
+from src.schemas.settings import settings
 
 
 async def main(output: Path, include_embeddings: bool):

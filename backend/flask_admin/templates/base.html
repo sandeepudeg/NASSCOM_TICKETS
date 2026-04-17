@@ -95,7 +95,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="ds-main-content">
+    <div class="ds-main-content" role="main">
         {% block content %}{% endblock %}
     </div>
 
@@ -292,6 +292,7 @@
     <!-- Design System Theme Script -->
     <script>
         // Theme management
+
         function toggleTheme() {
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');

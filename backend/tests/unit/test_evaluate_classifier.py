@@ -35,7 +35,7 @@ def fake_embedding_module(monkeypatch):
             get_embeddings=lambda texts: [[1.0, 0.0, 0.0] for _ in texts]
         )
     )
-    monkeypatch.setitem(sys.modules, "ml.embedding_service", fake)
+    monkeypatch.setitem(sys.modules, "src.ml.embedding_service", fake)
     return fake
 
 

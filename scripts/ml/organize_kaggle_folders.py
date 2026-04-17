@@ -1,7 +1,7 @@
+import os
 import sqlite3
 import uuid
 from datetime import datetime
-import os
 
 DB_PATH = "tickets.db"
 

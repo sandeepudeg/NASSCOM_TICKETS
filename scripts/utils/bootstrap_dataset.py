@@ -7,15 +7,14 @@ Usage:
 
 import argparse
 import asyncio
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from src.ml.pii_scrubber import PIIScrubber
+from src.repositories.models import Base, Ticket
 from src.schemas.settings import settings
 from src.schemas.ticket import Category
-from src.repositories.models import Ticket, Base
-from src.ml.pii_scrubber import PIIScrubber
 
 TEMPLATE_DESCRIPTIONS = {
     Category.INFRASTRUCTURE: "Server {host} unreachable, CPU spike and kernel logs showing soft lockup.",

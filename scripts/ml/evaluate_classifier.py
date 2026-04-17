@@ -115,7 +115,7 @@ def compute_semantic_similarity(predictions: list, ground_truths: list) -> float
     """Compute mean cosine similarity between prediction and ground-truth embeddings."""
     try:
         import numpy as np
-        from ml.embedding_service import embedding_service
+        from src.ml.embedding_service import embedding_service
 
         if not predictions or not ground_truths:
             return 0.0
@@ -145,8 +145,8 @@ async def run_llm_as_judge(
 ) -> dict:
     """Run LLM-as-judge evaluation. Returns mean routing and resolution scores."""
     try:
-        from ml.classifier import TicketClassifier
-        from schemas.settings import settings
+        from src.ml.classifier import TicketClassifier
+        from src.schemas.settings import settings
 
         TicketClassifier()
         routing_scores = []
@@ -226,7 +226,7 @@ def log_to_mlflow(
     """Log evaluation run to MLflow. Returns run_id or None on failure."""
     try:
         import mlflow
-        from schemas.settings import settings
+        from src.schemas.settings import settings
 
         mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
         mlflow.set_experiment("ticket-classifier")
@@ -318,7 +318,7 @@ async def evaluate(
     print(f"[INFO] Evaluating {len(test_data)} test samples...")
 
     # Run classifier on test set
-    from ml.classifier import TicketClassifier
+    from src.ml.classifier import TicketClassifier
 
     clf = TicketClassifier()
     y_pred = []
@@ -420,9 +420,22 @@ def main():
         print(f"[ERROR] Test data not found: {args.test_data}", file=sys.stderr)
         sys.exit(1)
 
-    passes = asyncio.run(
-        evaluate(args.test_data, args.model_version, args.dataset_version, args.output)
-    )
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    if loop.is_running():
+        import nest_asyncio
+        nest_asyncio.apply()
+        coro = evaluate(args.test_data, args.model_version, args.dataset_version, args.output)
+        passes = loop.run_until_complete(coro)
+    else:
+        passes = asyncio.run(
+            evaluate(args.test_data, args.model_version, args.dataset_version, args.output)
+        )
+
     sys.exit(0 if passes else 1)
 
 

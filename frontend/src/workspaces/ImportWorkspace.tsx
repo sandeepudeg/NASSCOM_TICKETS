@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { 
   Typography, 
   Card, 
@@ -12,8 +12,7 @@ import {
   message,
   Divider,
   Tag,
-  Result,
-  Empty
+  Result
 } from 'antd'
 import { 
   InboxOutlined, 
@@ -21,8 +20,7 @@ import {
   SettingOutlined, 
   CheckCircleOutlined,
   TableOutlined,
-  ArrowRightOutlined,
-  HistoryOutlined
+  ArrowRightOutlined
 } from '@ant-design/icons'
 import { designSystemStyled } from '@ticketiq/design-system'
 

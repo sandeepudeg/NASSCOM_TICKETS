@@ -88,11 +88,12 @@ def rollback_to_version(run_id: str):
         print(f"[INFO] Timestamp: {run.data.tags.get('retrain_timestamp', 'unknown')}")
 
         # Log rollback to audit log
-        from src.repositories.models import AuditLog
         import asyncio
         import json
-        from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+
+        from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
         from sqlalchemy.orm import sessionmaker
+        from src.repositories.models import AuditLog
 
         async def _log_rollback():
             engine = create_async_engine(settings.database_url, echo=False)

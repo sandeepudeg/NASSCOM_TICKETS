@@ -16,10 +16,10 @@ Requirements: 10.5
 
 import argparse
 import json
-import sys
 import os
-import httpx
+import sys
 
+import httpx
 from src.ml.pii_scrubber import PIIScrubber
 
 VALID_FORMATS = ("json_log", "otlp_trace", "prometheus_alert", "text")

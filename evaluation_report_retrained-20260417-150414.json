@@ -1,0 +1,64 @@
+{
+  "macro_f1": 0.1429,
+  "per_category_f1": {
+    "Infrastructure": 0.0,
+    "Application": 1.0,
+    "Security": 0.0,
+    "Database": 0.0,
+    "Storage": 0.0,
+    "Network": 0.0,
+    "Access Management": 0.0
+  },
+  "semantic_similarity": 1.0,
+  "judge_routing_score": 3.0,
+  "judge_resolution_score": 3.0,
+  "equitable_recall_spread": 1.0,
+  "per_category_recall": {
+    "Infrastructure": 0.0,
+    "Application": 1.0,
+    "Security": 0.0,
+    "Database": 0.0,
+    "Storage": 0.0,
+    "Network": 0.0,
+    "Access Management": 0.0
+  },
+  "class_imbalance": {
+    "counts": {
+      "Infrastructure": 0,
+      "Application": 1,
+      "Security": 0,
+      "Database": 0,
+      "Storage": 0,
+      "Network": 0,
+      "Access Management": 0
+    },
+    "warnings": [
+      "Infrastructure: only 0 samples (minimum 100)",
+      "Application: only 1 samples (minimum 100)",
+      "Security: only 0 samples (minimum 100)",
+      "Database: only 0 samples (minimum 100)",
+      "Storage: only 0 samples (minimum 100)",
+      "Network: only 0 samples (minimum 100)",
+      "Access Management: only 0 samples (minimum 100)"
+    ]
+  },
+  "model_version": "retrained-20260417-150414",
+  "dataset_version": "retrain",
+  "evaluated_at": "2026-04-17T15:04:30.350476",
+  "sample_count": 1,
+  "promotion_gate": {
+    "passes": false,
+    "failures": [
+      "Macro F1 0.1429 < threshold 0.8",
+      "Category 'Infrastructure' F1 0.0 < threshold 0.65",
+      "Category 'Security' F1 0.0 < threshold 0.65",
+      "Category 'Database' F1 0.0 < threshold 0.65",
+      "Category 'Storage' F1 0.0 < threshold 0.65",
+      "Category 'Network' F1 0.0 < threshold 0.65",
+      "Category 'Access Management' F1 0.0 < threshold 0.65",
+      "Judge routing score 3.0 < threshold 3.5",
+      "Judge resolution score 3.0 < threshold 3.5",
+      "Equitable recall spread 1.0 > threshold 0.25"
+    ]
+  }
+}

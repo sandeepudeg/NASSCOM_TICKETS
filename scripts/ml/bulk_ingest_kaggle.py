@@ -22,13 +22,12 @@ import json
 import logging
 from pathlib import Path
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select, func
-
+from src.ml.pii_scrubber import PIIScrubber
 from src.repositories.models import Ticket
 from src.schemas.settings import settings
-from src.ml.pii_scrubber import PIIScrubber
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

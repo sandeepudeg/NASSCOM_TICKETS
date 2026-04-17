@@ -17,10 +17,12 @@ class TestAPIClient:
     @pytest.fixture
     def mock_config(self):
         """Mock configuration object"""
-        config = Mock()
+        from unittest.mock import MagicMock
+        config = MagicMock()
         config.CONNECTION_POOL_SIZE = 5
         config.CONNECTION_POOL_MAXSIZE = 5
         config.API_REQUEST_RETRIES = 2
+        config.REQUEST_TIMEOUT = 15
         return config
 
     def test_api_client_initialization(self):

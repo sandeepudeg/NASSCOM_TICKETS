@@ -22,10 +22,17 @@ from src.schemas.ticket import (
 
 def load_category_config(config_path: str = "config/classifier_config.yaml") -> dict:
     """Load category taxonomy from YAML configuration file."""
-    config_file = Path(config_path)
+    # Try absolute path from project root first
+    root = Path(__file__).parent.parent.parent.parent
+    config_file = root / config_path
+    
+    if not config_file.exists():
+        # Fallback to current working directory
+        config_file = Path(config_path)
+
     if not config_file.exists():
         raise FileNotFoundError(
-            f"Classifier config not found at {config_path}. "
+            f"Classifier config not found at {config_path} or {root / config_path}. "
             "Please create config/classifier_config.yaml with category definitions."
         )
 

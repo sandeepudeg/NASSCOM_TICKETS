@@ -138,7 +138,7 @@ def is_hf_spaces():
     # Primary detection via SPACE_ID environment variable
     space_id = os.getenv("SPACE_ID")
     if space_id is not None:
-        print(f"🎯 HF Spaces detected via SPACE_ID: {space_id}")
+        print(f"HF Spaces detected via SPACE_ID: {space_id}")
         return True
 
     # Secondary detection methods for HF Spaces environment
@@ -158,7 +158,7 @@ def is_hf_spaces():
             detected_indicators.append(indicator)
 
     if detected_indicators:
-        print(f"🎯 HF Spaces detected via indicators: {detected_indicators}")
+        print(f"HF Spaces detected via indicators: {detected_indicators}")
         return True
 
     # Check if running on port 7860 (HF Spaces default) with specific hostname patterns
@@ -172,7 +172,7 @@ def is_hf_spaces():
             or "huggingface" in hostname.lower()
             or "space" in hostname.lower()
         ):
-            print(f"🎯 HF Spaces detected via port/hostname: {hostname}")
+            print(f"HF Spaces detected via port/hostname: {hostname}")
             return True
 
     # Additional check for HF Spaces specific paths and container structure
@@ -186,22 +186,22 @@ def is_hf_spaces():
         # Check for HF Spaces specific environment characteristics
         if hostname and (len(hostname) > 10 or "space" in hostname.lower()):
             print(
-                f"🎯 HF Spaces detected via container structure and hostname: {hostname}"
+                f"HF Spaces detected via container structure and hostname: {hostname}"
             )
             return True
 
         # Check for specific HF Spaces process indicators
         if os.getenv("USER") == "user" and port == "7860":
-            print("🎯 HF Spaces detected via user and port configuration")
+            print("HF Spaces detected via user and port configuration")
             return True
 
     # Final check: Look for HF Spaces in environment dump
     env_dump = " ".join([f"{k}={v}" for k, v in os.environ.items()])
     if "huggingface" in env_dump.lower() or "hf.space" in env_dump.lower():
-        print("🎯 HF Spaces detected via environment variables scan")
+        print("HF Spaces detected via environment variables scan")
         return True
 
-    print("🏠 Local/Docker environment detected (not HF Spaces)")
+    print("Local/Docker environment detected (not HF Spaces)")
     return False
 
 
@@ -220,7 +220,7 @@ def get_hf_space_url():
     # Method 1: Use SPACE_ID environment variable
     space_id = os.getenv("SPACE_ID")
     if space_id:
-        print(f"📍 Found SPACE_ID: {space_id}")
+        print(f"Found SPACE_ID: {space_id}")
 
         # Handle different SPACE_ID formats
         if "/" in space_id:
@@ -234,7 +234,7 @@ def get_hf_space_url():
 
         # Validate the URL format (should contain at least one dash for owner-space format)
         if space_url_part and ("-" in space_url_part or len(space_url_part) > 5):
-            print(f"✅ Resolved HF Space URL from SPACE_ID: {space_url}")
+            print(f"Resolved HF Space URL from SPACE_ID: {space_url}")
             return space_url
 
     # Method 2: Use individual SPACE_AUTHOR_NAME and SPACE_REPO_NAME
@@ -243,17 +243,17 @@ def get_hf_space_url():
 
     if space_author and space_repo:
         space_url = f"https://{space_author}-{space_repo}.hf.space"
-        print(f"✅ Resolved HF Space URL from author/repo: {space_url}")
+        print(f"Resolved HF Space URL from author/repo: {space_url}")
         return space_url
 
     # Method 3: Fallback to specific known deployment URL for sandeepudeg/tickets
     if is_hf_spaces():
         # This handles the specific deployment mentioned in the task
         fallback_url = "https://sandeepudeg-tickets.hf.space"
-        print(f"⚠️  Using fallback HF Space URL: {fallback_url}")
+        print(f"Using fallback HF Space URL: {fallback_url}")
         return fallback_url
 
-    print("❌ Could not resolve HF Space URL")
+    print("Could not resolve HF Space URL")
     return None
 
 
@@ -269,12 +269,12 @@ def configure_for_hf_spaces():
     5. Ensures environment variable loading works with HF Spaces secrets
     """
     if is_hf_spaces():
-        print("🚀 HF Spaces environment detected - configuring...")
+        print("HF Spaces environment detected - configuring...")
 
         # Dynamic CORS origin resolution for the specific HF Space
         space_url = get_hf_space_url()
         if space_url:
-            print(f"📍 Resolved HF Space URL: {space_url}")
+            print(f"Resolved HF Space URL: {space_url}")
 
             # Set CORS origins for the specific HF Space
             existing_origins = os.getenv("CORS_ORIGINS", "")
@@ -283,19 +283,19 @@ def configure_for_hf_spaces():
             if not existing_origins:
                 # No existing CORS origins - set to HF Space URL
                 os.environ["CORS_ORIGINS"] = space_url
-                print(f"🔗 Set CORS origins to: {space_url}")
+                print(f"Set CORS origins to: {space_url}")
             elif existing_origins == "http://localhost:5001":
                 # Replace localhost with HF Space URL
                 os.environ["CORS_ORIGINS"] = space_url
-                print(f"🔗 Replaced localhost CORS origins with: {space_url}")
+                print(f"Replaced localhost CORS origins with: {space_url}")
             elif space_url not in existing_origins:
                 # Add HF Space URL to existing origins
                 os.environ["CORS_ORIGINS"] = f"{existing_origins},{space_url}"
-                print(f"🔗 Added to existing CORS origins: {space_url}")
+                print(f"Added to existing CORS origins: {space_url}")
             else:
-                print(f"✅ HF Space URL already in CORS origins: {space_url}")
+                print(f"HF Space URL already in CORS origins: {space_url}")
         else:
-            print("⚠️  Could not resolve HF Space URL for CORS configuration")
+            print("Could not resolve HF Space URL for CORS configuration")
 
         # Configure Flask to run on host 0.0.0.0 and port 7860 for HF Spaces
         os.environ.setdefault("HOST", "0.0.0.0")
@@ -303,7 +303,7 @@ def configure_for_hf_spaces():
 
         # Set up environment variable loading with HF Spaces secrets
         # HF Spaces provides secrets as environment variables automatically
-        print("🔐 Environment variable loading configured for HF Spaces secrets")
+        print("Environment variable loading configured for HF Spaces secrets")
 
         # Ensure production settings for HF Spaces
         os.environ.setdefault("FLASK_ENV", "production")
@@ -319,7 +319,7 @@ def configure_for_hf_spaces():
                 missing_vars.append(var)
 
         if missing_vars:
-            print(f"⚠️  Missing critical environment variables: {missing_vars}")
+            print(f"Missing critical environment variables: {missing_vars}")
             print("💡 Please configure these in HF Spaces secrets:")
             for var in missing_vars:
                 if var == "SECRET_KEY":
@@ -329,10 +329,10 @@ def configure_for_hf_spaces():
                 elif var == "API_BASE_URL":
                     print(f"   - {var}: URL of your FastAPI backend service")
         else:
-            print("✅ All critical environment variables are configured")
+            print("All critical environment variables are configured")
 
         # Log final configuration
-        print("⚙️  HF Spaces configuration complete:")
+        print("HF Spaces configuration complete:")
         print(f"   - HOST: {os.getenv('HOST')}")
         print(f"   - PORT: {os.getenv('PORT')}")
         print(f"   - FLASK_ENV: {os.getenv('FLASK_ENV')}")
@@ -341,7 +341,7 @@ def configure_for_hf_spaces():
         print(f"   - CORS_ORIGINS: {os.getenv('CORS_ORIGINS', 'Not set')}")
 
     else:
-        print("🏠 Local/Docker environment detected - using default configuration")
+        print("Local/Docker environment detected - using default configuration")
         print(f"   - Default HOST: {os.getenv('HOST', '0.0.0.0')}")
         print(
             f"   - Default PORT: {os.getenv('PORT', '5000')} (local), 7860 (HF Spaces)"

@@ -24,6 +24,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
 # Lock file for concurrent run detection
 LOCK_FILE = Path("/tmp/retrain_classifier.lock")
 
@@ -136,31 +137,29 @@ def release_lock():
         print(f"[WARN] Failed to release lock: {e}", file=sys.stderr)
 
 
-def log_concurrent_skip():
+async def log_concurrent_skip():
     """Log retrain_skipped_concurrent event to audit log."""
     try:
-        from src.repositories.models import AuditLog
         # Synchronous audit log write
         import asyncio
-        from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+
+        from src.schemas.settings import settings
+        from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
         from sqlalchemy.orm import sessionmaker
-        from schemas.settings import settings
-        async def _log():
-            engine = create_async_engine(settings.database_url, echo=False)
-            async_session = sessionmaker(
-                engine, class_=AsyncSession, expire_on_commit=False
-            )
-            async with async_session() as session:
+        from src.repositories.models import AuditLog
+        engine = create_async_engine(settings.database_url, echo=False)
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async with async_session() as session:
+            async with session.begin():
                 log_entry = AuditLog(
                     actor_user_id="system",
-                    action_type="retrain_skipped_concurrent",
-                    target_resource_id="classifier",
+                    action_type="retrain_skipped",
+                    target_resource_id="classification_model",
+                    timestamp=datetime.now(timezone.utc),
                     metadata_json=json.dumps({"reason": "concurrent_run_active"}),
                 )
                 session.add(log_entry)
                 await session.commit()
-
-        asyncio.run(_log())
     except Exception as e:
         print(f"[WARN] Failed to log concurrent skip: {e}", file=sys.stderr)
 
@@ -170,7 +169,7 @@ def log_concurrent_skip():
 # ---------------------------------------------------------------------------
 def download_datasets_from_minio(output_dir: Path) -> list[Path]:
     """Download raw datasets from MinIO. Returns list of downloaded file paths."""
-    from schemas.settings import settings
+    from src.schemas.settings import settings
     try:
         from minio import Minio
         client = Minio(
@@ -203,9 +202,9 @@ def download_datasets_from_minio(output_dir: Path) -> list[Path]:
 # ---------------------------------------------------------------------------
 async def fetch_agent_overrides() -> list[dict]:
     """Fetch all agent override labels from the database."""
+    from sqlalchemy import select
     from src.repositories.database import get_db
     from src.repositories.models import AgentOverride
-    from sqlalchemy import select
     overrides = []
     async for session in get_db():
         result = await session.execute(select(AgentOverride))
@@ -670,8 +669,8 @@ def _apply_oversampling(data: list[dict]) -> list[dict]:
 
     Requirements: 15.2 (equitable recall improvement)
     """
-    from collections import Counter
     import random
+    from collections import Counter
 
     # Count samples per category
     category_counts = Counter(
@@ -781,7 +780,7 @@ def register_model_in_mlflow(model_version: str, metrics: dict) -> Optional[str]
     """Register the new model version in MLflow if promotion gate passes."""
     try:
         import mlflow
-        from schemas.settings import settings
+        from src.schemas.settings import settings
 
         mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
         mlflow.set_experiment("ticket-classifier")
@@ -906,7 +905,7 @@ async def retrain_pipeline(
     # Step 1: Acquire lock
     if not acquire_lock():
         print("[ERROR] Another retraining run is already in progress", file=sys.stderr)
-        log_concurrent_skip()
+        await log_concurrent_skip()
         return False
 
     try:
@@ -1062,13 +1061,33 @@ def main():
         )
         sys.exit(1)
 
-    success = asyncio.run(
-        retrain_pipeline(
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    if loop.is_running():
+        # Use existing loop if already running (e.g. within tests or other app)
+        import nest_asyncio
+        nest_asyncio.apply()
+        coro = retrain_pipeline(
             skip_download=args.skip_download,
             dataset_dir=args.dataset_dir,
             dry_run=args.dry_run,
         )
-    )
+        # In a running loop, we can't asyncio.run. 
+        # But this part is only hit if main() is called from another async function.
+        # For tests that import the script, main() won't be called.
+        success = loop.run_until_complete(coro)
+    else:
+        success = asyncio.run(
+            retrain_pipeline(
+                skip_download=args.skip_download,
+                dataset_dir=args.dataset_dir,
+                dry_run=args.dry_run,
+            )
+        )
 
     sys.exit(0 if success else 1)
 

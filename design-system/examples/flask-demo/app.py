@@ -4,7 +4,7 @@ Flask Demo Application for TicketIQ Design System
 This demo shows how to integrate the design system with a Flask application.
 """
 
-from flask import Flask, render_template, request, flash, redirect, url_for
+from flask import Flask, flash, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 app.secret_key = "demo-secret-key-change-in-production"

@@ -17,7 +17,11 @@ from src.repositories.audit_repository import AuditLogRepository
 from src.repositories.folder_repository import FolderRepository
 from src.schemas.errors import HTTPError
 from src.schemas.folder import FolderCreate, FolderUpdate
+import pytest_asyncio
 from src.services.folder_service import FolderService
+from src.services.ticket_assignment_service import TicketAssignmentService
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 INJECTION_PAYLOADS = [
     "<script>alert('xss')</script>",
@@ -50,28 +54,25 @@ def make_service():
 # Feature: tickets-folder, Property 1: Folder Name Validation
 # For any string that is empty after stripping or longer than 255 chars,
 # Folder_Manager SHALL reject create/rename with a validation error.
+@pytest.mark.asyncio
 class TestP1FolderNameValidation:
 
     @given(name=st.text().filter(lambda s: s.strip() == ""))
     @settings(max_examples=100)
-    def test_whitespace_only_name_rejected_on_create(self, name):
+    async def test_whitespace_only_name_rejected_on_create(self, name):
         """P1: Whitespace-only names must be rejected."""
         # Feature: tickets-folder, Property 1: Folder Name Validation
         assume(name.strip() == "")
         service = make_service()
         folder_data = FolderCreate(name=name if name else " ")
 
-        import asyncio
-
         with pytest.raises(HTTPError) as exc_info:
-            asyncio.get_event_loop().run_until_complete(
-                service.create_folder(folder_data, "user-1")
-            )
+            await service.create_folder(folder_data, "user-1")
         assert exc_info.value.problem.status == 422
 
     @given(name=st.text(min_size=256))
     @settings(max_examples=100)
-    def test_name_exceeding_255_chars_rejected(self, name):
+    async def test_name_exceeding_255_chars_rejected(self, name):
         """P1: Names exceeding 255 chars must be rejected — either by Pydantic schema or service."""
         # Feature: tickets-folder, Property 1: Folder Name Validation
         assume(len(name.strip()) > 255)
@@ -80,7 +81,6 @@ class TestP1FolderNameValidation:
         # Pydantic enforces max_length=255 at schema level — this IS the validation error
         with pytest.raises((pydantic.ValidationError, HTTPError)):
             folder_data = FolderCreate(name=name[:300])
-            import asyncio
 
             with patch.object(
                 FolderRepository,
@@ -95,25 +95,21 @@ class TestP1FolderNameValidation:
                     return_value=0,
                 ):
                     service = make_service()
-                    asyncio.get_event_loop().run_until_complete(
-                        service.create_folder(folder_data, "user-1")
-                    )
+                    await service.create_folder(folder_data, "user-1")
 
 
-# Feature: tickets-folder, Property 2: Duplicate Folder Name Rejection
+@pytest.mark.asyncio
 class TestP2DuplicateFolderNameRejection:
 
     @given(name=VALID_NAME_STRATEGY)
     @settings(max_examples=100)
-    def test_duplicate_name_rejected(self, name):
+    async def test_duplicate_name_rejected(self, name):
         """P2: Creating a folder with an existing name must return 409."""
         # Feature: tickets-folder, Property 2: Duplicate Folder Name Rejection
         service = make_service()
         folder_data = FolderCreate(name=name)
         existing = MagicMock()
         existing.id = str(uuid4())
-
-        import asyncio
 
         with patch.object(
             FolderRepository,
@@ -122,18 +118,16 @@ class TestP2DuplicateFolderNameRejection:
             return_value=existing,
         ):
             with pytest.raises(HTTPError) as exc_info:
-                asyncio.get_event_loop().run_until_complete(
-                    service.create_folder(folder_data, "user-1")
-                )
+                await service.create_folder(folder_data, "user-1")
             assert exc_info.value.problem.status == 409
 
 
-# Feature: tickets-folder, Property 3: Folder Creation Round-Trip
+@pytest.mark.asyncio
 class TestP3FolderCreationRoundTrip:
 
     @given(name=VALID_NAME_STRATEGY)
     @settings(max_examples=100)
-    def test_created_folder_has_id_and_timestamp(self, name):
+    async def test_created_folder_has_id_and_timestamp(self, name):
         """P3: Created folder must have non-null id, created_at, and stripped name."""
         # Feature: tickets-folder, Property 3: Folder Creation Round-Trip
         service = make_service()
@@ -148,8 +142,6 @@ class TestP3FolderCreationRoundTrip:
         mock_folder.deleted_at = None
         mock_folder.created_at = datetime.utcnow()
         mock_folder.updated_at = datetime.utcnow()
-
-        import asyncio
 
         with patch.object(
             FolderRepository, "get_by_name", new_callable=AsyncMock, return_value=None
@@ -169,40 +161,34 @@ class TestP3FolderCreationRoundTrip:
                     with patch.object(
                         AuditLogRepository, "create", new_callable=AsyncMock
                     ):
-                        result = asyncio.get_event_loop().run_until_complete(
-                            service.create_folder(folder_data, owner_id)
-                        )
+                        result = await service.create_folder(folder_data, owner_id)
         assert result.id is not None
         assert result.created_at is not None
         assert result.name == name.strip()
 
 
-# Feature: tickets-folder, Property 4: Injection Payload Rejection
+@pytest.mark.asyncio
 class TestP4InjectionPayloadRejection:
 
     @given(name=st.sampled_from(INJECTION_PAYLOADS))
     @settings(max_examples=100)
-    def test_injection_payloads_rejected(self, name):
+    async def test_injection_payloads_rejected(self, name):
         """P4: HTML/script injection payloads must be rejected with 422."""
         # Feature: tickets-folder, Property 4: Injection Payload Rejection
         service = make_service()
         folder_data = FolderCreate(name=name)
 
-        import asyncio
-
         with pytest.raises(HTTPError) as exc_info:
-            asyncio.get_event_loop().run_until_complete(
-                service.create_folder(folder_data, "user-1")
-            )
+            await service.create_folder(folder_data, "user-1")
         assert exc_info.value.problem.status == 422
 
 
-# Feature: tickets-folder, Property 5: Folder List Completeness and Ownership
+@pytest.mark.asyncio
 class TestP5FolderListCompleteness:
 
     @given(n=st.integers(min_value=0, max_value=20))
     @settings(max_examples=100)
-    def test_list_returns_only_owner_folders(self, n):
+    async def test_list_returns_only_owner_folders(self, n):
         """P5: List must return exactly N active folders for the owner."""
         # Feature: tickets-folder, Property 5: Folder List Completeness and Ownership
         owner_id = "user-1"
@@ -219,11 +205,7 @@ class TestP5FolderListCompleteness:
             folders.append(f)
 
         service = make_service()
-
-        import asyncio
-
-        from schemas.folder import FolderPaginationParams
-
+        from src.schemas.folder import FolderPaginationParams
         params = FolderPaginationParams()
 
         with patch.object(
@@ -232,9 +214,7 @@ class TestP5FolderListCompleteness:
             new_callable=AsyncMock,
             return_value=(folders, None),
         ):
-            result = asyncio.get_event_loop().run_until_complete(
-                service.list_folders(owner_id, params)
-            )
+            result = await service.list_folders(owner_id, params)
 
         assert result.total == n
         assert len(result.folders) == n
@@ -243,16 +223,15 @@ class TestP5FolderListCompleteness:
             assert folder.deleted_at is None
 
 
-# Feature: tickets-folder, Property 6: List Sort Order Invariant
+@pytest.mark.asyncio
 class TestP6ListSortOrderInvariant:
 
     @given(n=st.integers(min_value=2, max_value=10))
     @settings(max_examples=100)
-    def test_default_sort_is_descending_by_created_at(self, n):
+    async def test_default_sort_is_descending_by_created_at(self, n):
         """P6: Default folder list must be sorted by created_at descending."""
         # Feature: tickets-folder, Property 6: List Sort Order Invariant
         from datetime import timedelta
-
         base = datetime.utcnow()
         folders = []
         for i in range(n):
@@ -262,14 +241,12 @@ class TestP6ListSortOrderInvariant:
             f.owner_id = "user-1"
             f.version = 1
             f.deleted_at = None
-            # Descending: newest first
             f.created_at = base - timedelta(seconds=i)
             f.updated_at = f.created_at
             folders.append(f)
 
         service = make_service()
-        from schemas.folder import FolderPaginationParams
-
+        from src.schemas.folder import FolderPaginationParams
         params = FolderPaginationParams()
 
         with patch.object(
@@ -278,22 +255,18 @@ class TestP6ListSortOrderInvariant:
             new_callable=AsyncMock,
             return_value=(folders, None),
         ):
-            import asyncio
-
-            result = asyncio.get_event_loop().run_until_complete(
-                service.list_folders("user-1", params)
-            )
+            result = await service.list_folders("user-1", params)
 
         timestamps = [f.created_at for f in result.folders]
         assert timestamps == sorted(timestamps, reverse=True)
 
 
-# Feature: tickets-folder, Property 9: Optimistic Locking Conflict
+@pytest.mark.asyncio
 class TestP9OptimisticLockingConflict:
 
     @given(stored_version=st.integers(min_value=2, max_value=100))
     @settings(max_examples=100)
-    def test_version_mismatch_returns_409(self, stored_version):
+    async def test_version_mismatch_returns_409(self, stored_version):
         """P9: Rename with wrong version must return HTTP 409."""
         # Feature: tickets-folder, Property 9: Optimistic Locking Conflict
         service = make_service()
@@ -305,31 +278,24 @@ class TestP9OptimisticLockingConflict:
         existing.id = folder_id
         existing.version = stored_version  # mismatch
 
-        import asyncio
-
         with patch.object(
             FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing
         ):
             with pytest.raises(HTTPError) as exc_info:
-                asyncio.get_event_loop().run_until_complete(
-                    service.rename_folder(folder_id, folder_data, "user-1")
-                )
+                await service.rename_folder(folder_id, folder_data, "user-1")
             assert exc_info.value.problem.status == 409
 
 
-# Feature: tickets-folder, Property 10: Soft-Delete Visibility
+@pytest.mark.asyncio
 class TestP10SoftDeleteVisibility:
 
-    def test_soft_deleted_folder_not_in_list(self):
+    async def test_soft_deleted_folder_not_in_list(self):
         """P10: Soft-deleted folders must not appear in default list results."""
         # Feature: tickets-folder, Property 10: Soft-Delete Visibility
         service = make_service()
         # Repository returns empty list (soft-deleted excluded by default)
-        from schemas.folder import FolderPaginationParams
-
+        from src.schemas.folder import FolderPaginationParams
         params = FolderPaginationParams()
-
-        import asyncio
 
         with patch.object(
             FolderRepository,
@@ -337,12 +303,10 @@ class TestP10SoftDeleteVisibility:
             new_callable=AsyncMock,
             return_value=([], None),
         ):
-            result = asyncio.get_event_loop().run_until_complete(
-                service.list_folders("user-1", params)
-            )
+            result = await service.list_folders("user-1", params)
         assert result.total == 0
 
-    def test_delete_already_deleted_folder_returns_404(self):
+    async def test_delete_already_deleted_folder_returns_404(self):
         """P10c: Deleting an already soft-deleted folder must return 404."""
         # Feature: tickets-folder, Property 10: Soft-Delete Visibility
         service = make_service()
@@ -353,18 +317,14 @@ class TestP10SoftDeleteVisibility:
         existing.deleted_at = datetime.utcnow()  # already deleted
         existing.name = "deleted-folder"
 
-        import asyncio
-
         with patch.object(
             FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing
         ):
             with pytest.raises(HTTPError) as exc_info:
-                asyncio.get_event_loop().run_until_complete(
-                    service.delete_folder(folder_id, "user-1")
-                )
+                await service.delete_folder(folder_id, "user-1")
             assert exc_info.value.problem.status == 404
 
-    def test_include_deleted_returns_soft_deleted_folder(self):
+    async def test_include_deleted_returns_soft_deleted_folder(self):
         """P10b: include_deleted flag should surface soft-deleted folders."""
         # Feature: tickets-folder, Property 10: Soft-Delete Visibility
         service = make_service()
@@ -378,10 +338,7 @@ class TestP10SoftDeleteVisibility:
         deleted_folder.created_at = datetime.utcnow()
         deleted_folder.updated_at = deleted_folder.created_at
 
-        import asyncio
-
-        from schemas.folder import FolderPaginationParams
-
+        from src.schemas.folder import FolderPaginationParams
         params = FolderPaginationParams(include_deleted=True)
 
         with patch.object(
@@ -390,14 +347,11 @@ class TestP10SoftDeleteVisibility:
             new_callable=AsyncMock,
             return_value=([deleted_folder], None),
         ):
-            result = asyncio.get_event_loop().run_until_complete(
-                service.list_folders("user-1", params)
-            )
+            result = await service.list_folders("user-1", params)
         assert len(result.folders) == 1
         assert result.folders[0].deleted_at is not None
 
 
-# Feature: tickets-folder, Property 7: Cursor Pagination Completeness
 class TestP7CursorPaginationCompleteness:
 
     @given(
@@ -405,7 +359,8 @@ class TestP7CursorPaginationCompleteness:
         page_size=st.integers(min_value=1, max_value=10),
     )
     @settings(max_examples=50)
-    def test_paginating_all_pages_returns_full_set(self, total, page_size):
+    @pytest.mark.asyncio
+    async def test_paginating_all_pages_returns_full_set(self, total, page_size):
         """P7: Cursor pagination yields exactly N items with no duplicates."""
         # Feature: tickets-folder, Property 7: Cursor Pagination Completeness
         owner_id = "user-1"
@@ -444,23 +399,17 @@ class TestP7CursorPaginationCompleteness:
             return slice_, next_cursor
 
         service = make_service()
-        from schemas.folder import FolderPaginationParams
-
+        from src.schemas.folder import FolderPaginationParams
         params = FolderPaginationParams(page_size=page_size)
-
         collected_ids = []
         cursor = None
-
-        import asyncio
 
         with patch.object(
             FolderRepository, "list_folders", side_effect=mock_list_folders
         ):
             while True:
                 params.cursor = cursor
-                result = asyncio.get_event_loop().run_until_complete(
-                    service.list_folders(owner_id, params)
-                )
+                result = await service.list_folders("user-1", params)
                 collected_ids.extend([f.id for f in result.folders])
                 if not result.next_cursor:
                     break
@@ -474,13 +423,11 @@ class TestP7CursorPaginationCompleteness:
     def test_page_size_within_bounds(self, page_size):
         """P7: Page size must be accepted within [1, 200]."""
         # Feature: tickets-folder, Property 7: Cursor Pagination Completeness
-        from schemas.folder import FolderPaginationParams
-
+        from src.schemas.folder import FolderPaginationParams
         params = FolderPaginationParams(page_size=page_size)
         assert 1 <= params.page_size <= 200
 
 
-# Feature: tickets-folder, Property 8: Name Prefix Filter Correctness
 class TestP8NamePrefixFilterCorrectness:
 
     @given(
@@ -491,7 +438,8 @@ class TestP8NamePrefixFilterCorrectness:
         )
     )
     @settings(max_examples=100)
-    def test_prefix_filter_only_returns_matching_folders(self, prefix):
+    @pytest.mark.asyncio
+    async def test_prefix_filter_only_returns_matching_folders(self, prefix):
         """P8: All returned folders must start with the given prefix (case-insensitive)."""
         # Feature: tickets-folder, Property 8: Name Prefix Filter Correctness
         matching = [MagicMock() for _ in range(3)]
@@ -505,11 +453,8 @@ class TestP8NamePrefixFilterCorrectness:
             f.updated_at = datetime.utcnow()
 
         service = make_service()
-        from schemas.folder import FolderPaginationParams
-
+        from src.schemas.folder import FolderPaginationParams
         params = FolderPaginationParams(name_filter=prefix)
-
-        import asyncio
 
         with patch.object(
             FolderRepository,
@@ -517,20 +462,18 @@ class TestP8NamePrefixFilterCorrectness:
             new_callable=AsyncMock,
             return_value=(matching, None),
         ):
-            result = asyncio.get_event_loop().run_until_complete(
-                service.list_folders("user-1", params)
-            )
+            result = await service.list_folders("user-1", params)
 
         for folder in result.folders:
             assert folder.name.lower().startswith(prefix.lower())
 
 
-# Feature: tickets-folder, Property 11: Soft-Delete Cascades Associations
+@pytest.mark.asyncio
 class TestP11SoftDeleteCascadesAssociations:
 
     @given(folder_id=st.uuids().map(str))
     @settings(max_examples=50)
-    def test_soft_delete_removes_associations_not_tickets(self, folder_id):
+    async def test_soft_delete_removes_associations_not_tickets(self, folder_id):
         """P11: Soft-delete must remove ticket-folder associations without deleting tickets."""
         # Feature: tickets-folder, Property 11: Soft-Delete Cascades Associations
         service = make_service()
@@ -550,8 +493,6 @@ class TestP11SoftDeleteCascadesAssociations:
         async def mock_soft_delete(folder):
             soft_delete_calls.append(folder.id)
 
-        import asyncio
-
         with patch.object(
             FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing
         ):
@@ -566,9 +507,7 @@ class TestP11SoftDeleteCascadesAssociations:
                     with patch.object(
                         AuditLogRepository, "create", new_callable=AsyncMock
                     ):
-                        asyncio.get_event_loop().run_until_complete(
-                            service.delete_folder(folder_id, "user-1")
-                        )
+                        await service.delete_folder(folder_id, "user-1")
 
         assert folder_id in delete_calls
         assert folder_id in soft_delete_calls

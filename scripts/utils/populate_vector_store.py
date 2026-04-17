@@ -20,16 +20,16 @@ import os
 import sys
 from pathlib import Path
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select, delete
 
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from src.ml.embedding_service import embedding_service
 from src.repositories.models import Ticket, TicketEmbedding
 from src.schemas.settings import settings
-from src.ml.embedding_service import embedding_service
 
 logging.basicConfig(
     level=logging.INFO,

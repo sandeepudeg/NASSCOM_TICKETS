@@ -603,10 +603,12 @@ def register_routes(app, csrf):
             else:
                 app.logger.debug("Using cached folders data")
 
-            total_folders = folders_response.get("total", 0) if folders_response else 0
-            folders_list = (
-                folders_response.get("folders", []) if folders_response else []
-            )
+            if isinstance(folders_response, dict):
+                total_folders = folders_response.get("total", 0)
+                folders_list = folders_response.get("folders", [])
+            else:
+                total_folders = len(folders_response) if folders_response else 0
+                folders_list = folders_response or []
 
             # Get cached escalations data
             escalations_response = app.cache.get(cache_key_escalations)
@@ -627,12 +629,10 @@ def register_routes(app, csrf):
             else:
                 app.logger.debug("Using cached escalations data")
 
-            pending_escalations = (
-                escalations_response.get("total", 0) if escalations_response else 0
-            )
-            (
-                escalations_response.get("tickets", []) if escalations_response else []
-            )
+            if isinstance(escalations_response, dict):
+                pending_escalations = escalations_response.get("total", 0)
+            else:
+                pending_escalations = len(escalations_response) if escalations_response else 0
 
             app.logger.info(
                 f"Dashboard loaded: {total_folders} folders, {pending_escalations} escalations"
@@ -1144,7 +1144,7 @@ def register_context_processors(app):
                     "icon": "robot",
                 },
                 {
-                    "endpoint": "system_health",
+                    "endpoint": "health",
                     "label": "System Health",
                     "icon": "heartbeat",
                 },

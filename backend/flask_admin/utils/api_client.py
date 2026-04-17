@@ -194,3 +194,7 @@ class APIClient:
             return response is not None
         except Exception:
             return False
+
+    def close(self):
+        """Close the underlying session and release resources"""
+        self.session.close()
