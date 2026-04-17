@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class FolderBase(BaseModel):
@@ -24,19 +24,19 @@ class FolderResponse(FolderBase):
     created_at: datetime
     updated_at: datetime
     version: int
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
 
 
 class FolderListResponse(BaseModel):
     folders: list[FolderResponse]
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
     total: int
 
 
 class FolderPaginationParams(BaseModel):
     page_size: int = Field(default=50, ge=1, le=200)
-    cursor: Optional[str] = None
-    name_filter: Optional[str] = None
+    cursor: str | None = None
+    name_filter: str | None = None
     sort_by: str = Field(default="created_at", pattern="^(created_at|name)$")
     sort_dir: str = Field(default="desc", pattern="^(asc|desc)$")
     include_deleted: bool = False

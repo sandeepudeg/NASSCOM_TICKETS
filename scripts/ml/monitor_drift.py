@@ -15,26 +15,30 @@ Options:
 
 Requirements: 15.4
 """
+
 import argparse
 import asyncio
 import sys
 from datetime import datetime
 
 from src.repositories.database import get_db
-from src.services.drift_monitor import DriftMonitor, load_training_distribution_from_mlflow
+from src.services.drift_monitor import (
+    DriftMonitor,
+    load_training_distribution_from_mlflow,
+)
 
 
 async def monitor_drift_once(window_hours: int = 24):
     """Run drift monitoring once."""
     print(f"[{datetime.utcnow().isoformat()}] Starting drift monitoring check...")
-    
+
     # Load training distribution from MLflow (or use default)
     training_dist = await load_training_distribution_from_mlflow()
     if training_dist:
         print("[INFO] Loaded training distribution from MLflow")
     else:
         print("[INFO] Using default training distribution")
-    
+
     # Run drift check
     async for session in get_db():
         monitor = DriftMonitor(session)
@@ -47,14 +51,16 @@ async def monitor_drift_once(window_hours: int = 24):
 
 async def monitor_drift_continuous(window_hours: int = 24, interval_hours: int = 1):
     """Run drift monitoring continuously at regular intervals."""
-    print(f"[INFO] Starting continuous drift monitoring (interval: {interval_hours}h, window: {window_hours}h)")
-    
+    print(
+        f"[INFO] Starting continuous drift monitoring (interval: {interval_hours}h, window: {window_hours}h)"
+    )
+
     while True:
         try:
             await monitor_drift_once(window_hours)
         except Exception as e:
             print(f"[ERROR] Drift monitoring failed: {e}", file=sys.stderr)
-        
+
         # Wait for next interval
         print(f"[INFO] Next check in {interval_hours} hour(s)...")
         await asyncio.sleep(interval_hours * 3600)
@@ -82,7 +88,7 @@ def main():
         help="Check interval in hours for continuous mode (default: 1)",
     )
     args = parser.parse_args()
-    
+
     if args.once:
         asyncio.run(monitor_drift_once(args.window_hours))
     else:

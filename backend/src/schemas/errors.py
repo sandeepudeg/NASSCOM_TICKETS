@@ -1,4 +1,5 @@
-from typing import Any, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -6,17 +7,17 @@ class ProblemDetail(BaseModel):
     type: str
     title: str
     status: int
-    detail: Optional[str] = None
-    instance: Optional[str] = None
+    detail: str | None = None
+    instance: str | None = None
     extensions: dict[str, Any] = Field(default_factory=dict)
 
 
 def create_error(
     status: int,
     title: str,
-    detail: Optional[str] = None,
+    detail: str | None = None,
     error_type: str = "about:blank",
-    instance: Optional[str] = None,
+    instance: str | None = None,
     **kwargs,
 ) -> ProblemDetail:
     return ProblemDetail(
@@ -36,33 +37,45 @@ class HTTPError(Exception):
 
     @staticmethod
     def not_found(
-        detail: str = "Resource not found", resource_id: Optional[str] = None
+        detail: str = "Resource not found", resource_id: str | None = None
     ) -> "HTTPError":
         return HTTPError(
-            create_error(404, "Not Found", detail, "urn:tickets:error:not-found", resource_id)
+            create_error(
+                404, "Not Found", detail, "urn:tickets:error:not-found", resource_id
+            )
         )
 
     @staticmethod
     def bad_request(detail: str = "Bad request", **kwargs) -> "HTTPError":
         return HTTPError(
-            create_error(400, "Bad Request", detail, "urn:tickets:error:bad-request", **kwargs)
+            create_error(
+                400, "Bad Request", detail, "urn:tickets:error:bad-request", **kwargs
+            )
         )
 
     @staticmethod
     def conflict(detail: str = "Conflict", **kwargs) -> "HTTPError":
         return HTTPError(
-            create_error(409, "Conflict", detail, "urn:tickets:error:conflict", **kwargs)
+            create_error(
+                409, "Conflict", detail, "urn:tickets:error:conflict", **kwargs
+            )
         )
 
     @staticmethod
     def validation_error(detail: str = "Validation error", **kwargs) -> "HTTPError":
         return HTTPError(
-            create_error(422, "Validation Error", detail, "urn:tickets:error:validation", **kwargs)
+            create_error(
+                422,
+                "Validation Error",
+                detail,
+                "urn:tickets:error:validation",
+                **kwargs,
+            )
         )
 
     @staticmethod
     def too_many_requests(
-        detail: str = "Rate limit exceeded", retry_after: Optional[int] = None
+        detail: str = "Rate limit exceeded", retry_after: int | None = None
     ) -> "HTTPError":
         return HTTPError(
             create_error(
@@ -77,5 +90,7 @@ class HTTPError(Exception):
     @staticmethod
     def internal_error(detail: str = "Internal server error") -> "HTTPError":
         return HTTPError(
-            create_error(500, "Internal Server Error", detail, "urn:tickets:error:internal")
+            create_error(
+                500, "Internal Server Error", detail, "urn:tickets:error:internal"
+            )
         )

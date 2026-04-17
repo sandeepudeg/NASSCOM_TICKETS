@@ -2,20 +2,24 @@
 Property-based tests for ticket assignment correctness properties (P12–P16).
 Feature: tickets-folder
 """
-import pytest
+
 from datetime import datetime
-from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
-from hypothesis import given, settings, assume
 import hypothesis.strategies as st
+import pytest
+from hypothesis import given, settings
 
-from src.services.ticket_assignment_service import TicketAssignmentService
-from src.repositories.folder_repository import FolderRepository
-from src.repositories.ticket_repository import TicketRepository, TicketAssignmentRepository
 from src.repositories.audit_repository import AuditLogRepository
-from src.schemas.ticket import BulkAssignRequest
+from src.repositories.folder_repository import FolderRepository
+from src.repositories.ticket_repository import (
+    TicketAssignmentRepository,
+    TicketRepository,
+)
 from src.schemas.errors import HTTPError
+from src.schemas.ticket import BulkAssignRequest
+from src.services.ticket_assignment_service import TicketAssignmentService
 
 
 def make_service():
@@ -71,14 +75,36 @@ class TestP12TicketAssignmentRoundTrip:
             assigned_calls.append((tid, fid))
 
         import asyncio
-        with patch.object(TicketRepository, "get_by_id", new_callable=AsyncMock, return_value=make_ticket(ticket_id)):
-            with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=make_folder(folder_id)):
-                with patch.object(TicketAssignmentRepository, "is_assigned", new_callable=AsyncMock, return_value=False):
-                    with patch.object(TicketAssignmentRepository, "assign", side_effect=mock_assign):
-                        with patch.object(AuditLogRepository, "create", new_callable=AsyncMock):
+
+        with patch.object(
+            TicketRepository,
+            "get_by_id",
+            new_callable=AsyncMock,
+            return_value=make_ticket(ticket_id),
+        ):
+            with patch.object(
+                FolderRepository,
+                "get_by_id",
+                new_callable=AsyncMock,
+                return_value=make_folder(folder_id),
+            ):
+                with patch.object(
+                    TicketAssignmentRepository,
+                    "is_assigned",
+                    new_callable=AsyncMock,
+                    return_value=False,
+                ):
+                    with patch.object(
+                        TicketAssignmentRepository, "assign", side_effect=mock_assign
+                    ):
+                        with patch.object(
+                            AuditLogRepository, "create", new_callable=AsyncMock
+                        ):
                             try:
                                 asyncio.get_event_loop().run_until_complete(
-                                    service.assign_ticket(ticket_id, folder_id, "user-1")
+                                    service.assign_ticket(
+                                        ticket_id, folder_id, "user-1"
+                                    )
                                 )
                             except Exception:
                                 pass  # Pydantic mock validation — assignment itself was called
@@ -96,9 +122,25 @@ class TestP13DuplicateAssignmentRejection:
         service = make_service()
 
         import asyncio
-        with patch.object(TicketRepository, "get_by_id", new_callable=AsyncMock, return_value=make_ticket(ticket_id)):
-            with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=make_folder(folder_id)):
-                with patch.object(TicketAssignmentRepository, "is_assigned", new_callable=AsyncMock, return_value=True):
+
+        with patch.object(
+            TicketRepository,
+            "get_by_id",
+            new_callable=AsyncMock,
+            return_value=make_ticket(ticket_id),
+        ):
+            with patch.object(
+                FolderRepository,
+                "get_by_id",
+                new_callable=AsyncMock,
+                return_value=make_folder(folder_id),
+            ):
+                with patch.object(
+                    TicketAssignmentRepository,
+                    "is_assigned",
+                    new_callable=AsyncMock,
+                    return_value=True,
+                ):
                     with pytest.raises(HTTPError) as exc_info:
                         asyncio.get_event_loop().run_until_complete(
                             service.assign_ticket(ticket_id, folder_id, "user-1")
@@ -130,9 +172,22 @@ class TestP14BulkAssignAtomicity:
             return make_ticket(tid)
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=make_folder(folder_id)):
-            with patch.object(TicketRepository, "get_by_id", side_effect=mock_get_ticket):
-                with patch.object(TicketAssignmentRepository, "is_assigned", new_callable=AsyncMock, return_value=False):
+
+        with patch.object(
+            FolderRepository,
+            "get_by_id",
+            new_callable=AsyncMock,
+            return_value=make_folder(folder_id),
+        ):
+            with patch.object(
+                TicketRepository, "get_by_id", side_effect=mock_get_ticket
+            ):
+                with patch.object(
+                    TicketAssignmentRepository,
+                    "is_assigned",
+                    new_callable=AsyncMock,
+                    return_value=False,
+                ):
                     result = asyncio.get_event_loop().run_until_complete(
                         service.bulk_assign(folder_id, request, "user-1")
                     )
@@ -151,11 +206,31 @@ class TestP14BulkAssignAtomicity:
         request = BulkAssignRequest(ticket_ids=ticket_ids)
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=make_folder(folder_id)):
-            with patch.object(TicketRepository, "get_by_id", new_callable=AsyncMock, return_value=make_ticket()):
-                with patch.object(TicketAssignmentRepository, "is_assigned", new_callable=AsyncMock, return_value=False):
-                    with patch.object(TicketAssignmentRepository, "assign", new_callable=AsyncMock):
-                        with patch.object(AuditLogRepository, "create", new_callable=AsyncMock):
+
+        with patch.object(
+            FolderRepository,
+            "get_by_id",
+            new_callable=AsyncMock,
+            return_value=make_folder(folder_id),
+        ):
+            with patch.object(
+                TicketRepository,
+                "get_by_id",
+                new_callable=AsyncMock,
+                return_value=make_ticket(),
+            ):
+                with patch.object(
+                    TicketAssignmentRepository,
+                    "is_assigned",
+                    new_callable=AsyncMock,
+                    return_value=False,
+                ):
+                    with patch.object(
+                        TicketAssignmentRepository, "assign", new_callable=AsyncMock
+                    ):
+                        with patch.object(
+                            AuditLogRepository, "create", new_callable=AsyncMock
+                        ):
                             result = asyncio.get_event_loop().run_until_complete(
                                 service.bulk_assign(folder_id, request, "user-1")
                             )
@@ -180,10 +255,25 @@ class TestP15RemoveAssociationRoundTrip:
             return True
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=make_folder(folder_id)):
-            with patch.object(TicketAssignmentRepository, "is_assigned", new_callable=AsyncMock, return_value=True):
-                with patch.object(TicketAssignmentRepository, "unassign", side_effect=mock_unassign):
-                    with patch.object(AuditLogRepository, "create", new_callable=AsyncMock):
+
+        with patch.object(
+            FolderRepository,
+            "get_by_id",
+            new_callable=AsyncMock,
+            return_value=make_folder(folder_id),
+        ):
+            with patch.object(
+                TicketAssignmentRepository,
+                "is_assigned",
+                new_callable=AsyncMock,
+                return_value=True,
+            ):
+                with patch.object(
+                    TicketAssignmentRepository, "unassign", side_effect=mock_unassign
+                ):
+                    with patch.object(
+                        AuditLogRepository, "create", new_callable=AsyncMock
+                    ):
                         asyncio.get_event_loop().run_until_complete(
                             service.unassign_ticket(ticket_id, folder_id, "user-1")
                         )
@@ -198,8 +288,19 @@ class TestP15RemoveAssociationRoundTrip:
         service = make_service()
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=make_folder(folder_id)):
-            with patch.object(TicketAssignmentRepository, "is_assigned", new_callable=AsyncMock, return_value=False):
+
+        with patch.object(
+            FolderRepository,
+            "get_by_id",
+            new_callable=AsyncMock,
+            return_value=make_folder(folder_id),
+        ):
+            with patch.object(
+                TicketAssignmentRepository,
+                "is_assigned",
+                new_callable=AsyncMock,
+                return_value=False,
+            ):
                 with pytest.raises(HTTPError):
                     asyncio.get_event_loop().run_until_complete(
                         service.unassign_ticket(ticket_id, folder_id, "user-1")
@@ -215,6 +316,7 @@ class TestP16TicketDeletionCascadesAssociations:
         """P16: Deleting a ticket must remove all its folder associations."""
         # Feature: tickets-folder, Property 16: Ticket Deletion Cascades Associations
         from services.ticket_service import TicketService
+
         session = AsyncMock()
         session.flush = AsyncMock()
         session.commit = AsyncMock()
@@ -228,10 +330,22 @@ class TestP16TicketDeletionCascadesAssociations:
             delete_calls.append(tid)
 
         import asyncio
-        with patch.object(TicketRepository, "get_by_id", new_callable=AsyncMock, return_value=make_ticket(ticket_id)):
-            with patch.object(TicketAssignmentRepository, "delete_by_ticket", side_effect=mock_delete_by_ticket):
+
+        with patch.object(
+            TicketRepository,
+            "get_by_id",
+            new_callable=AsyncMock,
+            return_value=make_ticket(ticket_id),
+        ):
+            with patch.object(
+                TicketAssignmentRepository,
+                "delete_by_ticket",
+                side_effect=mock_delete_by_ticket,
+            ):
                 with patch.object(TicketRepository, "delete", new_callable=AsyncMock):
-                    with patch.object(AuditLogRepository, "create", new_callable=AsyncMock):
+                    with patch.object(
+                        AuditLogRepository, "create", new_callable=AsyncMock
+                    ):
                         asyncio.get_event_loop().run_until_complete(
                             service.delete_ticket(ticket_id, "user-1")
                         )

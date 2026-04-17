@@ -4,10 +4,10 @@ Export tickets (with optional embeddings) to CSV with PII scrubbing.
 Usage:
   PYTHONPATH=. python scripts/export_tickets.py --output data/exported_tickets.csv --include-embeddings
 """
+
 import argparse
 import asyncio
 import csv
-import json
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -72,7 +72,9 @@ async def main(output: Path, include_embeddings: bool):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=Path("data/exported_tickets.csv"))
+    parser.add_argument(
+        "--output", type=Path, default=Path("data/exported_tickets.csv")
+    )
     parser.add_argument("--include-embeddings", action="store_true")
     args = parser.parse_args()
     asyncio.run(main(args.output, args.include_embeddings))

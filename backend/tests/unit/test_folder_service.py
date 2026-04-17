@@ -1,13 +1,12 @@
-import pytest
-import asyncio
-from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
-from src.services.folder_service import FolderService
-from src.repositories.folder_repository import FolderRepository
+import pytest
+
 from src.repositories.audit_repository import AuditLogRepository
+from src.repositories.folder_repository import FolderRepository
 from src.schemas.folder import FolderCreate, FolderUpdate
-from src.schemas.errors import HTTPError
+from src.services.folder_service import FolderService
 
 
 class TestFolderService:
@@ -46,8 +45,8 @@ class TestFolderService:
                     mock_folder.owner_id = owner_id
                     mock_folder.version = 1
                     mock_folder.deleted_at = None
-                    mock_folder.created_at = __import__('datetime').datetime.utcnow()
-                    mock_folder.updated_at = __import__('datetime').datetime.utcnow()
+                    mock_folder.created_at = __import__("datetime").datetime.utcnow()
+                    mock_folder.updated_at = __import__("datetime").datetime.utcnow()
                     mock_create.return_value = mock_folder
 
                     with patch.object(
@@ -63,7 +62,9 @@ class TestFolderService:
     @pytest.mark.asyncio
     async def test_create_folder_empty_name(self, folder_service):
         # Pydantic rejects empty string at schema level — test the service with whitespace-only name
-        folder_data = FolderCreate(name="   ")  # whitespace-only, passes Pydantic min_length=1
+        folder_data = FolderCreate(
+            name="   "
+        )  # whitespace-only, passes Pydantic min_length=1
         owner_id = str(uuid4())
 
         with pytest.raises(Exception) as exc_info:
@@ -154,8 +155,8 @@ class TestFolderService:
                     mock_updated.owner_id = owner_id
                     mock_updated.version = 2
                     mock_updated.deleted_at = None
-                    mock_updated.created_at = __import__('datetime').datetime.utcnow()
-                    mock_updated.updated_at = __import__('datetime').datetime.utcnow()
+                    mock_updated.created_at = __import__("datetime").datetime.utcnow()
+                    mock_updated.updated_at = __import__("datetime").datetime.utcnow()
                     mock_update.return_value = mock_updated
 
                     with patch.object(

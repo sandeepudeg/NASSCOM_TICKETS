@@ -1,27 +1,25 @@
 import json
 import logging
 
-import structlog
 import pytest
+import structlog
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry import trace
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from config.observability import (
     CLASSIFICATION_LATENCY,
     REQUEST_COUNT,
     REQUEST_LATENCY,
-    setup_logging,
-    setup_metrics,
-    setup_tracing,
+    WEBHOOK_ATTEMPTS,
+    WEBHOOK_LATENCY,
     StructuredLoggingMiddleware,
     record_classification_latency,
     record_webhook_attempt,
-    WEBHOOK_ATTEMPTS,
-    WEBHOOK_LATENCY,
+    setup_logging,
+    setup_metrics,
+    setup_tracing,
 )
 
 
@@ -105,7 +103,6 @@ def test_classification_latency_records_histogram():
 
 
 def test_webhook_metrics_increment():
-    before_attempts = WEBHOOK_ATTEMPTS.collect()[0].samples
     record_webhook_attempt(0.12, True)
     record_webhook_attempt(0.2, False)
 
@@ -116,8 +113,16 @@ def test_webhook_metrics_increment():
     assert failure.value >= 1
 
     latency_samples = WEBHOOK_LATENCY.collect()[0].samples
-    success_lat = [s for s in latency_samples if s.name.endswith("_sum") and s.labels.get("outcome") == "success"][0]
-    failure_lat = [s for s in latency_samples if s.name.endswith("_sum") and s.labels.get("outcome") == "failure"][0]
+    success_lat = [
+        s
+        for s in latency_samples
+        if s.name.endswith("_sum") and s.labels.get("outcome") == "success"
+    ][0]
+    failure_lat = [
+        s
+        for s in latency_samples
+        if s.name.endswith("_sum") and s.labels.get("outcome") == "failure"
+    ][0]
     assert success_lat.value > 0
     assert failure_lat.value > 0
 
@@ -136,7 +141,9 @@ async def test_structured_logs_include_trace_ids(caplog):
 
     tracer = trace.get_tracer("test")
     with tracer.start_as_current_span("test-span") as span:
-        request = Request({"type": "http", "method": "GET", "path": "/trace", "headers": []})
+        request = Request(
+            {"type": "http", "method": "GET", "path": "/trace", "headers": []}
+        )
         with caplog.at_level(logging.INFO):
             await middleware.dispatch(request, call_next)
 

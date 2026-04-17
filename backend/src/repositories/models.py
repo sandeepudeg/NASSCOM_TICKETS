@@ -1,19 +1,21 @@
+import uuid
 from datetime import datetime
-from uuid import uuid4
+
 from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Integer,
     Boolean,
-    Text,
+    Column,
+    DateTime,
     Float,
-    Enum as SQLEnum,
     ForeignKey,
     Index,
+    Integer,
+    String,
+    Text,
 )
-from sqlalchemy.orm import relationship, declarative_base
-import uuid
+from sqlalchemy import (
+    Enum as SQLEnum,
+)
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 

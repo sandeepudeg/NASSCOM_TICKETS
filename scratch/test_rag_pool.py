@@ -18,15 +18,25 @@ async def test():
 
         # Show a sample resolution from Kaggle (has non-empty, non-bracket-prefixed text)
         kaggle_sample = next(
-            (t for t in tickets if t.get("resolution_summary") and not t["resolution_summary"].startswith("[")),
+            (
+                t
+                for t in tickets
+                if t.get("resolution_summary")
+                and not t["resolution_summary"].startswith("[")
+            ),
             None,
         )
         if kaggle_sample:
-            print("Sample Kaggle resolution:", kaggle_sample["resolution_summary"][:250])
+            print(
+                "Sample Kaggle resolution:", kaggle_sample["resolution_summary"][:250]
+            )
         else:
             print("No Kaggle resolution found in sample; showing first entry:")
             print("  title:", tickets[0]["title"] if tickets else "N/A")
-            print("  resolution:", tickets[0]["resolution_summary"][:200] if tickets else "N/A")
+            print(
+                "  resolution:",
+                tickets[0]["resolution_summary"][:200] if tickets else "N/A",
+            )
 
 
 asyncio.run(test())

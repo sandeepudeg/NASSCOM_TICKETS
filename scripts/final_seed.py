@@ -1,4 +1,3 @@
-
 import asyncio
 import os
 import sys
@@ -12,9 +11,11 @@ sys.path.append(os.getcwd())
 
 from src.repositories.database import async_session_maker
 from src.repositories.models import Ticket
-from src.schemas.ticket import Category, RoutingStatus, TicketStatus
+from src.schemas.ticket import RoutingStatus, TicketStatus
 
-KAGGLE_PATH = r"d:\Learning\Self_learning\Nasscom\Tickets\data\kaggle\multilingual_tickets.csv"
+KAGGLE_PATH = (
+    r"d:\Learning\Self_learning\Nasscom\Tickets\data\kaggle\multilingual_tickets.csv"
+)
 
 # Category Mapping
 TAG_MAPPING = {
@@ -34,6 +35,7 @@ TAG_MAPPING = {
     "Database Management": "Database",
 }
 
+
 async def final_seed():
     if not os.path.exists(KAGGLE_PATH):
         print(f"Error: Kaggle dataset not found at {KAGGLE_PATH}")
@@ -41,28 +43,28 @@ async def final_seed():
 
     print("Loading Kaggle dataset...")
     df = pd.read_csv(KAGGLE_PATH)
-    
+
     # Filter for English and resolved tickets (those with answers)
-    df_en = df[df['language'] == 'en'].dropna(subset=['answer', 'tag_1'])
-    
+    df_en = df[df["language"] == "en"].dropna(subset=["answer", "tag_1"])
+
     # Take a diverse sample
-    sampled_df = df_en.groupby('tag_1').head(15).head(300)
-    
+    sampled_df = df_en.groupby("tag_1").head(15).head(300)
+
     print(f"Importing {len(sampled_df)} tickets...")
-    
+
     async with async_session_maker() as session:
         count = 0
         for _, row in sampled_df.iterrows():
             try:
-                tag = row['tag_1']
+                tag = row["tag_1"]
                 category_str = TAG_MAPPING.get(tag, "Application")
-                
-                title = str(row['subject'])[:500]
-                description = str(row['body'])
-                resolution = str(row['answer'])
-                
+
+                title = str(row["subject"])[:500]
+                description = str(row["body"])
+                resolution = str(row["answer"])
+
                 ticket_number = f"KAG-{int(datetime.utcnow().timestamp())}-{count:04d}"
-                
+
                 ticket = Ticket(
                     id=str(uuid4()),
                     ticket_number=ticket_number,
@@ -78,20 +80,21 @@ async def final_seed():
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                     resolved_at=datetime.utcnow(),
-                    structured_payload=json.dumps({"resolution": resolution})
+                    structured_payload=json.dumps({"resolution": resolution}),
                 )
-                
+
                 session.add(ticket)
                 await session.commit()
                 count += 1
                 if count % 20 == 0:
                     print(f"  Added {count} tickets...")
-            except Exception as e:
+            except Exception:
                 await session.rollback()
                 # Skip error and continue
                 continue
-    
+
     print(f"\nFinal Seed Finished. Successfully added {count} tickets.")
+
 
 if __name__ == "__main__":
     asyncio.run(final_seed())

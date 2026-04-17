@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,7 +42,7 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:latest"
-    groq_api_key: Optional[str] = None
+    groq_api_key: str | None = None
 
     mlflow_tracking_uri: str = "http://localhost:5000"
     mlflow_enabled: bool = True
@@ -60,7 +59,7 @@ class Settings(BaseSettings):
     escalation_webhook_url: str = "http://localhost:9000/webhook/escalation"
     webhook_retry_max: int = 3
     webhook_retry_initial_delay_seconds: int = 10
-    
+
     observability_webhook_url: str = "http://localhost:9000/webhook/observability"
 
     rate_limit_standard: int = 300

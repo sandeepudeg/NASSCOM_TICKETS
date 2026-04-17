@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+
 from opentelemetry import trace
 
 
@@ -13,7 +13,7 @@ class PIIScrubber:
     @classmethod
     def scrub(cls, text: str) -> tuple[str, dict]:
         tracer = trace.get_tracer("ml.pii_scrubber")
-        
+
         with tracer.start_as_current_span("pii.scrub") as span:
             if not text:
                 return text, {"redaction_summary": {}, "total_detected": 0}
@@ -77,23 +77,30 @@ class PIIScrubber:
             )
             matches = re.findall(address_pattern, scrubbed, re.IGNORECASE)
             redaction_summary["address"] = len(matches)
-            scrubbed = re.sub(address_pattern, "[ADDRESS]", scrubbed, flags=re.IGNORECASE)
+            scrubbed = re.sub(
+                address_pattern, "[ADDRESS]", scrubbed, flags=re.IGNORECASE
+            )
 
             total_detected = sum(redaction_summary.values())
-            
+
             # Record metrics
             from config.observability import record_pii_redaction
+
             for entity_type, count in redaction_summary.items():
                 if count > 0:
                     record_pii_redaction(entity_type, count)
-            
+
             span.set_attribute("pii.total_detected", total_detected)
             for entity_type, count in redaction_summary.items():
                 span.set_attribute(f"pii.{entity_type}", count)
-            
-            return scrubbed, {"redaction_summary": redaction_summary, "total_detected": total_detected}
+
+            return scrubbed, {
+                "redaction_summary": redaction_summary,
+                "total_detected": total_detected,
+            }
 
 
 class PIIScrubberPresidio:
     """Alias kept for compatibility — uses the same regex implementation."""
+
     scrub = PIIScrubber.scrub

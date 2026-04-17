@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import select, and_, or_, func, delete
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.repositories.models import Ticket, TicketFolderAssignment, SimilarTicket, TicketEmbedding
+from src.repositories.models import Ticket, TicketEmbedding, TicketFolderAssignment
 
 
 class TicketRepository:
@@ -18,9 +17,9 @@ class TicketRepository:
         title: str,
         description: str,
         owner_id: str,
-        priority: Optional[str] = None,
+        priority: str | None = None,
         source_channel: str = "web",
-        structured_payload: Optional[str] = None,
+        structured_payload: str | None = None,
     ) -> Ticket:
         ticket = Ticket(
             id=str(uuid4()),
@@ -37,7 +36,7 @@ class TicketRepository:
         await self.session.flush()
         return ticket
 
-    async def get_by_id(self, ticket_id: str) -> Optional[Ticket]:
+    async def get_by_id(self, ticket_id: str) -> Ticket | None:
         query = (
             select(Ticket)
             .options(selectinload(Ticket.similar_tickets))
@@ -48,16 +47,16 @@ class TicketRepository:
 
     async def list_tickets(
         self,
-        owner_id: Optional[str] = None,
-        status: Optional[str] = None,
-        category: Optional[str] = None,
-        routing_status: Optional[str] = None,
+        owner_id: str | None = None,
+        status: str | None = None,
+        category: str | None = None,
+        routing_status: str | None = None,
         page_size: int = 50,
-        cursor: Optional[str] = None,
+        cursor: str | None = None,
         sort_by: str = "created_at",
         sort_dir: str = "desc",
-        is_automation_candidate: Optional[bool] = None,
-    ) -> tuple[list[Ticket], Optional[str]]:
+        is_automation_candidate: bool | None = None,
+    ) -> tuple[list[Ticket], str | None]:
         # Eager load similar_tickets for dashboard intelligence reconstruction
         query = select(Ticket).options(selectinload(Ticket.similar_tickets))
 
@@ -70,7 +69,9 @@ class TicketRepository:
         if routing_status:
             query = query.where(Ticket.routing_status == routing_status)
         if is_automation_candidate is not None:
-            query = query.where(Ticket.is_automation_candidate == is_automation_candidate)
+            query = query.where(
+                Ticket.is_automation_candidate == is_automation_candidate
+            )
 
         if sort_by == "status":
             order_col = Ticket.status
@@ -121,26 +122,23 @@ class TicketRepository:
         await self.session.flush()
 
     async def count_by_status(
-         self, owner_id: Optional[str] = None, status: Optional[str] = None
-     ) -> dict[str, int]:
-         query = select(Ticket.status, func.count(Ticket.id))
-         if owner_id:
-             query = query.where(Ticket.owner_id == owner_id)
-         if status:
-             query = query.where(Ticket.status == status)
-         query = query.group_by(Ticket.status)
-         result = await self.session.execute(query)
-         return {row[0]: row[1] for row in result.all()}
- 
+        self, owner_id: str | None = None, status: str | None = None
+    ) -> dict[str, int]:
+        query = select(Ticket.status, func.count(Ticket.id))
+        if owner_id:
+            query = query.where(Ticket.owner_id == owner_id)
+        if status:
+            query = query.where(Ticket.status == status)
+        query = query.group_by(Ticket.status)
+        result = await self.session.execute(query)
+        return {row[0]: row[1] for row in result.all()}
+
     async def count_all(self) -> int:
         query = select(func.count(Ticket.id))
         result = await self.session.execute(query)
         return result.scalar() or 0
 
-
-    async def get_resolved_tickets_for_rag(
-        self, limit: int = 300
-    ) -> list[dict]:
+    async def get_resolved_tickets_for_rag(self, limit: int = 300) -> list[dict]:
         """Fetch resolved tickets for RAG similarity search.
 
         Joins ticket_embeddings so pre-computed vectors are reused (fast path).
@@ -185,7 +183,11 @@ class TicketRepository:
                 "resolution_summary": resolution_summary,
                 # text used for on-the-fly embedding fallback
                 "text": f"{ticket.title}. {ticket.description}",
-                "knowledge_source": "Kaggle Dataset" if ticket.owner_id == "kaggle_importer" else "Internal History",
+                "knowledge_source": (
+                    "Kaggle Dataset"
+                    if ticket.owner_id == "kaggle_importer"
+                    else "Internal History"
+                ),
             }
             # If we have a pre-stored embedding, include it to skip re-computation
             if stored_embedding:
@@ -240,10 +242,10 @@ class TicketAssignmentRepository:
         self,
         folder_id: str,
         page_size: int = 50,
-        cursor: Optional[str] = None,
+        cursor: str | None = None,
         sort_by: str = "assigned_at",
         sort_dir: str = "desc",
-    ) -> tuple[list[Ticket], Optional[str]]:
+    ) -> tuple[list[Ticket], str | None]:
         query = (
             select(Ticket)
             .join(TicketFolderAssignment, Ticket.id == TicketFolderAssignment.ticket_id)

@@ -1,19 +1,23 @@
 import asyncio
 import json
 from pathlib import Path
-from typing import Optional
+
 import yaml
-import ollama
 from ollama import AsyncClient
 from openai import AsyncOpenAI
 from opentelemetry import trace
 
-from src.schemas.ticket import Category, ClassificationResult, RoutingStatus, CausalContext
-from src.schemas.settings import settings
-from src.ml.structured_input_parser import StructuredInputParser
-from src.ml.pii_scrubber import PIIScrubber
-from src.ml.evaluation_service import evaluation_service
 from config.observability import record_classifier_prediction
+from src.ml.evaluation_service import evaluation_service
+from src.ml.pii_scrubber import PIIScrubber
+from src.ml.structured_input_parser import StructuredInputParser
+from src.schemas.settings import settings
+from src.schemas.ticket import (
+    Category,
+    CausalContext,
+    ClassificationResult,
+    RoutingStatus,
+)
 
 
 def load_category_config(config_path: str = "config/classifier_config.yaml") -> dict:
@@ -24,10 +28,10 @@ def load_category_config(config_path: str = "config/classifier_config.yaml") -> 
             f"Classifier config not found at {config_path}. "
             "Please create config/classifier_config.yaml with category definitions."
         )
-    
-    with open(config_file, "r", encoding="utf-8") as f:
+
+    with open(config_file, encoding="utf-8") as f:
         config = yaml.safe_load(f)
-    
+
     return config
 
 
@@ -47,8 +51,8 @@ CATEGORY_DEFINITIONS = build_category_definitions(_classifier_config)
 
 
 class TicketClassifier:
-    _client: Optional[AsyncClient] = None
-    _groq_client: Optional[AsyncOpenAI] = None
+    _client: AsyncClient | None = None
+    _groq_client: AsyncOpenAI | None = None
 
     def __init__(self):
         self.timeout = settings.classification_timeout_seconds
@@ -59,15 +63,16 @@ class TicketClassifier:
     @property
     def client(self) -> AsyncClient:
         if self._client is None:
-            self._client = AsyncClient(host=settings.ollama_base_url, timeout=self.timeout)
+            self._client = AsyncClient(
+                host=settings.ollama_base_url, timeout=self.timeout
+            )
         return self._client
 
     @property
     def groq_client(self) -> AsyncOpenAI:
         if self._groq_client is None:
             self._groq_client = AsyncOpenAI(
-                api_key=settings.groq_api_key,
-                base_url="https://api.groq.com/openai/v1"
+                api_key=settings.groq_api_key, base_url="https://api.groq.com/openai/v1"
             )
         return self._groq_client
 
@@ -75,9 +80,13 @@ class TicketClassifier:
         """Get response from the configured LLM provider (Groq or Ollama)."""
         if settings.groq_api_key:
             response = await self.groq_client.chat.completions.create(
-                model=settings.ollama_model, # We use the same setting for model name
+                model=settings.ollama_model,  # We use the same setting for model name
                 messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"} if "llama-3" in settings.ollama_model.lower() else None
+                response_format=(
+                    {"type": "json_object"}
+                    if "llama-3" in settings.ollama_model.lower()
+                    else None
+                ),
             )
             return response.choices[0].message.content
         else:
@@ -94,25 +103,25 @@ class TicketClassifier:
         self,
         title: str,
         description: str,
-        structured_payload: Optional[dict] = None,
+        structured_payload: dict | None = None,
         enable_judge: bool = False,
     ) -> ClassificationResult:
         tracer = trace.get_tracer("ml.classifier")
-        
+
         causal_context = None
         causal_signal = None
         parse_warning = None
         inference_outcome = "success"
 
-        with tracer.start_as_current_span("pii.scrub") as span:
+        with tracer.start_as_current_span("pii.scrub"):
             if structured_payload:
                 payload_str = json.dumps(structured_payload)
 
                 if not self.disable_pii_scrubbing:
                     payload_str, _ = PIIScrubber.scrub(payload_str)
 
-                context, fmt, parse_warning, causal_signal = StructuredInputParser.parse(
-                    payload_str
+                context, fmt, parse_warning, causal_signal = (
+                    StructuredInputParser.parse(payload_str)
                 )
                 causal_context = CausalContext(
                     error_codes=context.get("error_codes", []),
@@ -126,9 +135,9 @@ class TicketClassifier:
             if not self.disable_pii_scrubbing:
                 full_text, _ = PIIScrubber.scrub(full_text)
 
-        with tracer.start_as_current_span("embed.generate") as span:
+        with tracer.start_as_current_span("embed.generate"):
             # Embedding generation happens in the prompt construction
-            prompt = f"""You are a ticket classification assistant. 
+            prompt = f"""You are a ticket classification assistant.
 Classify the following support ticket into exactly one of the seven categories.
 
 {CATEGORY_DEFINITIONS}
@@ -145,13 +154,14 @@ Example: {{"category": "Application", "confidence": 0.85}}
 """
 
         try:
-            with tracer.start_as_current_span("llm.infer") as span:
+            with tracer.start_as_current_span("llm.infer"):
                 content = await asyncio.wait_for(
                     self._get_llm_response(prompt),
                     timeout=self.timeout,
                 )
-                
+
                 import structlog
+
                 logger = structlog.get_logger("ml.classifier")
                 logger.info("llm.raw_response", content=content)
 
@@ -170,12 +180,12 @@ Example: {{"category": "Application", "confidence": 0.85}}
                     title=title,
                     description=description,
                     category=category,
-                    resolution_steps=[], # Will be filled if RAG runs, or just empty for now
+                    resolution_steps=[],  # Will be filled if RAG runs, or just empty for now
                     confidence_score=confidence,
-                    enable_judge=enable_judge
+                    enable_judge=enable_judge,
                 )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             category = Category.APPLICATION
             confidence = 0.0
             routing_status = RoutingStatus.PENDING_CLASSIFICATION
@@ -192,6 +202,7 @@ Example: {{"category": "Application", "confidence": 0.85}}
             )
         except Exception as e:
             import structlog
+
             logger = structlog.get_logger("ml.classifier")
             logger.exception("classifier.error", error=str(e))
             category = Category.APPLICATION

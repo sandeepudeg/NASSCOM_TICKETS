@@ -1,23 +1,21 @@
 import json
-import asyncio
-from typing import Optional
 from time import perf_counter
+
 import numpy as np
-import ollama
 from ollama import AsyncClient
 from openai import AsyncOpenAI
 from opentelemetry import trace
 from opentelemetry.trace import Link
 
-from src.schemas.ticket import Category, SimilarTicket, ResolutionSuggestion
-from src.schemas.settings import settings
-from src.ml.embedding_service import embedding_service
 from config.observability import record_rag_retrieval_duration
+from src.ml.embedding_service import embedding_service
+from src.schemas.settings import settings
+from src.schemas.ticket import Category, ResolutionSuggestion, SimilarTicket
 
 
 class RAGService:
-    _client: Optional[AsyncClient] = None
-    _groq_client: Optional[AsyncOpenAI] = None
+    _client: AsyncClient | None = None
+    _groq_client: AsyncOpenAI | None = None
     similarity_threshold = settings.similarity_threshold
     top_k = settings.top_k_similar_tickets
 
@@ -34,8 +32,7 @@ class RAGService:
     def groq_client(self) -> AsyncOpenAI:
         if self._groq_client is None:
             self._groq_client = AsyncOpenAI(
-                api_key=settings.groq_api_key,
-                base_url="https://api.groq.com/openai/v1"
+                api_key=settings.groq_api_key, base_url="https://api.groq.com/openai/v1"
             )
         return self._groq_client
 
@@ -43,9 +40,13 @@ class RAGService:
         """Get response from the configured LLM provider (Groq or Ollama)."""
         if settings.groq_api_key:
             response = await self.groq_client.chat.completions.create(
-                model=self.ollama_model, 
+                model=self.ollama_model,
                 messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"} if "llama-3" in self.ollama_model.lower() else None
+                response_format=(
+                    {"type": "json_object"}
+                    if "llama-3" in self.ollama_model.lower()
+                    else None
+                ),
             )
             return response.choices[0].message.content
         else:
@@ -82,7 +83,7 @@ class RAGService:
             if tickets_needing_embed:
                 texts = [t["text"] for t in tickets_needing_embed]
                 embeddings = embedding_service.get_embeddings(texts)
-                for t, emb in zip(tickets_needing_embed, embeddings):
+                for t, emb in zip(tickets_needing_embed, embeddings, strict=False):
                     t["embedding"] = json.dumps(emb.tolist())
 
             similarities = []
@@ -120,10 +121,10 @@ class RAGService:
             ]
 
             low_retrieval_confidence = len(top_results) < 2
-            
+
             duration = perf_counter() - start
             record_rag_retrieval_duration(duration)
-            
+
             span.set_attribute("rag.candidates_count", len(resolved_tickets))
             span.set_attribute("rag.matches_count", len(top_results))
             span.set_attribute("rag.low_confidence", low_retrieval_confidence)
@@ -135,7 +136,7 @@ class RAGService:
         title: str,
         description: str,
         similar_tickets: list[SimilarTicket],
-    ) -> Optional[ResolutionSuggestion]:
+    ) -> ResolutionSuggestion | None:
         tracer = trace.get_tracer("ml.rag_service")
 
         current_ctx = trace.get_current_span().get_span_context()
@@ -167,7 +168,7 @@ Similar resolved tickets:
 
 Return ONLY a JSON object with:
 - "root_cause": a string explaining the underlying cause
-- "steps": a JSON array of strings, each string being a step. 
+- "steps": a JSON array of strings, each string being a step.
 
 ALWAYS cite the source at the end of every step like '(Source: [Knowledge Source Name] - [Ticket ID])'.
 
@@ -179,37 +180,35 @@ Example: {{
 
             try:
                 content = await self._get_llm_response(prompt)
-                
+
                 if not content:
                     # Final fallback for unexpected structures
-                    try:
-                        content = str(response)
-                    except:
-                        content = ""
+                    content = ""
 
                 try:
                     result = json.loads(content)
                     steps = result.get("steps", [])
-                    root_cause = result.get("root_cause", "Likely a recurring symptoms-based failure.")
+                    root_cause = result.get(
+                        "root_cause", "Likely a recurring symptoms-based failure."
+                    )
                     if not isinstance(steps, list):
                         steps = [content]
-                except:
+                except Exception:
                     steps = [content]
                     root_cause = "Automatic analysis in progress."
 
                 source_ids = [st.id for st in similar_tickets]
-                
+
                 span.set_attribute("rag.steps_generated", len(steps[:5]))
                 span.set_attribute("rag.source_tickets", len(source_ids))
 
                 return ResolutionSuggestion(
-                    steps=steps[:5],
-                    source_ticket_ids=source_ids,
-                    root_cause=root_cause
+                    steps=steps[:5], source_ticket_ids=source_ids, root_cause=root_cause
                 )
 
             except Exception as e:
                 import structlog
+
                 logger = structlog.get_logger()
                 logger.error("rag.generation_failed", error=str(e), exc_info=True)
                 return None

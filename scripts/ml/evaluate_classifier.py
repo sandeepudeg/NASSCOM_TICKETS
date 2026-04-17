@@ -14,18 +14,23 @@ Outputs a structured JSON report and logs the run to MLflow.
 
 Requirements: 14.1–14.6, 15.1, 15.2
 """
+
 import argparse
 import asyncio
 import json
 import os
 import sys
 from datetime import datetime
-from pathlib import Path
 from typing import Optional
 
 VALID_CATEGORIES = [
-    "Infrastructure", "Application", "Security", "Database",
-    "Storage", "Network", "Access Management"
+    "Infrastructure",
+    "Application",
+    "Security",
+    "Database",
+    "Storage",
+    "Network",
+    "Access Management",
 ]
 
 MACRO_F1_THRESHOLD = 0.80
@@ -39,6 +44,7 @@ MIN_SAMPLES_PER_CATEGORY = 100
 # ---------------------------------------------------------------------------
 # Metric computation
 # ---------------------------------------------------------------------------
+
 
 def compute_f1_scores(y_true: list, y_pred: list) -> dict:
     """Compute per-category and macro-averaged F1 scores."""
@@ -59,7 +65,11 @@ def compute_f1_scores(y_true: list, y_pred: list) -> dict:
     for cat in VALID_CATEGORIES:
         precision = tp[cat] / (tp[cat] + fp[cat]) if (tp[cat] + fp[cat]) > 0 else 0.0
         recall = tp[cat] / (tp[cat] + fn[cat]) if (tp[cat] + fn[cat]) > 0 else 0.0
-        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+        f1 = (
+            (2 * precision * recall / (precision + recall))
+            if (precision + recall) > 0
+            else 0.0
+        )
         per_category_f1[cat] = round(f1, 4)
 
     macro_f1 = round(sum(per_category_f1.values()) / len(VALID_CATEGORIES), 4)
@@ -69,6 +79,7 @@ def compute_f1_scores(y_true: list, y_pred: list) -> dict:
 def compute_recall_per_category(y_true: list, y_pred: list) -> dict:
     """Compute per-category recall."""
     from collections import defaultdict
+
     tp = defaultdict(int)
     fn = defaultdict(int)
     for true, pred in zip(y_true, y_pred):
@@ -86,6 +97,7 @@ def compute_recall_per_category(y_true: list, y_pred: list) -> dict:
 def compute_class_imbalance(y_true: list) -> dict:
     """Count samples per category and flag categories below minimum."""
     from collections import Counter
+
     counts = Counter(y_true)
     report = {}
     warnings = []
@@ -93,7 +105,9 @@ def compute_class_imbalance(y_true: list) -> dict:
         count = counts.get(cat, 0)
         report[cat] = count
         if count < MIN_SAMPLES_PER_CATEGORY:
-            warnings.append(f"{cat}: only {count} samples (minimum {MIN_SAMPLES_PER_CATEGORY})")
+            warnings.append(
+                f"{cat}: only {count} samples (minimum {MIN_SAMPLES_PER_CATEGORY})"
+            )
     return {"counts": report, "warnings": warnings}
 
 
@@ -134,7 +148,7 @@ async def run_llm_as_judge(
         from ml.classifier import TicketClassifier
         from schemas.settings import settings
 
-        judge = TicketClassifier()
+        TicketClassifier()
         routing_scores = []
         resolution_scores = []
 
@@ -154,9 +168,12 @@ Return ONLY a JSON object with:
 """
             try:
                 from ollama import AsyncClient
+
                 client = AsyncClient(
-                    host=settings.ollama_base_url.replace("http://", "").replace("https://", ""),
-                    timeout=10
+                    host=settings.ollama_base_url.replace("http://", "").replace(
+                        "https://", ""
+                    ),
+                    timeout=10,
                 )
                 response = await asyncio.wait_for(
                     client.chat(
@@ -167,16 +184,31 @@ Return ONLY a JSON object with:
                     timeout=10,
                 )
                 result = json.loads(response.message.content)
-                routing_scores.append(max(1, min(5, int(result.get("routing_score", 3)))))
-                resolution_scores.append(max(1, min(5, int(result.get("resolution_score", 3)))))
+                routing_scores.append(
+                    max(1, min(5, int(result.get("routing_score", 3))))
+                )
+                resolution_scores.append(
+                    max(1, min(5, int(result.get("resolution_score", 3))))
+                )
             except Exception:
                 # If judge unavailable, use neutral score
                 routing_scores.append(3)
                 resolution_scores.append(3)
 
-        mean_routing = round(sum(routing_scores) / len(routing_scores), 2) if routing_scores else 0.0
-        mean_resolution = round(sum(resolution_scores) / len(resolution_scores), 2) if resolution_scores else 0.0
-        return {"mean_routing_score": mean_routing, "mean_resolution_score": mean_resolution}
+        mean_routing = (
+            round(sum(routing_scores) / len(routing_scores), 2)
+            if routing_scores
+            else 0.0
+        )
+        mean_resolution = (
+            round(sum(resolution_scores) / len(resolution_scores), 2)
+            if resolution_scores
+            else 0.0
+        )
+        return {
+            "mean_routing_score": mean_routing,
+            "mean_resolution_score": mean_resolution,
+        }
 
     except Exception as e:
         print(f"[WARN] LLM-as-judge failed: {e}", file=sys.stderr)
@@ -187,7 +219,10 @@ Return ONLY a JSON object with:
 # MLflow logging
 # ---------------------------------------------------------------------------
 
-def log_to_mlflow(metrics: dict, model_version: str, dataset_version: str) -> Optional[str]:
+
+def log_to_mlflow(
+    metrics: dict, model_version: str, dataset_version: str
+) -> Optional[str]:
     """Log evaluation run to MLflow. Returns run_id or None on failure."""
     try:
         import mlflow
@@ -196,14 +231,20 @@ def log_to_mlflow(metrics: dict, model_version: str, dataset_version: str) -> Op
         mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
         mlflow.set_experiment("ticket-classifier")
 
-        with mlflow.start_run(run_name=f"eval-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}") as run:
+        with mlflow.start_run(
+            run_name=f"eval-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+        ) as run:
             mlflow.set_tag("model_version", model_version)
             mlflow.set_tag("dataset_version", dataset_version)
             mlflow.log_metric("macro_f1", metrics["macro_f1"])
             mlflow.log_metric("semantic_similarity", metrics["semantic_similarity"])
             mlflow.log_metric("judge_routing_score", metrics["judge_routing_score"])
-            mlflow.log_metric("judge_resolution_score", metrics["judge_resolution_score"])
-            mlflow.log_metric("equitable_recall_spread", metrics["equitable_recall_spread"])
+            mlflow.log_metric(
+                "judge_resolution_score", metrics["judge_resolution_score"]
+            )
+            mlflow.log_metric(
+                "equitable_recall_spread", metrics["equitable_recall_spread"]
+            )
             for cat, score in metrics["per_category_f1"].items():
                 key = cat.lower().replace(" ", "_")
                 mlflow.log_metric(f"f1_{key}", score)
@@ -216,6 +257,7 @@ def log_to_mlflow(metrics: dict, model_version: str, dataset_version: str) -> Op
 # ---------------------------------------------------------------------------
 # Promotion gate
 # ---------------------------------------------------------------------------
+
 
 def check_promotion_gate(metrics: dict) -> tuple[bool, list[str]]:
     """Return (passes, list_of_failures)."""
@@ -259,7 +301,10 @@ def check_promotion_gate(metrics: dict) -> tuple[bool, list[str]]:
 # Main
 # ---------------------------------------------------------------------------
 
-async def evaluate(test_data_path: str, model_version: str, dataset_version: str, output_path: str):
+
+async def evaluate(
+    test_data_path: str, model_version: str, dataset_version: str, output_path: str
+):
     """Run full evaluation pipeline."""
     print(f"[INFO] Loading test data from {test_data_path}")
 
@@ -274,6 +319,7 @@ async def evaluate(test_data_path: str, model_version: str, dataset_version: str
 
     # Run classifier on test set
     from ml.classifier import TicketClassifier
+
     clf = TicketClassifier()
     y_pred = []
     resolution_suggestions = []
@@ -294,10 +340,14 @@ async def evaluate(test_data_path: str, model_version: str, dataset_version: str
     f1_results = compute_f1_scores(y_true, y_pred)
     recalls = compute_recall_per_category(y_true, y_pred)
     recall_values = list(recalls.values())
-    equitable_recall_spread = round(max(recall_values) - min(recall_values), 4) if recall_values else 0.0
+    equitable_recall_spread = (
+        round(max(recall_values) - min(recall_values), 4) if recall_values else 0.0
+    )
 
     semantic_sim = compute_semantic_similarity(resolution_suggestions, resolutions_gt)
-    judge_scores = await run_llm_as_judge(test_data, y_pred, resolution_suggestions, y_true)
+    judge_scores = await run_llm_as_judge(
+        test_data, y_pred, resolution_suggestions, y_true
+    )
     imbalance = compute_class_imbalance(y_true)
 
     metrics = {
@@ -335,10 +385,12 @@ async def evaluate(test_data_path: str, model_version: str, dataset_version: str
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
 
-    print(f"\n[RESULT] Macro F1: {metrics['macro_f1']} | "
-          f"Semantic similarity: {metrics['semantic_similarity']} | "
-          f"Judge routing: {metrics['judge_routing_score']} | "
-          f"Judge resolution: {metrics['judge_resolution_score']}")
+    print(
+        f"\n[RESULT] Macro F1: {metrics['macro_f1']} | "
+        f"Semantic similarity: {metrics['semantic_similarity']} | "
+        f"Judge routing: {metrics['judge_routing_score']} | "
+        f"Judge resolution: {metrics['judge_resolution_score']}"
+    )
     print(f"[RESULT] Promotion gate: {'PASS ✓' if passes else 'FAIL ✗'}")
     if failures:
         for f in failures:

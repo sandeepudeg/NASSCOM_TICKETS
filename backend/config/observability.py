@@ -12,42 +12,52 @@ from src.schemas.settings import settings
 # Try to import OpenTelemetry but don't fail if it's not available
 try:
     from opentelemetry import trace
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-    from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import (
-        BatchSpanProcessor,
-        SimpleSpanProcessor,
-        SpanExporter,
-        ConsoleSpanExporter,
-    )
+    from opentelemetry.sdk.trace.export import SpanExporter
+
     OTEL_AVAILABLE = True
 except (ImportError, TypeError):
     OTEL_AVAILABLE = False
     trace = None
 
 try:
-    from prometheus_client import Counter, Histogram, Gauge
+    from prometheus_client import Counter, Gauge, Histogram
+
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
+
     # Create dummy metric classes
     class Counter:
-        def __init__(self, *args, **kwargs): pass
-        def labels(self, *args, **kwargs): return self
-        def inc(self, *args, **kwargs): pass
-    
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def labels(self, *args, **kwargs):
+            return self
+
+        def inc(self, *args, **kwargs):
+            pass
+
     class Histogram:
-        def __init__(self, *args, **kwargs): pass
-        def labels(self, *args, **kwargs): return self
-        def observe(self, value): pass
-    
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def labels(self, *args, **kwargs):
+            return self
+
+        def observe(self, value):
+            pass
+
     class Gauge:
-        def __init__(self, *args, **kwargs): pass
-        def labels(self, *args, **kwargs): return self
-        def set(self, value): pass
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def labels(self, *args, **kwargs):
+            return self
+
+        def set(self, value):
+            pass
+
 
 # Prometheus metrics
 REQUEST_COUNT = Counter(
@@ -152,7 +162,9 @@ def setup_logging(debug: bool = False) -> None:
     if _logging_configured:
         return
 
-    logging.basicConfig(level=logging.DEBUG if debug else logging.INFO, format="%(message)s")
+    logging.basicConfig(
+        level=logging.DEBUG if debug else logging.INFO, format="%(message)s"
+    )
 
     structlog.configure(
         processors=[
@@ -254,9 +266,9 @@ def setup_metrics(app: FastAPI) -> None:
 def setup_tracing(
     app: FastAPI,
     *,
-    span_exporter: Optional[SpanExporter] = None,
+    span_exporter: SpanExporter | None = None,
     use_batch: bool = True,
-) -> Optional['TracerProvider']:
+) -> Optional["TracerProvider"]:
     """
     Configure OpenTelemetry tracing for the FastAPI app.
 
@@ -280,8 +292,8 @@ def setup_tracing(
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import (
         BatchSpanProcessor,
-        SimpleSpanProcessor,
         ConsoleSpanExporter,
+        SimpleSpanProcessor,
     )
 
     resource = Resource.create(
@@ -293,12 +305,17 @@ def setup_tracing(
     provider = TracerProvider(resource=resource)
 
     try:
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+            OTLPSpanExporter,
+        )
+
         exporter = span_exporter or OTLPSpanExporter(
             endpoint=settings.otel_exporter_otlp_endpoint,
             timeout=5,
         )
-        processor = BatchSpanProcessor(exporter) if use_batch else SimpleSpanProcessor(exporter)
+        processor = (
+            BatchSpanProcessor(exporter) if use_batch else SimpleSpanProcessor(exporter)
+        )
     except Exception as exc:
         # Fallback to console exporter to keep app running without crashing on missing collector.
         logging.warning(
@@ -314,6 +331,7 @@ def setup_tracing(
 
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
         FastAPIInstrumentor.instrument_app(
             app,
             tracer_provider=provider,
@@ -325,6 +343,7 @@ def setup_tracing(
     try:
         # Instrument SQLAlchemy if present; safe to ignore failures in tests.
         from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
         from repositories.database import engine
 
         SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)

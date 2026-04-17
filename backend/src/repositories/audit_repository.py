@@ -1,12 +1,12 @@
-from datetime import datetime
-from typing import Optional, Any
-from uuid import uuid4
 import json
+from datetime import datetime
+from typing import Any
+from uuid import uuid4
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repositories.models import AuditLog, PatternAlert, AgentOverride
+from src.repositories.models import AgentOverride, AuditLog, PatternAlert
 
 
 class AuditLogRepository:
@@ -18,8 +18,8 @@ class AuditLogRepository:
         actor_user_id: str,
         action_type: str,
         target_resource_id: str,
-        source_ip: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        source_ip: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuditLog:
         entry = AuditLog(
             id=str(uuid4()),
@@ -36,12 +36,12 @@ class AuditLogRepository:
 
     async def list_logs(
         self,
-        actor_user_id: Optional[str] = None,
-        action_type: Optional[str] = None,
-        target_resource_id: Optional[str] = None,
+        actor_user_id: str | None = None,
+        action_type: str | None = None,
+        target_resource_id: str | None = None,
         page_size: int = 50,
-        cursor: Optional[str] = None,
-    ) -> tuple[list[AuditLog], Optional[str]]:
+        cursor: str | None = None,
+    ) -> tuple[list[AuditLog], str | None]:
         query = select(AuditLog)
 
         if actor_user_id:
@@ -94,7 +94,7 @@ class PatternAlertRepository:
         await self.session.flush()
         return alert
 
-    async def get_by_id(self, alert_id: str) -> Optional[PatternAlert]:
+    async def get_by_id(self, alert_id: str) -> PatternAlert | None:
         query = select(PatternAlert).where(PatternAlert.id == alert_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
@@ -113,7 +113,7 @@ class PatternAlertRepository:
         self,
         alert: PatternAlert,
         status: str,
-        snooze_until: Optional[datetime] = None,
+        snooze_until: datetime | None = None,
     ) -> PatternAlert:
         alert.status = status
         if snooze_until:

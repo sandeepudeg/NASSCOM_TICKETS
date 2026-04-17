@@ -1,15 +1,10 @@
-import asyncio
-from datetime import datetime, timedelta
-from typing import Optional
-import numpy as np
 import json
+from datetime import datetime
+
+import numpy as np
 from opentelemetry import trace
 
-from src.repositories.audit_repository import PatternAlertRepository
-from src.repositories.ticket_repository import TicketRepository
 from src.schemas.settings import settings
-from src.schemas.ticket import Category
-from src.ml.embedding_service import embedding_service
 
 
 class PatternDetectionService:
@@ -23,7 +18,7 @@ class PatternDetectionService:
         ticket_embeddings: list[dict],
     ) -> list[dict]:
         tracer = trace.get_tracer("ml.pattern_detection")
-        
+
         with tracer.start_as_current_span("pattern_detector.scan") as span:
             if len(ticket_embeddings) < self.cluster_min_size:
                 return []
@@ -36,7 +31,7 @@ class PatternDetectionService:
                     emb = np.array(json.loads(item["embedding"]))
                     embeddings.append(emb)
                     valid_tickets.append(item)
-                except:
+                except Exception:
                     continue
 
             if len(embeddings) < self.cluster_min_size:
@@ -96,7 +91,7 @@ class PatternDetectionService:
                     "ticket_ids": [t["id"] for t in cluster_tickets],
                 }
                 alerts.append(alert)
-            
+
             span.set_attribute("pattern.tickets_analyzed", len(valid_tickets))
             span.set_attribute("pattern.clusters_found", len(clusters))
             span.set_attribute("pattern.alerts_generated", len(alerts))

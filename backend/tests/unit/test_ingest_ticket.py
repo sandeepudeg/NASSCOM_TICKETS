@@ -3,30 +3,31 @@ Unit tests for ingest_ticket.py — argument parsing, format detection,
 PII scrubbing, schema validation, and payload building.
 Requirements: 10.5
 """
+
 import json
 import os
-import pytest
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
 
 # Add scripts/ml to path for importing
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "ml"))
 
 # Import functions under test
 from ingest_ticket import (
-    load_payload,
-    detect_title_from_payload,
-    validate_structured_payload,
-    build_ticket_payload,
     VALID_FORMATS,
+    build_ticket_payload,
+    detect_title_from_payload,
+    load_payload,
+    validate_structured_payload,
 )
-
 
 # ---------------------------------------------------------------------------
 # load_payload
 # ---------------------------------------------------------------------------
+
 
 def test_load_payload_reads_file():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -48,6 +49,7 @@ def test_load_payload_file_not_found():
 # VALID_FORMATS
 # ---------------------------------------------------------------------------
 
+
 def test_valid_formats_contains_all_four():
     assert "json_log" in VALID_FORMATS
     assert "otlp_trace" in VALID_FORMATS
@@ -58,6 +60,7 @@ def test_valid_formats_contains_all_four():
 # ---------------------------------------------------------------------------
 # detect_title_from_payload
 # ---------------------------------------------------------------------------
+
 
 def test_detect_title_text_format():
     payload = "Server is down\nMore details here"
@@ -72,17 +75,17 @@ def test_detect_title_json_log():
 
 
 def test_detect_title_otlp_trace():
-    payload = json.dumps({
-        "resourceSpans": [{"spans": [{"name": "api-gateway error"}]}]
-    })
+    payload = json.dumps(
+        {"resourceSpans": [{"spans": [{"name": "api-gateway error"}]}]}
+    )
     title = detect_title_from_payload(payload, "otlp_trace")
     assert "api-gateway error" in title
 
 
 def test_detect_title_prometheus_alert():
-    payload = json.dumps({
-        "alerts": [{"labels": {"alertname": "HighLatency", "severity": "critical"}}]
-    })
+    payload = json.dumps(
+        {"alerts": [{"labels": {"alertname": "HighLatency", "severity": "critical"}}]}
+    )
     title = detect_title_from_payload(payload, "prometheus_alert")
     assert "HighLatency" in title
 
@@ -96,6 +99,7 @@ def test_detect_title_truncates_at_200_chars():
 # ---------------------------------------------------------------------------
 # validate_structured_payload
 # ---------------------------------------------------------------------------
+
 
 def test_validate_text_format_always_passes():
     validate_structured_payload("any text here", "text")  # should not raise
@@ -148,6 +152,7 @@ def test_validate_invalid_json_raises():
 # build_ticket_payload
 # ---------------------------------------------------------------------------
 
+
 def test_build_ticket_payload_text():
     payload = "Database connection timeout on prod-db-01"
     result = build_ticket_payload(payload, "text")
@@ -157,7 +162,9 @@ def test_build_ticket_payload_text():
 
 
 def test_build_ticket_payload_json_log_includes_structured():
-    payload = json.dumps({"message": "disk full", "level": "critical", "service": "storage"})
+    payload = json.dumps(
+        {"message": "disk full", "level": "critical", "service": "storage"}
+    )
     result = build_ticket_payload(payload, "json_log")
     assert "structured_payload" in result
     assert isinstance(result["structured_payload"], dict)
@@ -185,8 +192,8 @@ def test_build_ticket_payload_description_truncated():
 
 
 def test_build_ticket_payload_prometheus_includes_structured():
-    payload = json.dumps({
-        "alerts": [{"labels": {"alertname": "HighCPU", "severity": "warning"}}]
-    })
+    payload = json.dumps(
+        {"alerts": [{"labels": {"alertname": "HighCPU", "severity": "warning"}}]}
+    )
     result = build_ticket_payload(payload, "prometheus_alert")
     assert "structured_payload" in result

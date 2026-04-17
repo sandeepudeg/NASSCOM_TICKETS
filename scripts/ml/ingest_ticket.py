@@ -13,6 +13,7 @@ Formats:
 
 Requirements: 10.5
 """
+
 import argparse
 import json
 import sys
@@ -20,8 +21,6 @@ import os
 import httpx
 
 from src.ml.pii_scrubber import PIIScrubber
-from src.ml.structured_input_parser import StructuredInputParser
-
 
 VALID_FORMATS = ("json_log", "otlp_trace", "prometheus_alert", "text")
 
@@ -35,7 +34,9 @@ def load_payload(file_path: str) -> str:
 def detect_title_from_payload(payload: str, fmt: str) -> str:
     """Extract a meaningful title from the payload."""
     if fmt == "text":
-        first_line = payload.strip().splitlines()[0] if payload.strip() else "Ingested ticket"
+        first_line = (
+            payload.strip().splitlines()[0] if payload.strip() else "Ingested ticket"
+        )
         return first_line[:200]
     try:
         data = json.loads(payload)
@@ -43,7 +44,11 @@ def detect_title_from_payload(payload: str, fmt: str) -> str:
             return data.get("message", data.get("msg", "Log ingestion ticket"))[:200]
         if fmt == "otlp_trace":
             spans = data.get("resourceSpans", [{}])[0].get("spans", [{}])
-            return spans[0].get("name", "Trace ingestion ticket")[:200] if spans else "Trace ingestion ticket"
+            return (
+                spans[0].get("name", "Trace ingestion ticket")[:200]
+                if spans
+                else "Trace ingestion ticket"
+            )
         if fmt == "prometheus_alert":
             alerts = data.get("alerts", [{}])
             labels = alerts[0].get("labels", {}) if alerts else {}
@@ -87,8 +92,11 @@ def build_ticket_payload(raw_payload: str, fmt: str) -> dict:
     # PII scrub
     scrubbed, summary = PIIScrubber.scrub(raw_payload)
     if summary.get("total_detected", 0) > 0:
-        print(f"[PII] Redacted {summary['total_detected']} entity/entities: "
-              f"{summary['redaction_summary']}", file=sys.stderr)
+        print(
+            f"[PII] Redacted {summary['total_detected']} entity/entities: "
+            f"{summary['redaction_summary']}",
+            file=sys.stderr,
+        )
 
     title = detect_title_from_payload(scrubbed, fmt)
     description = scrubbed[:2000]  # truncate for description field
@@ -107,11 +115,15 @@ def build_ticket_payload(raw_payload: str, fmt: str) -> dict:
     return payload
 
 
-def submit_ticket(api_url: str, ticket_payload: dict, user_id: str = "ingest-cli") -> dict:
+def submit_ticket(
+    api_url: str, ticket_payload: dict, user_id: str = "ingest-cli"
+) -> dict:
     """POST the ticket to the API and return the response."""
     headers = {"x-user-id": user_id, "Content-Type": "application/json"}
     with httpx.Client(timeout=30.0) as client:
-        response = client.post(f"{api_url}/api/v1/tickets", json=ticket_payload, headers=headers)
+        response = client.post(
+            f"{api_url}/api/v1/tickets", json=ticket_payload, headers=headers
+        )
         response.raise_for_status()
         return response.json()
 
@@ -169,14 +181,21 @@ def main():
     # Submit
     try:
         result = submit_ticket(args.api_url, ticket_payload, args.user_id)
-        print(f"[OK] Ticket created: {result.get('id')} | "
-              f"routing_status={result.get('routing_status')} | "
-              f"category={result.get('category')}")
+        print(
+            f"[OK] Ticket created: {result.get('id')} | "
+            f"routing_status={result.get('routing_status')} | "
+            f"category={result.get('category')}"
+        )
     except httpx.HTTPStatusError as e:
-        print(f"[ERROR] API returned {e.response.status_code}: {e.response.text}", file=sys.stderr)
+        print(
+            f"[ERROR] API returned {e.response.status_code}: {e.response.text}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     except httpx.RequestError as e:
-        print(f"[ERROR] Could not connect to API at {args.api_url}: {e}", file=sys.stderr)
+        print(
+            f"[ERROR] Could not connect to API at {args.api_url}: {e}", file=sys.stderr
+        )
         sys.exit(1)
 
 

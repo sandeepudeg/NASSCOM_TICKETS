@@ -2,13 +2,13 @@
 Property-based tests for AI classifier and ML pipeline correctness properties (P17–P26).
 Feature: tickets-folder
 """
+
 import json
 import re
-import pytest
-from unittest.mock import patch, MagicMock
 
-from hypothesis import given, settings, assume
 import hypothesis.strategies as st
+import pytest
+from hypothesis import given, settings
 
 from src.ml.pii_scrubber import PIIScrubber
 from src.ml.structured_input_parser import StructuredInputParser
@@ -54,35 +54,49 @@ class TestP17ClassificationOutputInvariant:
 class TestP18StructuredInputAcceptance:
 
     def _make_otlp_payload(self):
-        return json.dumps({
-            "resourceSpans": [{
-                "spans": [{
-                    "traceId": "abc123",
-                    "spanId": "def456",
-                    "startTimeUnixNano": "1234567890",
-                    "status": {"code": 2, "message": "error"},
-                    "attributes": [{"key": "service.name", "value": "api-gateway"}]
-                }]
-            }]
-        })
+        return json.dumps(
+            {
+                "resourceSpans": [
+                    {
+                        "spans": [
+                            {
+                                "traceId": "abc123",
+                                "spanId": "def456",
+                                "startTimeUnixNano": "1234567890",
+                                "status": {"code": 2, "message": "error"},
+                                "attributes": [
+                                    {"key": "service.name", "value": "api-gateway"}
+                                ],
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
 
     def _make_prometheus_payload(self):
-        return json.dumps({
-            "alerts": [{
-                "alertname": "HighLatency",
-                "labels": {"severity": "critical", "job": "api"},
-                "annotations": {"summary": "High latency"},
-                "startsAt": "2024-01-01T00:00:00Z"
-            }]
-        })
+        return json.dumps(
+            {
+                "alerts": [
+                    {
+                        "alertname": "HighLatency",
+                        "labels": {"severity": "critical", "job": "api"},
+                        "annotations": {"summary": "High latency"},
+                        "startsAt": "2024-01-01T00:00:00Z",
+                    }
+                ]
+            }
+        )
 
     def _make_json_log_payload(self):
-        return json.dumps({
-            "level": "error",
-            "message": "Connection refused",
-            "service": "db-service",
-            "timestamp": "2024-01-01T00:00:00Z"
-        })
+        return json.dumps(
+            {
+                "level": "error",
+                "message": "Connection refused",
+                "service": "db-service",
+                "timestamp": "2024-01-01T00:00:00Z",
+            }
+        )
 
     @settings(max_examples=10, deadline=None)
     @given(dummy=st.just(None))
@@ -119,9 +133,11 @@ class TestP18StructuredInputAcceptance:
 # Feature: tickets-folder, Property 19: Unknown Format Fallback
 class TestP19UnknownFormatFallback:
 
-    @given(text=st.text(min_size=1, max_size=500).filter(
-        lambda s: not s.strip().startswith("{") and not s.strip().startswith("[")
-    ))
+    @given(
+        text=st.text(min_size=1, max_size=500).filter(
+            lambda s: not s.strip().startswith("{") and not s.strip().startswith("[")
+        )
+    )
     @settings(max_examples=100, deadline=None)
     def test_plain_text_falls_back_gracefully(self, text):
         """P19: Non-JSON payload must fall back to plain text without error."""
@@ -147,11 +163,13 @@ class TestP19UnknownFormatFallback:
 # Feature: tickets-folder, Property 21: RAG Retrieval Threshold Invariant
 class TestP21RAGRetrievalThresholdInvariant:
 
-    @given(scores=st.lists(
-        st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
-        min_size=0,
-        max_size=10
-    ))
+    @given(
+        scores=st.lists(
+            st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+            min_size=0,
+            max_size=10,
+        )
+    )
     @settings(max_examples=100)
     def test_only_scores_above_threshold_returned(self, scores):
         """P21: Every similar_ticket entry must have similarity_score >= 0.70."""
@@ -175,7 +193,13 @@ class TestP21RAGRetrievalThresholdInvariant:
 # Feature: tickets-folder, Property 26: PII Scrubbing Completeness
 class TestP26PIIScrubbing:
 
-    @given(email=st.emails().filter(lambda e: re.match(r'^[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', e)))
+    @given(
+        email=st.emails().filter(
+            lambda e: re.match(
+                r"^[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$", e
+            )
+        )
+    )
     @settings(max_examples=100, deadline=None)
     def test_email_is_redacted(self, email):
         """P26: Email addresses must be replaced with [EMAIL] placeholder."""

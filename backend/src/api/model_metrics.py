@@ -1,19 +1,20 @@
-from fastapi import APIRouter, Query
-from typing import Optional
-from datetime import datetime
 import os
+from datetime import datetime
+
+from fastapi import APIRouter, Query
 
 router = APIRouter(prefix="/model", tags=["model"])
 
 
 @router.get("/metrics")
-async def get_model_metrics(version: Optional[str] = Query(None)):
+async def get_model_metrics(version: str | None = Query(None)):
     """
     Return the latest AI classifier evaluation metrics from MLflow.
     Falls back to placeholder values when MLflow is unreachable.
     """
     try:
         from src.schemas.settings import settings
+
         if not settings.mlflow_enabled:
             raise Exception("MLflow disabled")
         import mlflow
@@ -37,10 +38,16 @@ async def get_model_metrics(version: Optional[str] = Query(None)):
                     "model_version": run.info.run_id[:8],
                     "macro_f1": metrics.get("macro_f1", 0.0),
                     "semantic_similarity": metrics.get("semantic_similarity", 0.0),
-                    "llm_judge_routing_correctness": metrics.get("judge_routing_score", 0.0),
-                    "llm_judge_resolution_relevance": metrics.get("judge_resolution_score", 0.0),
+                    "llm_judge_routing_correctness": metrics.get(
+                        "judge_routing_score", 0.0
+                    ),
+                    "llm_judge_resolution_relevance": metrics.get(
+                        "judge_resolution_score", 0.0
+                    ),
                     "hallucination_rate": metrics.get("hallucination_rate", 0.0),
-                    "equitable_recall_spread": metrics.get("equitable_recall_spread", 0.0),
+                    "equitable_recall_spread": metrics.get(
+                        "equitable_recall_spread", 0.0
+                    ),
                     "per_category_f1": {
                         "Infrastructure": metrics.get("f1_infrastructure", 0.0),
                         "Application": metrics.get("f1_application", 0.0),
@@ -50,7 +57,9 @@ async def get_model_metrics(version: Optional[str] = Query(None)):
                         "Network": metrics.get("f1_network", 0.0),
                         "Access Management": metrics.get("f1_access_management", 0.0),
                     },
-                    "last_updated": datetime.fromtimestamp(run.info.start_time / 1000).isoformat(),
+                    "last_updated": datetime.fromtimestamp(
+                        run.info.start_time / 1000
+                    ).isoformat(),
                     "source": "mlflow",
                 }
     except Exception:
@@ -59,7 +68,7 @@ async def get_model_metrics(version: Optional[str] = Query(None)):
     # Fallback — return placeholder structure when MLflow is unavailable
     return {
         "model_version": "not-evaluated",
-        "macro_f1": 0.85, # Default placeholder for UI visualization
+        "macro_f1": 0.85,  # Default placeholder for UI visualization
         "semantic_similarity": 0.78,
         "llm_judge_routing_correctness": 4.2,
         "llm_judge_resolution_relevance": 4.5,

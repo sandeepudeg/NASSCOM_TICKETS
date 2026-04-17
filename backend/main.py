@@ -1,16 +1,17 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.exceptions import RequestValidationError
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from config.observability import setup_observability
+from src.api import classification, escalations, folders, health, model_metrics, tickets
+from src.repositories.database import close_db, init_db
 from src.schemas.errors import HTTPError, ProblemDetail
 from src.schemas.settings import settings
-from src.repositories.database import init_db, close_db
-from src.api import folders, tickets, classification, health, escalations, model_metrics
-from config.observability import setup_observability
 
 
 class ProblemDetailException(Exception):
@@ -21,7 +22,7 @@ class ProblemDetailException(Exception):
 
 def get_allowed_origins():
     """Get allowed CORS origins for FastAPI backend"""
-    
+
     # Default origins for local development
     default_origins = [
         "http://localhost:3000",  # React frontend (default)
@@ -30,13 +31,15 @@ def get_allowed_origins():
         "http://localhost:5000",  # Flask admin local (default)
         "http://localhost:5001",  # Flask admin local (alternative)
     ]
-    
+
     # Get additional origins from environment
-    cors_origins = os.getenv('CORS_ORIGINS', '')
+    cors_origins = os.getenv("CORS_ORIGINS", "")
     if cors_origins:
-        additional_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+        additional_origins = [
+            origin.strip() for origin in cors_origins.split(",") if origin.strip()
+        ]
         default_origins.extend(additional_origins)
-    
+
     # Remove duplicates while preserving order
     seen = set()
     unique_origins = []
@@ -44,7 +47,7 @@ def get_allowed_origins():
         if origin not in seen:
             seen.add(origin)
             unique_origins.append(origin)
-    
+
     return unique_origins
 
 
@@ -110,7 +113,12 @@ app.include_router(model_metrics.router, prefix=settings.api_v1_prefix)
 # This directory will be populated during the Docker build process
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
-    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(static_dir, "assets")),
+        name="assets",
+    )
+
 
 @app.get("/")
 async def serve_root():
@@ -124,12 +132,17 @@ async def serve_root():
         "docs": "/docs",
     }
 
+
 @app.get("/{full_path:path}")
 async def serve_react_routes(full_path: str):
     # Skip if it looks like an API call
-    if full_path.startswith("api/v1") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
-        pass # Let FastAPI handle routers
-    
+    if (
+        full_path.startswith("api/v1")
+        or full_path.startswith("docs")
+        or full_path.startswith("openapi.json")
+    ):
+        pass  # Let FastAPI handle routers
+
     index_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)

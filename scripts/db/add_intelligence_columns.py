@@ -1,8 +1,8 @@
-
 import sqlite3
 import os
 
 DB_PATH = "tickets.db"
+
 
 def add_columns():
     if not os.path.exists(DB_PATH):
@@ -16,7 +16,7 @@ def add_columns():
         ("accuracy", "FLOAT"),
         ("f1_score", "FLOAT"),
         ("semantic_similarity", "FLOAT"),
-        ("resolution_steps_json", "TEXT")
+        ("resolution_steps_json", "TEXT"),
     ]
 
     print(f"Checking columns in {DB_PATH}...")
@@ -37,6 +37,7 @@ def add_columns():
     conn.commit()
     conn.close()
     print("Database schema update complete.")
+
 
 if __name__ == "__main__":
     add_columns()

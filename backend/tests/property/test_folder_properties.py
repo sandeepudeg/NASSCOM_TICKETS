@@ -3,20 +3,21 @@ Property-based tests for folder manager correctness properties (P1–P11).
 Feature: tickets-folder
 Uses Hypothesis with min 100 examples per property.
 """
+
 import re
-import pytest
 from datetime import datetime, timedelta
-from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
-from hypothesis import given, settings, assume, example
 import hypothesis.strategies as st
+import pytest
+from hypothesis import assume, given, settings
 
-from src.services.folder_service import FolderService
-from src.schemas.folder import FolderCreate, FolderUpdate
-from src.schemas.errors import HTTPError
-from src.repositories.folder_repository import FolderRepository
 from src.repositories.audit_repository import AuditLogRepository
+from src.repositories.folder_repository import FolderRepository
+from src.schemas.errors import HTTPError
+from src.schemas.folder import FolderCreate, FolderUpdate
+from src.services.folder_service import FolderService
 
 INJECTION_PAYLOADS = [
     "<script>alert('xss')</script>",
@@ -31,7 +32,11 @@ VALID_NAME_STRATEGY = st.text(
     alphabet=st.characters(blacklist_categories=("Cs",)),
     min_size=1,
     max_size=255,
-).filter(lambda s: s.strip() != "" and len(s.strip()) <= 255 and not re.search(r"<[^>]+>|javascript:|on\w+\s*=", s, re.IGNORECASE))
+).filter(
+    lambda s: s.strip() != ""
+    and len(s.strip()) <= 255
+    and not re.search(r"<[^>]+>|javascript:|on\w+\s*=", s, re.IGNORECASE)
+)
 
 
 def make_service():
@@ -57,6 +62,7 @@ class TestP1FolderNameValidation:
         folder_data = FolderCreate(name=name if name else " ")
 
         import asyncio
+
         with pytest.raises(HTTPError) as exc_info:
             asyncio.get_event_loop().run_until_complete(
                 service.create_folder(folder_data, "user-1")
@@ -70,12 +76,24 @@ class TestP1FolderNameValidation:
         # Feature: tickets-folder, Property 1: Folder Name Validation
         assume(len(name.strip()) > 255)
         import pydantic
+
         # Pydantic enforces max_length=255 at schema level — this IS the validation error
         with pytest.raises((pydantic.ValidationError, HTTPError)):
             folder_data = FolderCreate(name=name[:300])
             import asyncio
-            with patch.object(FolderRepository, "get_by_name", new_callable=AsyncMock, return_value=None):
-                with patch.object(FolderRepository, "count_by_owner", new_callable=AsyncMock, return_value=0):
+
+            with patch.object(
+                FolderRepository,
+                "get_by_name",
+                new_callable=AsyncMock,
+                return_value=None,
+            ):
+                with patch.object(
+                    FolderRepository,
+                    "count_by_owner",
+                    new_callable=AsyncMock,
+                    return_value=0,
+                ):
                     service = make_service()
                     asyncio.get_event_loop().run_until_complete(
                         service.create_folder(folder_data, "user-1")
@@ -96,7 +114,13 @@ class TestP2DuplicateFolderNameRejection:
         existing.id = str(uuid4())
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_name", new_callable=AsyncMock, return_value=existing):
+
+        with patch.object(
+            FolderRepository,
+            "get_by_name",
+            new_callable=AsyncMock,
+            return_value=existing,
+        ):
             with pytest.raises(HTTPError) as exc_info:
                 asyncio.get_event_loop().run_until_complete(
                     service.create_folder(folder_data, "user-1")
@@ -126,10 +150,25 @@ class TestP3FolderCreationRoundTrip:
         mock_folder.updated_at = datetime.utcnow()
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_name", new_callable=AsyncMock, return_value=None):
-            with patch.object(FolderRepository, "count_by_owner", new_callable=AsyncMock, return_value=0):
-                with patch.object(FolderRepository, "create", new_callable=AsyncMock, return_value=mock_folder):
-                    with patch.object(AuditLogRepository, "create", new_callable=AsyncMock):
+
+        with patch.object(
+            FolderRepository, "get_by_name", new_callable=AsyncMock, return_value=None
+        ):
+            with patch.object(
+                FolderRepository,
+                "count_by_owner",
+                new_callable=AsyncMock,
+                return_value=0,
+            ):
+                with patch.object(
+                    FolderRepository,
+                    "create",
+                    new_callable=AsyncMock,
+                    return_value=mock_folder,
+                ):
+                    with patch.object(
+                        AuditLogRepository, "create", new_callable=AsyncMock
+                    ):
                         result = asyncio.get_event_loop().run_until_complete(
                             service.create_folder(folder_data, owner_id)
                         )
@@ -150,6 +189,7 @@ class TestP4InjectionPayloadRejection:
         folder_data = FolderCreate(name=name)
 
         import asyncio
+
         with pytest.raises(HTTPError) as exc_info:
             asyncio.get_event_loop().run_until_complete(
                 service.create_folder(folder_data, "user-1")
@@ -181,10 +221,17 @@ class TestP5FolderListCompleteness:
         service = make_service()
 
         import asyncio
+
         from schemas.folder import FolderPaginationParams
+
         params = FolderPaginationParams()
 
-        with patch.object(FolderRepository, "list_folders", new_callable=AsyncMock, return_value=(folders, None)):
+        with patch.object(
+            FolderRepository,
+            "list_folders",
+            new_callable=AsyncMock,
+            return_value=(folders, None),
+        ):
             result = asyncio.get_event_loop().run_until_complete(
                 service.list_folders(owner_id, params)
             )
@@ -205,6 +252,7 @@ class TestP6ListSortOrderInvariant:
         """P6: Default folder list must be sorted by created_at descending."""
         # Feature: tickets-folder, Property 6: List Sort Order Invariant
         from datetime import timedelta
+
         base = datetime.utcnow()
         folders = []
         for i in range(n):
@@ -221,10 +269,17 @@ class TestP6ListSortOrderInvariant:
 
         service = make_service()
         from schemas.folder import FolderPaginationParams
+
         params = FolderPaginationParams()
 
-        with patch.object(FolderRepository, "list_folders", new_callable=AsyncMock, return_value=(folders, None)):
+        with patch.object(
+            FolderRepository,
+            "list_folders",
+            new_callable=AsyncMock,
+            return_value=(folders, None),
+        ):
             import asyncio
+
             result = asyncio.get_event_loop().run_until_complete(
                 service.list_folders("user-1", params)
             )
@@ -251,7 +306,10 @@ class TestP9OptimisticLockingConflict:
         existing.version = stored_version  # mismatch
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing):
+
+        with patch.object(
+            FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing
+        ):
             with pytest.raises(HTTPError) as exc_info:
                 asyncio.get_event_loop().run_until_complete(
                     service.rename_folder(folder_id, folder_data, "user-1")
@@ -268,10 +326,17 @@ class TestP10SoftDeleteVisibility:
         service = make_service()
         # Repository returns empty list (soft-deleted excluded by default)
         from schemas.folder import FolderPaginationParams
+
         params = FolderPaginationParams()
 
         import asyncio
-        with patch.object(FolderRepository, "list_folders", new_callable=AsyncMock, return_value=([], None)):
+
+        with patch.object(
+            FolderRepository,
+            "list_folders",
+            new_callable=AsyncMock,
+            return_value=([], None),
+        ):
             result = asyncio.get_event_loop().run_until_complete(
                 service.list_folders("user-1", params)
             )
@@ -289,7 +354,10 @@ class TestP10SoftDeleteVisibility:
         existing.name = "deleted-folder"
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing):
+
+        with patch.object(
+            FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing
+        ):
             with pytest.raises(HTTPError) as exc_info:
                 asyncio.get_event_loop().run_until_complete(
                     service.delete_folder(folder_id, "user-1")
@@ -311,10 +379,17 @@ class TestP10SoftDeleteVisibility:
         deleted_folder.updated_at = deleted_folder.created_at
 
         import asyncio
+
         from schemas.folder import FolderPaginationParams
+
         params = FolderPaginationParams(include_deleted=True)
 
-        with patch.object(FolderRepository, "list_folders", new_callable=AsyncMock, return_value=([deleted_folder], None)):
+        with patch.object(
+            FolderRepository,
+            "list_folders",
+            new_callable=AsyncMock,
+            return_value=([deleted_folder], None),
+        ):
             result = asyncio.get_event_loop().run_until_complete(
                 service.list_folders("user-1", params)
             )
@@ -370,13 +445,17 @@ class TestP7CursorPaginationCompleteness:
 
         service = make_service()
         from schemas.folder import FolderPaginationParams
+
         params = FolderPaginationParams(page_size=page_size)
 
         collected_ids = []
         cursor = None
 
         import asyncio
-        with patch.object(FolderRepository, "list_folders", side_effect=mock_list_folders):
+
+        with patch.object(
+            FolderRepository, "list_folders", side_effect=mock_list_folders
+        ):
             while True:
                 params.cursor = cursor
                 result = asyncio.get_event_loop().run_until_complete(
@@ -396,6 +475,7 @@ class TestP7CursorPaginationCompleteness:
         """P7: Page size must be accepted within [1, 200]."""
         # Feature: tickets-folder, Property 7: Cursor Pagination Completeness
         from schemas.folder import FolderPaginationParams
+
         params = FolderPaginationParams(page_size=page_size)
         assert 1 <= params.page_size <= 200
 
@@ -403,7 +483,13 @@ class TestP7CursorPaginationCompleteness:
 # Feature: tickets-folder, Property 8: Name Prefix Filter Correctness
 class TestP8NamePrefixFilterCorrectness:
 
-    @given(prefix=st.text(min_size=1, max_size=10, alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"))))
+    @given(
+        prefix=st.text(
+            min_size=1,
+            max_size=10,
+            alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
+        )
+    )
     @settings(max_examples=100)
     def test_prefix_filter_only_returns_matching_folders(self, prefix):
         """P8: All returned folders must start with the given prefix (case-insensitive)."""
@@ -420,10 +506,17 @@ class TestP8NamePrefixFilterCorrectness:
 
         service = make_service()
         from schemas.folder import FolderPaginationParams
+
         params = FolderPaginationParams(name_filter=prefix)
 
         import asyncio
-        with patch.object(FolderRepository, "list_folders", new_callable=AsyncMock, return_value=(matching, None)):
+
+        with patch.object(
+            FolderRepository,
+            "list_folders",
+            new_callable=AsyncMock,
+            return_value=(matching, None),
+        ):
             result = asyncio.get_event_loop().run_until_complete(
                 service.list_folders("user-1", params)
             )
@@ -458,10 +551,21 @@ class TestP11SoftDeleteCascadesAssociations:
             soft_delete_calls.append(folder.id)
 
         import asyncio
-        with patch.object(FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing):
-            with patch.object(FolderRepository, "delete_folder_assignments", side_effect=mock_delete_folder_assignments):
-                with patch.object(FolderRepository, "soft_delete", side_effect=mock_soft_delete):
-                    with patch.object(AuditLogRepository, "create", new_callable=AsyncMock):
+
+        with patch.object(
+            FolderRepository, "get_by_id", new_callable=AsyncMock, return_value=existing
+        ):
+            with patch.object(
+                FolderRepository,
+                "delete_folder_assignments",
+                side_effect=mock_delete_folder_assignments,
+            ):
+                with patch.object(
+                    FolderRepository, "soft_delete", side_effect=mock_soft_delete
+                ):
+                    with patch.object(
+                        AuditLogRepository, "create", new_callable=AsyncMock
+                    ):
                         asyncio.get_event_loop().run_until_complete(
                             service.delete_folder(folder_id, "user-1")
                         )

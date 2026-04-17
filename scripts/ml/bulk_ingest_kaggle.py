@@ -20,9 +20,7 @@ import asyncio
 import csv
 import json
 import logging
-import os
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -40,14 +38,48 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 CATEGORY_MAP = {
-    "Infrastructure": ["Hardware", "Infrastructure", "Server", "Data Center", "Network Equipment", "Projector", "Screen"],
-    "Application":    ["Software", "App", "Application", "Bug", "Feature", "Returns", "Product", "Integration"],
-    "Security":       ["Access", "Password", "Firewall", "Security", "LDAP", "Data Breach", "Cyber"],
-    "Database":       ["DB", "SQL", "Database", "Oracle", "Postgres"],
-    "Storage":        ["Disk", "Storage", "Filing", "Share", "Cloud", "Cloud Plattform"],
-    "Network":        ["VPN", "WIFI", "Network", "Internet", "Connectivity", "Outage", "Disruption"],
+    "Infrastructure": [
+        "Hardware",
+        "Infrastructure",
+        "Server",
+        "Data Center",
+        "Network Equipment",
+        "Projector",
+        "Screen",
+    ],
+    "Application": [
+        "Software",
+        "App",
+        "Application",
+        "Bug",
+        "Feature",
+        "Returns",
+        "Product",
+        "Integration",
+    ],
+    "Security": [
+        "Access",
+        "Password",
+        "Firewall",
+        "Security",
+        "LDAP",
+        "Data Breach",
+        "Cyber",
+    ],
+    "Database": ["DB", "SQL", "Database", "Oracle", "Postgres"],
+    "Storage": ["Disk", "Storage", "Filing", "Share", "Cloud", "Cloud Plattform"],
+    "Network": [
+        "VPN",
+        "WIFI",
+        "Network",
+        "Internet",
+        "Connectivity",
+        "Outage",
+        "Disruption",
+    ],
     "Access Management": ["Account", "Permission", "Login", "Access Management", "IAM"],
 }
+
 
 def map_category(raw_val: str) -> str:
     val = str(raw_val).lower()
@@ -55,6 +87,7 @@ def map_category(raw_val: str) -> str:
         if any(kw.lower() in val for kw in keywords):
             return official
     return "Application"  # safe default
+
 
 def map_priority(raw_val: str) -> str:
     val = str(raw_val).lower()
@@ -70,6 +103,7 @@ def map_priority(raw_val: str) -> str:
 # Columns: Document, Topic_group
 # Note: No resolution text — ingest as classified examples only
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 async def ingest_adisongoh(session: AsyncSession, file_path: Path, limit: int) -> int:
     """Ingest adisongoh IT ticket classification dataset."""
@@ -97,10 +131,12 @@ async def ingest_adisongoh(session: AsyncSession, file_path: Path, limit: int) -
                 status="resolved",
                 routing_status="classified",
                 priority="medium",
-                structured_payload=json.dumps({
-                    "source": "adisongoh_it_tickets",
-                    "topic_group": topic,
-                }),
+                structured_payload=json.dumps(
+                    {
+                        "source": "adisongoh_it_tickets",
+                        "topic_group": topic,
+                    }
+                ),
             )
             session.add(ticket)
             count += 1
@@ -116,6 +152,7 @@ async def ingest_adisongoh(session: AsyncSession, file_path: Path, limit: int) -
 
 # Filter to only resolved / closed incidents (skip duplicates from state changes)
 CLOSED_STATES = {"closed", "resolved"}
+
 
 async def ingest_vipulshinde(session: AsyncSession, file_path: Path, limit: int) -> int:
     """Ingest vipulshinde incident response log."""
@@ -143,9 +180,17 @@ async def ingest_vipulshinde(session: AsyncSession, file_path: Path, limit: int)
             priority = map_priority(row.get("priority", "medium"))
             resolved_at = str(row.get("resolved_at", "")).strip()
 
-            title_raw = f"{category} - {subcategory}" if subcategory and subcategory != "?" else category
+            title_raw = (
+                f"{category} - {subcategory}"
+                if subcategory and subcategory != "?"
+                else category
+            )
             description_raw = f"Incident: {inc_num}\nCategory: {category}\nSubcategory: {subcategory}\nSymptom: {symptom}"
-            resolution_raw = f"Resolution code: {closed_code}" if closed_code and closed_code != "?" else "Resolved — see incident log."
+            resolution_raw = (
+                f"Resolution code: {closed_code}"
+                if closed_code and closed_code != "?"
+                else "Resolved — see incident log."
+            )
 
             # Apply PII scrubbing
             title, _ = PIIScrubber.scrub(title_raw)
@@ -160,12 +205,14 @@ async def ingest_vipulshinde(session: AsyncSession, file_path: Path, limit: int)
                 status="resolved",
                 routing_status="classified",
                 priority=priority,
-                structured_payload=json.dumps({
-                    "source": "vipulshinde_incident_log",
-                    "incident_id": inc_num,
-                    "resolution": resolution,
-                    "resolved_at": resolved_at,
-                }),
+                structured_payload=json.dumps(
+                    {
+                        "source": "vipulshinde_incident_log",
+                        "incident_id": inc_num,
+                        "resolution": resolution,
+                        "resolved_at": resolved_at,
+                    }
+                ),
             )
             session.add(ticket)
             count += 1
@@ -178,6 +225,7 @@ async def ingest_vipulshinde(session: AsyncSession, file_path: Path, limit: int)
 # Columns: subject, body, answer, type, queue, priority, language, tag_1..tag_8
 # Note: 'answer' = rich resolution text — BEST for RAG context
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 async def ingest_tobiasbueck(session: AsyncSession, file_path: Path, limit: int) -> int:
     """Ingest tobiasbueck multilingual customer support tickets (English only for RAG quality)."""
@@ -201,10 +249,13 @@ async def ingest_tobiasbueck(session: AsyncSession, file_path: Path, limit: int)
             priority = map_priority(row.get("priority", "medium"))
 
             # Aggregate tags for category mapping
-            tags = " ".join([
-                str(row.get(f"tag_{i}", "")) for i in range(1, 9)
-                if str(row.get(f"tag_{i}", "")).strip() not in ("", "nan", "NaN")
-            ])
+            tags = " ".join(
+                [
+                    str(row.get(f"tag_{i}", ""))
+                    for i in range(1, 9)
+                    if str(row.get(f"tag_{i}", "")).strip() not in ("", "nan", "NaN")
+                ]
+            )
             category_raw = f"{queue} {tags}".lower()
 
             if not subject or subject == "nan":
@@ -223,13 +274,15 @@ async def ingest_tobiasbueck(session: AsyncSession, file_path: Path, limit: int)
                 status="resolved",
                 routing_status="classified",
                 priority=priority,
-                structured_payload=json.dumps({
-                    "source": "tobiasbueck_multilingual",
-                    "resolution": answer[:1500],   # ← KEY for RAG retrieval
-                    "ticket_type": ticket_type,
-                    "queue": queue,
-                    "tags": tags,
-                }),
+                structured_payload=json.dumps(
+                    {
+                        "source": "tobiasbueck_multilingual",
+                        "resolution": answer[:1500],  # ← KEY for RAG retrieval
+                        "ticket_type": ticket_type,
+                        "queue": queue,
+                        "tags": tags,
+                    }
+                ),
             )
             session.add(ticket)
             count += 1
@@ -241,6 +294,7 @@ async def ingest_tobiasbueck(session: AsyncSession, file_path: Path, limit: int)
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 async def get_existing_count(session: AsyncSession) -> int:
     result = await session.scalar(
         select(func.count(Ticket.id)).where(Ticket.owner_id == "kaggle_importer")
@@ -249,10 +303,23 @@ async def get_existing_count(session: AsyncSession) -> int:
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="Bulk ingest Kaggle datasets into TicketIQ")
-    parser.add_argument("--limit", type=int, default=100, help="Max tickets per dataset (default: 100)")
-    parser.add_argument("--data-dir", type=str, default="data/kaggle", help="Path to Kaggle CSV directory")
-    parser.add_argument("--clear", action="store_true", help="Delete existing kaggle_importer tickets first")
+    parser = argparse.ArgumentParser(
+        description="Bulk ingest Kaggle datasets into TicketIQ"
+    )
+    parser.add_argument(
+        "--limit", type=int, default=100, help="Max tickets per dataset (default: 100)"
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="data/kaggle",
+        help="Path to Kaggle CSV directory",
+    )
+    parser.add_argument(
+        "--clear",
+        action="store_true",
+        help="Delete existing kaggle_importer tickets first",
+    )
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
@@ -263,10 +330,15 @@ async def main():
     async with async_session() as session:
         existing = await get_existing_count(session)
         if existing > 0 and not args.clear:
-            logger.info(f"⚠  {existing} kaggle_importer tickets already exist. Use --clear to re-ingest or --limit to add more.")
+            logger.info(
+                f"⚠  {existing} kaggle_importer tickets already exist. Use --clear to re-ingest or --limit to add more."
+            )
         elif args.clear:
             from sqlalchemy import delete
-            await session.execute(delete(Ticket).where(Ticket.owner_id == "kaggle_importer"))
+
+            await session.execute(
+                delete(Ticket).where(Ticket.owner_id == "kaggle_importer")
+            )
             await session.commit()
             logger.info("🗑  Cleared existing kaggle_importer tickets.")
 
@@ -295,7 +367,9 @@ async def main():
 
         await session.commit()
         logger.info(f"✅ Ingested {total} tickets from Kaggle datasets.")
-        logger.info("   Next step: run  python scripts/utils/populate_vector_store.py  to vectorize them.")
+        logger.info(
+            "   Next step: run  python scripts/utils/populate_vector_store.py  to vectorize them."
+        )
 
 
 if __name__ == "__main__":

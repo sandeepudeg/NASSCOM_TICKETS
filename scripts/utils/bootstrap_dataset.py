@@ -4,6 +4,7 @@ Generate synthetic balanced tickets for all categories and insert into the datab
 Usage:
   PYTHONPATH=. python scripts/bootstrap_dataset.py --per-category 20
 """
+
 import argparse
 import asyncio
 from uuid import uuid4
@@ -29,7 +30,9 @@ TEMPLATE_DESCRIPTIONS = {
 
 def synth_ticket(cat: Category, idx: int) -> dict:
     title = f"[{cat.value}] synthetic ticket {idx}"
-    desc = TEMPLATE_DESCRIPTIONS[cat].format(host="srv-" + str(idx), ip=f"10.0.0.{idx%255}", lag=45 + idx, ms=120 + idx)
+    desc = TEMPLATE_DESCRIPTIONS[cat].format(
+        host="srv-" + str(idx), ip=f"10.0.0.{idx%255}", lag=45 + idx, ms=120 + idx
+    )
     title, _ = PIIScrubber.scrub(title)
     desc, _ = PIIScrubber.scrub(desc)
     now = datetime.utcnow()

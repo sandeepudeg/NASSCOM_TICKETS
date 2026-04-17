@@ -1,23 +1,31 @@
-from fastapi import APIRouter, Depends, Header, Query, UploadFile, File, Form, HTTPException
-from fastapi.responses import StreamingResponse
 import json
-from typing import Optional
 
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Query,
+    UploadFile,
+)
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repositories.database import get_db
-from src.services.ticket_assignment_service import TicketAssignmentService
+from src.schemas.errors import ProblemDetail
 from src.schemas.ticket import (
-    TicketCreate,
-    TicketResponse,
-    TicketListResponse,
     BulkAssignRequest,
     BulkAssignResponse,
+    TicketCreate,
+    TicketListResponse,
     TicketPaginationParams,
+    TicketResponse,
 )
-from src.schemas.errors import ProblemDetail
-from src.services.ticket_service import TicketService
 from src.services.import_service import ImportService
+from src.services.ticket_assignment_service import TicketAssignmentService
+from src.services.ticket_service import TicketService
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -28,7 +36,7 @@ router = APIRouter(prefix="/tickets", tags=["tickets"])
 async def create_ticket(
     ticket_data: TicketCreate,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketService(db)
@@ -42,10 +50,10 @@ async def create_ticket(
 @router.get("", response_model=TicketListResponse)
 async def list_tickets(
     page_size: int = Query(25, ge=1, le=200),
-    cursor: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
-    routing_status: Optional[str] = Query(None),
+    cursor: str | None = Query(None),
+    status: str | None = Query(None),
+    category: str | None = Query(None),
+    routing_status: str | None = Query(None),
     sort_by: str = Query("created_at", pattern="^(created_at|status|assigned_at)$"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
@@ -67,9 +75,9 @@ async def list_tickets(
 
 @router.get("/export-all")
 async def export_tickets(
-    status: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
-    routing_status: Optional[str] = Query(None),
+    status: str | None = Query(None),
+    category: str | None = Query(None),
+    routing_status: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -77,8 +85,9 @@ async def export_tickets(
     """
     service = TicketService(db)
     from datetime import datetime
+
     filename = f"ticketiq_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    
+
     return StreamingResponse(
         service.export_tickets(
             status=status,
@@ -86,7 +95,7 @@ async def export_tickets(
             routing_status=routing_status,
         ),
         media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 
@@ -113,7 +122,7 @@ async def get_ticket_classification(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get ticket classification result including RAG suggestions, 
+    Get ticket classification result including RAG suggestions,
     assigned department, and lifecycle stage.
     """
     service = TicketService(db)
@@ -129,7 +138,7 @@ async def update_ticket(
     ticket_id: str,
     ticket_data: TicketCreate,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketService(db)
@@ -147,7 +156,7 @@ async def update_ticket(
 async def delete_ticket(
     ticket_id: str,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketService(db)
@@ -167,7 +176,7 @@ async def assign_ticket(
     ticket_id: str,
     folder_id: str,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketAssignmentService(db)
@@ -188,7 +197,7 @@ async def unassign_ticket(
     ticket_id: str,
     folder_id: str,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketAssignmentService(db)
@@ -213,7 +222,7 @@ async def bulk_assign_tickets(
     folder_id: str,
     request: BulkAssignRequest,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketAssignmentService(db)
@@ -229,14 +238,14 @@ async def bulk_assign_tickets(
 async def get_folder_tickets(
     folder_id: str,
     page_size: int = Query(50, ge=1, le=200),
-    cursor: Optional[str] = Query(None),
+    cursor: str | None = Query(None),
     sort_by: str = Query("assigned_at", pattern="^(assigned_at|status|created_at)$"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     x_user_id: str = Header(default="system"),
     db: AsyncSession = Depends(get_db),
 ):
-    service = TicketAssignmentService(db)
-    params = TicketPaginationParams(
+    TicketAssignmentService(db)
+    TicketPaginationParams(
         page_size=page_size,
         cursor=cursor,
         sort_by=sort_by,
@@ -254,16 +263,20 @@ async def analyze_import_file(
     try:
         file_content = await file.read()
         file_ext = file.filename.split(".")[-1]
-        
+
         service = ImportService()
         result = await service.analyze_file(file_content, file_ext)
-        
+
         if not result.get("success"):
-            raise HTTPException(status_code=400, detail=result.get("error", "File analysis failed"))
-            
+            raise HTTPException(
+                status_code=400, detail=result.get("error", "File analysis failed")
+            )
+
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 async def import_tickets(
     file: UploadFile = File(...),
     mapping_json: str = Form(...),
@@ -278,22 +291,24 @@ async def import_tickets(
         mapping = json.loads(mapping_json)
         file_content = await file.read()
         file_ext = file.filename.split(".")[-1]
-        
+
         service = ImportService()
         result = await service.process_import(
             file_content=file_content,
             file_extension=file_ext,
             mapping=mapping,
             owner_id=x_user_id,
-            session=db
+            session=db,
         )
-        
+
         if not result.get("success"):
-            raise HTTPException(status_code=400, detail=result.get("error", "Import failed"))
-            
+            raise HTTPException(
+                status_code=400, detail=result.get("error", "Import failed")
+            )
+
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/import/mappings")
@@ -304,7 +319,10 @@ async def get_import_mappings(
     """Retrieve saved field mapping templates for the current user."""
     service = ImportService()
     configs = await service.get_mapping_configs(x_user_id, db)
-    return [{"id": c.id, "name": c.name, "mapping": json.loads(c.config_json)} for c in configs]
+    return [
+        {"id": c.id, "name": c.name, "mapping": json.loads(c.config_json)}
+        for c in configs
+    ]
 
 
 @router.post("/import/mappings")

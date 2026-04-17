@@ -1,10 +1,10 @@
 import asyncio
-import httpx
-from typing import Optional
 
-from src.schemas.settings import settings
-from config.observability import record_webhook_attempt
+import httpx
 from opentelemetry import trace
+
+from config.observability import record_webhook_attempt
+from src.schemas.settings import settings
 
 
 class EscalationService:

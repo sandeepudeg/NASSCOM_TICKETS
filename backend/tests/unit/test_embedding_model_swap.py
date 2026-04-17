@@ -6,8 +6,8 @@ without code changes, supporting domain adaptation.
 """
 
 import os
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from src.ml.embedding_service import EmbeddingService
 
 
@@ -19,13 +19,10 @@ def test_embedding_model_reads_env_var():
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_model.name_or_path = "custom-model"
             mock_st.return_value = mock_model
-            
             # Force reload by clearing singleton
             EmbeddingService._instance = None
             EmbeddingService._model = None
-            
             service = EmbeddingService()
-            
             # Verify SentenceTransformer was called with custom model
             mock_st.assert_called_once_with("custom-model")
             assert service.model_name == "custom-model"
@@ -41,13 +38,10 @@ def test_embedding_model_defaults_to_settings():
                 mock_model.get_sentence_embedding_dimension.return_value = 384
                 mock_model.name_or_path = "all-MiniLM-L6-v2"
                 mock_st.return_value = mock_model
-                
                 # Force reload
                 EmbeddingService._instance = None
                 EmbeddingService._model = None
-                
-                service = EmbeddingService()
-                
+                EmbeddingService()
                 # Verify default model was used
                 mock_st.assert_called_once_with("all-MiniLM-L6-v2")
 
@@ -58,21 +52,16 @@ def test_embedding_model_reload():
         mock_model_1 = MagicMock()
         mock_model_1.get_sentence_embedding_dimension.return_value = 384
         mock_model_1.name_or_path = "model-1"
-        
         mock_model_2 = MagicMock()
         mock_model_2.get_sentence_embedding_dimension.return_value = 768
         mock_model_2.name_or_path = "model-2"
-        
         mock_st.side_effect = [mock_model_1, mock_model_2]
-        
         # Force reload
         EmbeddingService._instance = None
         EmbeddingService._model = None
-        
         service = EmbeddingService()
         assert service.model_name == "model-1"
         assert service.dimension == 384
-        
         # Reload with new model
         service.reload("model-2")
         assert service.model_name == "model-2"
@@ -86,14 +75,11 @@ def test_embedding_service_singleton():
         mock_model = MagicMock()
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mock_st.return_value = mock_model
-        
         # Force reload
         EmbeddingService._instance = None
         EmbeddingService._model = None
-        
         service1 = EmbeddingService()
         service2 = EmbeddingService()
-        
         assert service1 is service2
         # Model should only be loaded once
         assert mock_st.call_count == 1

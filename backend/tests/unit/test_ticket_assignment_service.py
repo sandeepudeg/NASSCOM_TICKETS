@@ -1,14 +1,16 @@
-import pytest
-import asyncio
-from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
-from src.services.ticket_assignment_service import TicketAssignmentService
-from src.repositories.folder_repository import FolderRepository
-from src.repositories.ticket_repository import TicketRepository, TicketAssignmentRepository
+import pytest
+
 from src.repositories.audit_repository import AuditLogRepository
+from src.repositories.folder_repository import FolderRepository
+from src.repositories.ticket_repository import (
+    TicketAssignmentRepository,
+    TicketRepository,
+)
 from src.schemas.ticket import BulkAssignRequest
-from src.schemas.errors import HTTPError
+from src.services.ticket_assignment_service import TicketAssignmentService
 
 
 class TestTicketAssignmentService:
@@ -63,7 +65,10 @@ class TestTicketAssignmentService:
                                 )
                             except Exception as e:
                                 # Pydantic validation on MagicMock is expected — assignment itself succeeded
-                                assert "validationerror" in type(e).__name__.lower() or "assigned" not in str(e).lower()
+                                assert (
+                                    "validationerror" in type(e).__name__.lower()
+                                    or "assigned" not in str(e).lower()
+                                )
 
     @pytest.mark.asyncio
     async def test_assign_ticket_ticket_not_found(self, assignment_service):

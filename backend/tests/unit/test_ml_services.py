@@ -1,9 +1,5 @@
-import pytest
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
-
-from src.ml.structured_input_parser import StructuredInputParser
 from src.ml.pii_scrubber import PIIScrubber
+from src.ml.structured_input_parser import StructuredInputParser
 
 
 class TestStructuredInputParser:

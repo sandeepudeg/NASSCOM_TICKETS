@@ -8,14 +8,15 @@ router = APIRouter(tags=["health"])
 async def liveness():
     """Liveness probe — returns 200 if the process is running."""
     from src.schemas.settings import settings
+
     return {"status": "ok", "version": settings.app_version}
 
 
 @router.get("/health/ready")
 async def readiness(response: Response):
     """Readiness probe — returns 200 only when DB and Ollama are reachable."""
-    from src.schemas.settings import settings
     from src.repositories.database import engine
+    from src.schemas.settings import settings
 
     components: dict[str, str] = {}
 
@@ -30,9 +31,12 @@ async def readiness(response: Response):
     # Check Ollama
     try:
         import httpx
+
         async with httpx.AsyncClient(timeout=3.0) as client:
             r = await client.get(f"{settings.ollama_base_url}/api/tags")
-            components["ollama"] = "ok" if r.status_code == 200 else f"status {r.status_code}"
+            components["ollama"] = (
+                "ok" if r.status_code == 200 else f"status {r.status_code}"
+            )
     except Exception as e:
         components["ollama"] = f"unavailable: {e}"
 
@@ -50,8 +54,8 @@ async def readiness(response: Response):
 @router.get("/metrics")
 async def metrics():
     """Prometheus metrics endpoint."""
-    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
     from fastapi.responses import Response as FastAPIResponse
+    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
     return FastAPIResponse(
         content=generate_latest(),

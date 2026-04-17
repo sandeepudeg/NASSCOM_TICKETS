@@ -1,18 +1,16 @@
-
 import json
-from datetime import datetime
-from typing import Optional, List
 
 from src.schemas.ticket import (
-    TicketResponse,
     Category,
-    RoutingStatus,
     CausalContext,
-    SimilarTicket,
-    ResolutionSuggestion,
     EvaluationMatrix,
-    TicketStatus
+    ResolutionSuggestion,
+    RoutingStatus,
+    SimilarTicket,
+    TicketResponse,
+    TicketStatus,
 )
+
 
 def safe_enum(enum_cls, value, default=None):
     """Safely convert a value to an enum, returning default if invalid."""
@@ -23,14 +21,15 @@ def safe_enum(enum_cls, value, default=None):
     except (ValueError, KeyError):
         return default
 
+
 def ticket_to_response(
     ticket,
-    similar_tickets: Optional[List] = None,
-    resolution_suggestion: Optional[ResolutionSuggestion] = None,
-    assigned_department: Optional[str] = None,
+    similar_tickets: list | None = None,
+    resolution_suggestion: ResolutionSuggestion | None = None,
+    assigned_department: str | None = None,
 ) -> TicketResponse:
     """Centralized converter from Ticket ORM model to TicketResponse Pydantic schema."""
-    
+
     # 1. Handle Causal Context
     causal_context = None
     if ticket.causal_context_json:
@@ -42,10 +41,12 @@ def ticket_to_response(
             pass
 
     # 2. Reconstruct Evaluation Matrix from persisted columns
-    # We prefer the in-memory object if it exists (for new tickets), 
+    # We prefer the in-memory object if it exists (for new tickets),
     # otherwise we reconstruct from DB columns.
     eval_matrix = getattr(ticket, "evaluation_matrix_obj", None)
-    if not eval_matrix and (ticket.accuracy or ticket.f1_score or ticket.semantic_similarity):
+    if not eval_matrix and (
+        ticket.accuracy or ticket.f1_score or ticket.semantic_similarity
+    ):
         eval_matrix = EvaluationMatrix(
             accuracy=ticket.accuracy,
             f1_score=ticket.f1_score,
@@ -62,9 +63,9 @@ def ticket_to_response(
             if hasattr(ticket, "similar_tickets") and ticket.similar_tickets:
                 source_ids = [st.similar_ticket_id for st in ticket.similar_tickets]
             res_suggestion = ResolutionSuggestion(
-                steps=steps, 
+                steps=steps,
                 source_ticket_ids=source_ids,
-                root_cause=getattr(ticket, 'resolution_root_cause', None)
+                root_cause=getattr(ticket, "resolution_root_cause", None),
             )
         except Exception:
             pass
@@ -74,7 +75,11 @@ def ticket_to_response(
     try:
         # Check if relationship is loaded to avoid 500 lazy-load errors
         from sqlalchemy.orm import inspect
-        if inspect(ticket).mapper.relationships.similar_tickets in inspect(ticket).unloaded:
+
+        if (
+            inspect(ticket).mapper.relationships.similar_tickets
+            in inspect(ticket).unloaded
+        ):
             sim_tickets = []
         elif ticket.similar_tickets:
             sim_tickets = []
@@ -96,12 +101,18 @@ def ticket_to_response(
         sim_tickets = []
 
     # 5. Determine lifecycle stage (Business Logic)
-    lifecycle_stage = "Stage 5: Completed" if ticket.status == "resolved" else "Stage 4: Expert Review"
+    lifecycle_stage = (
+        "Stage 5: Completed"
+        if ticket.status == "resolved"
+        else "Stage 4: Expert Review"
+    )
     if ticket.routing_status == "pending_classification":
         lifecycle_stage = "Stage 1: Ingested"
-    elif not (assigned_department or getattr(ticket, 'assigned_department', None)):
+    elif not (assigned_department or getattr(ticket, "assigned_department", None)):
         lifecycle_stage = "Stage 2: Classified"
-    elif ticket.status == "open" and (assigned_department or getattr(ticket, 'assigned_department', None)):
+    elif ticket.status == "open" and (
+        assigned_department or getattr(ticket, "assigned_department", None)
+    ):
         lifecycle_stage = "Stage 3: Transferred"
 
     return TicketResponse(
@@ -113,7 +124,9 @@ def ticket_to_response(
         priority=ticket.priority,
         category=safe_enum(Category, ticket.category),
         status=safe_enum(TicketStatus, ticket.status, TicketStatus.OPEN),
-        routing_status=safe_enum(RoutingStatus, ticket.routing_status, RoutingStatus.PENDING_CLASSIFICATION),
+        routing_status=safe_enum(
+            RoutingStatus, ticket.routing_status, RoutingStatus.PENDING_CLASSIFICATION
+        ),
         confidence_score=ticket.confidence_score,
         evaluation_matrix=eval_matrix,
         causal_context=causal_context,
@@ -124,9 +137,10 @@ def ticket_to_response(
         resolved_at=ticket.resolved_at,
         similar_tickets=sim_tickets or [],
         resolution_suggestion=res_suggestion,
-        assigned_department=assigned_department or getattr(ticket, 'assigned_department', None),
-        source_channel=getattr(ticket, 'source_channel', 'web'),
+        assigned_department=assigned_department
+        or getattr(ticket, "assigned_department", None),
+        source_channel=getattr(ticket, "source_channel", "web"),
         lifecycle_stage=lifecycle_stage,
-        is_automation_candidate=getattr(ticket, 'is_automation_candidate', False),
-        is_repeated_issue=getattr(ticket, 'is_repeated_issue', False)
+        is_automation_candidate=getattr(ticket, "is_automation_candidate", False),
+        is_repeated_issue=getattr(ticket, "is_repeated_issue", False),
     )

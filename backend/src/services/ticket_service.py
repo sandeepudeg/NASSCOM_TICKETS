@@ -1,39 +1,40 @@
-from datetime import datetime
-from typing import Optional, AsyncGenerator
 import csv
 import io
+import json
+from collections.abc import AsyncGenerator
+from datetime import datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
+from opentelemetry import trace
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repositories.ticket_repository import TicketRepository
-from src.repositories.audit_repository import AuditLogRepository, AgentOverrideRepository
-from src.repositories.folder_repository import FolderRepository
-from src.schemas.ticket import (
-    TicketCreate,
-    TicketUpdate,
-    TicketResponse,
-    Category,
-    RoutingStatus,
-    CausalContext,
-    TicketListResponse,
-    TicketPaginationParams,
-    SimilarTicket,
-    ResolutionSuggestion,
-)
-from src.schemas.errors import HTTPError
-from src.schemas.settings import settings
-from src.services.ticket_assignment_service import TicketAssignmentService
-from src.services.routing_service import RoutingService
-from src.services.converters import ticket_to_response
+from config.observability import record_classification_latency
 from src.ml.classifier import classifier
 from src.ml.escalation_service import escalation_service
-from src.ml.rag_service import rag_service
-from src.ml.pii_scrubber import PIIScrubber
 from src.ml.pattern_detection import pattern_detection_service
-from config.observability import record_classification_latency
-from opentelemetry import trace
-
+from src.ml.pii_scrubber import PIIScrubber
+from src.ml.rag_service import rag_service
+from src.repositories.audit_repository import (
+    AgentOverrideRepository,
+    AuditLogRepository,
+)
+from src.repositories.folder_repository import FolderRepository
+from src.repositories.ticket_repository import TicketRepository
+from src.schemas.errors import HTTPError
+from src.schemas.settings import settings
+from src.schemas.ticket import (
+    Category,
+    ResolutionSuggestion,
+    RoutingStatus,
+    TicketCreate,
+    TicketListResponse,
+    TicketPaginationParams,
+    TicketResponse,
+    TicketUpdate,
+)
+from src.services.converters import ticket_to_response
+from src.services.routing_service import RoutingService
+from src.services.ticket_assignment_service import TicketAssignmentService
 
 logger = structlog.get_logger("services.ticket")
 
@@ -47,8 +48,6 @@ CATEGORY_SHORT_CODES = {
     Category.NETWORK: "NET",
     Category.ACCESS_MANAGEMENT: "ACC",
 }
-
-
 
 
 class TicketService:
@@ -65,7 +64,7 @@ class TicketService:
         self,
         ticket_data: TicketCreate,
         owner_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> TicketResponse:
         structured_payload_str = None
         if ticket_data.structured_payload:
@@ -93,9 +92,14 @@ class TicketService:
                     span.set_attribute("ticket.id", ticket.id)
                     span.set_attribute("ticket.owner_id", owner_id)
                     span.set_attribute("ticket.title.length", len(ticket.title))
-                    span.set_attribute("ticket.description.length", len(ticket.description))
-                    span.set_attribute("ticket.has_structured_payload", bool(ticket_data.structured_payload))
-                    
+                    span.set_attribute(
+                        "ticket.description.length", len(ticket.description)
+                    )
+                    span.set_attribute(
+                        "ticket.has_structured_payload",
+                        bool(ticket_data.structured_payload),
+                    )
+
                     trace_id = span.get_span_context().trace_id
                     span_id = span.get_span_context().span_id
 
@@ -105,10 +109,19 @@ class TicketService:
                         structured_payload=ticket_data.structured_payload,
                     )
 
-                    span.set_attribute("classification.category", classification.category.value)
-                    span.set_attribute("classification.confidence", classification.confidence_score)
-                    span.set_attribute("classification.routing_status", classification.routing_status.value)
-                    span.set_attribute("classification.outcome", classification.inference_outcome)
+                    span.set_attribute(
+                        "classification.category", classification.category.value
+                    )
+                    span.set_attribute(
+                        "classification.confidence", classification.confidence_score
+                    )
+                    span.set_attribute(
+                        "classification.routing_status",
+                        classification.routing_status.value,
+                    )
+                    span.set_attribute(
+                        "classification.outcome", classification.inference_outcome
+                    )
             except (NameError, TypeError):
                 # Tracing not available
                 start = perf_counter()
@@ -138,25 +151,31 @@ class TicketService:
             )
             ticket.causal_signal = classification.causal_signal
             ticket.parse_warning = classification.parse_warning
-            
+
             # Persist Intelligence Metrics
             if classification.evaluation_matrix:
                 ticket.evaluation_matrix_obj = classification.evaluation_matrix
                 ticket.accuracy = classification.evaluation_matrix.accuracy
                 ticket.f1_score = classification.evaluation_matrix.f1_score
-                ticket.semantic_similarity = classification.evaluation_matrix.semantic_similarity
-            
+                ticket.semantic_similarity = (
+                    classification.evaluation_matrix.semantic_similarity
+                )
+
             # --- Generate Readable Ticket Number ---
             try:
                 category_enum = Category(classification.category.value)
                 short_code = CATEGORY_SHORT_CODES.get(category_enum, "GEN")
-                
+
                 # Sequence based on global count (offset by 100 to look more established)
                 ticket_count = await self.ticket_repo.count_all()
                 ticket.ticket_number = f"TK-{short_code}-{ticket_count + 101:05d}"
-                logger.info("ticket.number_generated", ticket_number=ticket.ticket_number)
+                logger.info(
+                    "ticket.number_generated", ticket_number=ticket.ticket_number
+                )
             except Exception as e:
-                logger.warning("ticket.number_generation_failed", error=str(e), exc_info=True)
+                logger.warning(
+                    "ticket.number_generation_failed", error=str(e), exc_info=True
+                )
                 ticket.ticket_number = f"TK-GEN-{ticket.id[:5]}"
 
             try:
@@ -179,25 +198,28 @@ class TicketService:
 
             # --- Automated Departmental Transfer ---
             try:
-                dept_folder = await self.routing_service.get_or_create_department_folder(
-                    category=classification.category.value,
-                    owner_id=owner_id
+                dept_folder = (
+                    await self.routing_service.get_or_create_department_folder(
+                        category=classification.category.value, owner_id=owner_id
+                    )
                 )
                 await self.assignment_service.assign_ticket(
                     ticket_id=ticket.id,
                     folder_id=dept_folder.id,
                     user_id=owner_id,
-                    source_ip=source_ip
+                    source_ip=source_ip,
                 )
                 logger.info(
                     "ticket.departmental_transfer_complete",
                     ticket_id=ticket.id,
-                    department=dept_folder.name
+                    department=dept_folder.name,
                 )
                 # Store the assigned department name in the ticket object for the response
                 ticket.assigned_department = dept_folder.name
             except Exception as e:
-                logger.warning("ticket.routing_failed", error=str(e), ticket_id=ticket.id)
+                logger.warning(
+                    "ticket.routing_failed", error=str(e), ticket_id=ticket.id
+                )
                 ticket.assigned_department = "Pending Transfer"
 
             if classification.routing_status == RoutingStatus.ESCALATED:
@@ -227,36 +249,55 @@ class TicketService:
             if classification.routing_status == RoutingStatus.CLASSIFIED:
                 # Confident classification — attempt to suggest a resolution
                 try:
-                    resolved_tickets = await self.ticket_repo.get_resolved_tickets_for_rag()
+                    resolved_tickets = (
+                        await self.ticket_repo.get_resolved_tickets_for_rag()
+                    )
                     ticket_text = f"{ticket.title}. {ticket.description}"
-                    similar_tickets, low_confidence = await rag_service.find_similar_tickets(
-                        ticket_text=ticket_text,
-                        resolved_tickets=resolved_tickets,
+                    similar_tickets, low_confidence = (
+                        await rag_service.find_similar_tickets(
+                            ticket_text=ticket_text,
+                            resolved_tickets=resolved_tickets,
+                        )
                     )
                     if similar_tickets and not low_confidence:
-                        resolution_suggestion = await rag_service.generate_resolution_suggestion(
-                            title=ticket.title,
-                            description=ticket.description,
-                            similar_tickets=similar_tickets,
+                        resolution_suggestion = (
+                            await rag_service.generate_resolution_suggestion(
+                                title=ticket.title,
+                                description=ticket.description,
+                                similar_tickets=similar_tickets,
+                            )
                         )
                         # Persist RAG Insights
                         if resolution_suggestion:
-                            ticket.resolution_steps_json = json.dumps(resolution_suggestion.steps)
-                            ticket.resolution_root_cause = resolution_suggestion.root_cause
-                        
+                            ticket.resolution_steps_json = json.dumps(
+                                resolution_suggestion.steps
+                            )
+                            ticket.resolution_root_cause = (
+                                resolution_suggestion.root_cause
+                            )
+
                         # Automation Intelligence Candidate Logic (Bonus requirement)
                         # Flag as automation opportunity if confidence or similarity is extremely high (> 95%)
                         high_confidence = classification.confidence_score > 0.95
-                        high_similarity = any(st.similarity_score > 0.95 for st in similar_tickets)
+                        high_similarity = any(
+                            st.similarity_score > 0.95 for st in similar_tickets
+                        )
                         if high_confidence or high_similarity:
                             ticket.is_automation_candidate = True
-                            logger.info("ticket.automation_candidate_flagged", ticket_id=ticket.id, reason="high_confidence_or_similarity")
+                            logger.info(
+                                "ticket.automation_candidate_flagged",
+                                ticket_id=ticket.id,
+                                reason="high_confidence_or_similarity",
+                            )
                             # Add a note about automation to the steps
                             auto_suggest = "🤖 AGENTIC INSIGHT: This issue matches high-confidence patterns. RECOMMENDED: Deploy automated resolution script."
                             if resolution_suggestion:
                                 resolution_suggestion.steps.insert(0, auto_suggest)
 
-                        from src.repositories.models import SimilarTicket as SimilarTicketModel
+                        from src.repositories.models import (
+                            SimilarTicket as SimilarTicketModel,
+                        )
+
                         for st in similar_tickets:
                             st_model = SimilarTicketModel(
                                 ticket_id=ticket.id,
@@ -264,7 +305,7 @@ class TicketService:
                                 title=st.title,
                                 category=st.category.value,
                                 resolution_summary=st.resolution_summary,
-                                similarity_score=st.similarity_score
+                                similarity_score=st.similarity_score,
                             )
                             self.session.add(st_model)
                     logger.info(
@@ -284,11 +325,13 @@ class TicketService:
                 # Fetch recent tickets to check for patterns
                 # We reuse the resolved tickets fetcher but we actually need recent tickets (both open/resolved)
                 # For now, we'll check against a small window of recent tickets
-                recent_tickets = await self.ticket_repo.get_resolved_tickets_for_rag(limit=50)
-                
+                recent_tickets = await self.ticket_repo.get_resolved_tickets_for_rag(
+                    limit=50
+                )
+
                 # Check for patterns
                 alerts = await pattern_detection_service.detect_patterns(recent_tickets)
-                
+
                 if alerts:
                     # Check if the current ticket matches any alert
                     for alert in alerts:
@@ -301,9 +344,13 @@ class TicketService:
                             else:
                                 resolution_suggestion = ResolutionSuggestion(
                                     steps=[automation_note],
-                                    source_ticket_ids=alert.get("ticket_ids", [])[:3]
+                                    source_ticket_ids=alert.get("ticket_ids", [])[:3],
                                 )
-                            logger.info("ticket.repeated_issue_detected", ticket_id=ticket.id, cluster_size=alert['cluster_size'])
+                            logger.info(
+                                "ticket.repeated_issue_detected",
+                                ticket_id=ticket.id,
+                                cluster_size=alert["cluster_size"],
+                            )
                             break
             except Exception as e:
                 logger.warning("ticket.pattern_detection_failed", error=str(e))
@@ -332,19 +379,19 @@ class TicketService:
 
         await self.session.commit()
         return ticket_to_response(
-            ticket, 
-            similar_tickets=similar_tickets, 
+            ticket,
+            similar_tickets=similar_tickets,
             resolution_suggestion=resolution_suggestion,
-            assigned_department=getattr(ticket, 'assigned_department', None)
+            assigned_department=getattr(ticket, "assigned_department", None),
         )
 
     async def list_tickets(
         self,
-        owner_id: Optional[str] = None,
-        status: Optional[str] = None,
-        category: Optional[str] = None,
-        routing_status: Optional[str] = None,
-        params: Optional[TicketPaginationParams] = None,
+        owner_id: str | None = None,
+        status: str | None = None,
+        category: str | None = None,
+        routing_status: str | None = None,
+        params: TicketPaginationParams | None = None,
     ) -> TicketListResponse:
         p_size = params.page_size if params else 50
         p_cursor = params.cursor if params else None
@@ -381,7 +428,7 @@ class TicketService:
         ticket_id: str,
         ticket_data: TicketUpdate,
         user_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> TicketResponse:
         ticket = await self.ticket_repo.get_by_id(ticket_id)
         if not ticket:
@@ -400,13 +447,14 @@ class TicketService:
         self,
         ticket_id: str,
         user_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> None:
         ticket = await self.ticket_repo.get_by_id(ticket_id)
         if not ticket:
             raise HTTPError.not_found("Ticket not found")
 
         from src.repositories.ticket_repository import TicketAssignmentRepository
+
         assignment_repo = TicketAssignmentRepository(self.session)
         await assignment_repo.delete_by_ticket(ticket_id)
         await self.ticket_repo.delete(ticket)
@@ -424,7 +472,7 @@ class TicketService:
         ticket_id: str,
         new_category: Category,
         agent_user_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> TicketResponse:
         ticket = await self.ticket_repo.get_by_id(ticket_id)
         if not ticket:
@@ -458,9 +506,9 @@ class TicketService:
 
     async def export_tickets(
         self,
-        status: Optional[str] = None,
-        category: Optional[str] = None,
-        routing_status: Optional[str] = None,
+        status: str | None = None,
+        category: str | None = None,
+        routing_status: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """Generate a CSR stream for a complete dump of tickets."""
         # Use a larger page size for export query but we iterate to keep memory low
@@ -468,18 +516,30 @@ class TicketService:
             status=status,
             category=category,
             routing_status=routing_status,
-            page_size=1000, # Large batch for export
+            page_size=1000,  # Large batch for export
         )
 
         output = io.StringIO()
         writer = csv.writer(output)
 
         # Header
-        writer.writerow([
-            "Sr. No", "Ticket ID", "Ticket Number", "Title", "Description", 
-            "Category", "Status", "Priority", "Confidence Score", 
-            "Routing Status", "Source Channel", "Created At", "Assigned At"
-        ])
+        writer.writerow(
+            [
+                "Sr. No",
+                "Ticket ID",
+                "Ticket Number",
+                "Title",
+                "Description",
+                "Category",
+                "Status",
+                "Priority",
+                "Confidence Score",
+                "Routing Status",
+                "Source Channel",
+                "Created At",
+                "Assigned At",
+            ]
+        )
         yield output.getvalue()
         output.seek(0)
         output.truncate(0)
@@ -487,25 +547,26 @@ class TicketService:
         for i, t in enumerate(tickets, 1):
             # Extract assigned_at from assignments if available
             assigned_at = ""
-            if hasattr(t, 'assignments') and t.assignments:
+            if hasattr(t, "assignments") and t.assignments:
                 assigned_at = t.assignments[0].assigned_at.isoformat()
 
-            writer.writerow([
-                i,
-                t.id,
-                t.ticket_number or "N/A",
-                t.title,
-                t.description,
-                t.category,
-                t.status,
-                t.priority or "Normal",
-                f"{t.confidence_score * 100:.1f}%" if t.confidence_score else "0%",
-                t.routing_status,
-                t.source_channel,
-                t.created_at.isoformat() if t.created_at else "",
-                assigned_at
-            ])
+            writer.writerow(
+                [
+                    i,
+                    t.id,
+                    t.ticket_number or "N/A",
+                    t.title,
+                    t.description,
+                    t.category,
+                    t.status,
+                    t.priority or "Normal",
+                    f"{t.confidence_score * 100:.1f}%" if t.confidence_score else "0%",
+                    t.routing_status,
+                    t.source_channel,
+                    t.created_at.isoformat() if t.created_at else "",
+                    assigned_at,
+                ]
+            )
             yield output.getvalue()
             output.seek(0)
             output.truncate(0)
-

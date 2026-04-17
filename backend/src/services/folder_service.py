@@ -1,32 +1,30 @@
-from datetime import datetime
-from typing import Optional
 import re
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from opentelemetry import trace
 import structlog
+from opentelemetry import trace
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repositories.folder_repository import FolderRepository
 from src.repositories.audit_repository import AuditLogRepository
+from src.repositories.folder_repository import FolderRepository
+from src.schemas.errors import HTTPError
 from src.schemas.folder import (
     FolderCreate,
-    FolderUpdate,
-    FolderResponse,
     FolderListResponse,
     FolderPaginationParams,
+    FolderResponse,
     FolderStat,
     FolderStatsResponse,
+    FolderUpdate,
 )
-from src.schemas.errors import HTTPError, ProblemDetail
-from src.schemas.settings import settings
-
 
 logger = structlog.get_logger("services.folder")
 
 
 class FolderService:
     MAX_FOLDERS_PER_USER = 500
-    HTML_INJECTION_PATTERN = re.compile(r"<[^>]+>|\bjavascript:|on\w+\s*=", re.IGNORECASE)
+    HTML_INJECTION_PATTERN = re.compile(
+        r"<[^>]+>|\bjavascript:|on\w+\s*=", re.IGNORECASE
+    )
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -34,14 +32,14 @@ class FolderService:
         self.audit_repo = AuditLogRepository(session)
 
     async def create_folder(
-        self, folder_data: FolderCreate, owner_id: str, source_ip: Optional[str] = None
+        self, folder_data: FolderCreate, owner_id: str, source_ip: str | None = None
     ) -> FolderResponse:
         tracer = trace.get_tracer("services.folder")
-        
+
         with tracer.start_as_current_span("folder.create") as span:
             name = folder_data.name.strip()
             span.set_attribute("folder.name_length", len(name))
-            
+
             trace_id = span.get_span_context().trace_id
             span_id = span.get_span_context().span_id
 
@@ -49,10 +47,14 @@ class FolderService:
                 raise HTTPError.validation_error("Folder name cannot be empty")
 
             if len(name) > 255:
-                raise HTTPError.validation_error("Folder name cannot exceed 255 characters")
+                raise HTTPError.validation_error(
+                    "Folder name cannot exceed 255 characters"
+                )
 
             if self.HTML_INJECTION_PATTERN.search(name):
-                raise HTTPError.validation_error("Folder name contains invalid characters")
+                raise HTTPError.validation_error(
+                    "Folder name contains invalid characters"
+                )
 
             existing = await self.folder_repo.get_by_name(name, owner_id)
             if existing:
@@ -73,10 +75,10 @@ class FolderService:
                 source_ip=source_ip,
                 metadata={"folder_name": name},
             )
-            
+
             span.set_attribute("folder.id", folder.id)
             span.set_attribute("folder.owner_id", owner_id)
-            
+
             logger.info(
                 "folder.created",
                 trace_id=f"{trace_id:032x}",
@@ -103,7 +105,7 @@ class FolderService:
         params: FolderPaginationParams,
     ) -> FolderListResponse:
         tracer = trace.get_tracer("services.folder")
-        
+
         with tracer.start_as_current_span("folder.list") as span:
             folders, next_cursor = await self.folder_repo.list_folders(
                 owner_id=owner_id,
@@ -116,7 +118,7 @@ class FolderService:
             )
 
             folder_responses = [FolderResponse.model_validate(f) for f in folders]
-            
+
             span.set_attribute("folder.count", len(folder_responses))
             span.set_attribute("folder.has_next", next_cursor is not None)
 
@@ -131,10 +133,10 @@ class FolderService:
         folder_id: str,
         folder_data: FolderUpdate,
         owner_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> FolderResponse:
         tracer = trace.get_tracer("services.folder")
-        
+
         with tracer.start_as_current_span("folder.rename") as span:
             folder = await self.folder_repo.get_by_id(folder_id, owner_id)
             if not folder:
@@ -149,10 +151,14 @@ class FolderService:
                 raise HTTPError.validation_error("Folder name cannot be empty")
 
             if len(name) > 255:
-                raise HTTPError.validation_error("Folder name cannot exceed 255 characters")
+                raise HTTPError.validation_error(
+                    "Folder name cannot exceed 255 characters"
+                )
 
             if self.HTML_INJECTION_PATTERN.search(name):
-                raise HTTPError.validation_error("Folder name contains invalid characters")
+                raise HTTPError.validation_error(
+                    "Folder name contains invalid characters"
+                )
 
             existing = await self.folder_repo.get_by_name(name, owner_id)
             if existing and existing.id != folder_id:
@@ -168,7 +174,7 @@ class FolderService:
                 source_ip=source_ip,
                 metadata={"old_name": old_name, "new_name": name},
             )
-            
+
             span.set_attribute("folder.id", folder_id)
             span.set_attribute("folder.old_name", old_name)
             span.set_attribute("folder.new_name", name)
@@ -179,10 +185,10 @@ class FolderService:
         self,
         folder_id: str,
         owner_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> None:
         tracer = trace.get_tracer("services.folder")
-        
+
         with tracer.start_as_current_span("folder.delete") as span:
             folder = await self.folder_repo.get_by_id(folder_id, owner_id)
             if not folder:
@@ -201,7 +207,7 @@ class FolderService:
                 source_ip=source_ip,
                 metadata={"folder_name": folder.name},
             )
-            
+
             span.set_attribute("folder.id", folder_id)
             span.set_attribute("folder.name", folder.name)
 
@@ -217,6 +223,6 @@ class FolderService:
 
     async def get_all_folder_stats(self, owner_id: str) -> FolderStatsResponse:
         stats_list = await self.folder_repo.get_all_stats(owner_id)
-        
+
         stats = [FolderStat(**s) for s in stats_list]
         return FolderStatsResponse(stats=stats, total_folders=len(stats))

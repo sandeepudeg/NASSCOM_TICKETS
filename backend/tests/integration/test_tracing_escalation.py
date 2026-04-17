@@ -1,20 +1,20 @@
-import asyncio
-from uuid import uuid4
-
-import httpx
 import pytest
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.services.ticket_service import TicketService
-from src.schemas.ticket import TicketCreate, Category, ClassificationResult, RoutingStatus
-from src.repositories.models import Base
 from src.ml.classifier import classifier
 from src.ml.escalation_service import escalation_service
+from src.repositories.models import Base
+from src.schemas.ticket import (
+    Category,
+    ClassificationResult,
+    RoutingStatus,
+    TicketCreate,
+)
+from src.services.ticket_service import TicketService
 
 
 @pytest.mark.asyncio
@@ -28,11 +28,15 @@ async def test_classify_to_escalate_produces_spans(monkeypatch):
     tracer = trace.get_tracer("test")
 
     # SQLite in-memory DB
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    session_maker = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     # Mock classifier to force escalation
     async def fake_classify(title: str, description: str, structured_payload=None):
@@ -46,12 +50,15 @@ async def test_classify_to_escalate_produces_spans(monkeypatch):
     monkeypatch.setattr(classifier, "classify", fake_classify)
 
     # Mock webhook to avoid network but keep span
-    async def fake_notify(self, ticket_id: str, title: str, category: str, confidence_score: float):
+    async def fake_notify(
+        self, ticket_id: str, title: str, category: str, confidence_score: float
+    ):
         parent_ctx = trace.set_span_in_context(trace.get_current_span())
         with tracer.start_as_current_span("escalation.webhook", context=parent_ctx):
             return True
 
     import types
+
     monkeypatch.setattr(
         escalation_service,
         "notify_escalation",
@@ -63,7 +70,9 @@ async def test_classify_to_escalate_produces_spans(monkeypatch):
         ticket_data = TicketCreate(title="Test", description="trigger escalation")
 
         with tracer.start_as_current_span("test.request"):
-            await service.create_ticket(ticket_data, owner_id="user-123", source_ip="127.0.0.1")
+            await service.create_ticket(
+                ticket_data, owner_id="user-123", source_ip="127.0.0.1"
+            )
 
     spans = exporter.get_finished_spans()
     names = {s.name for s in spans}

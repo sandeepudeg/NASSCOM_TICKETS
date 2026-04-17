@@ -2,11 +2,11 @@
 Unit tests for retrain_classifier.py
 Focus: concurrency guard, preprocessing, and happy-path orchestration.
 """
+
 import json
-import os
 import sys
-from types import SimpleNamespace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -46,7 +46,9 @@ def test_load_and_preprocess_filters_invalid_and_scrubs(monkeypatch):
         calls.append(text)
         return f"[SCRUB]{text}", {}
 
-    monkeypatch.setattr("src.ml.pii_scrubber.PIIScrubber.scrub", staticmethod(fake_scrub))
+    monkeypatch.setattr(
+        "src.ml.pii_scrubber.PIIScrubber.scrub", staticmethod(fake_scrub)
+    )
 
     cleaned = rc.load_and_preprocess([str(data_path)])
     assert len(cleaned) == 1
@@ -61,13 +63,13 @@ def test_normalize_category():
     # Exact match
     assert rc.normalize_category("Infrastructure") == "Infrastructure"
     assert rc.normalize_category("Application") == "Application"
-    
+
     # Case-insensitive mapping
     assert rc.normalize_category("hardware") == "Infrastructure"
     assert rc.normalize_category("software") == "Application"
     assert rc.normalize_category("database") == "Database"
     assert rc.normalize_category("network") == "Network"
-    
+
     # Unmapped category
     assert rc.normalize_category("Unknown") is None
     assert rc.normalize_category("") is None
@@ -81,7 +83,7 @@ def test_map_dataset_fields():
         "title": "Test ticket",
         "description": "Test description",
         "category": "Infrastructure",
-        "resolution": "Fixed it"
+        "resolution": "Fixed it",
     }
     mapped1 = rc.map_dataset_fields(record1)
     assert mapped1["title"] == "Test ticket"
@@ -89,33 +91,33 @@ def test_map_dataset_fields():
     assert mapped1["category"] == "Infrastructure"
     assert mapped1["resolution"] == "Fixed it"
     assert mapped1["owner_id"] == "system"
-    
+
     # Alternative field names
     record2 = {
         "summary": "Test summary",
         "details": "Test details",
         "type": "hardware",
-        "solution": "Replaced hardware"
+        "solution": "Replaced hardware",
     }
     mapped2 = rc.map_dataset_fields(record2)
     assert mapped2["title"] == "Test summary"
     assert mapped2["description"] == "Test details"
     assert mapped2["category"] == "Infrastructure"  # hardware -> Infrastructure
     assert mapped2["resolution"] == "Replaced hardware"
-    
+
     # ServiceNow-style fields
     record3 = {
         "short_description": "Server down",
         "long_description": "Production server is down",
         "incident_type": "server",
-        "resolution_notes": "Restarted server"
+        "resolution_notes": "Restarted server",
     }
     mapped3 = rc.map_dataset_fields(record3)
     assert mapped3["title"] == "Server down"
     assert mapped3["description"] == "Production server is down"
     assert mapped3["category"] == "Infrastructure"  # server -> Infrastructure
     assert mapped3["resolution"] == "Restarted server"
-    
+
     # Missing fields
     record4 = {}
     mapped4 = rc.map_dataset_fields(record4)
@@ -136,7 +138,9 @@ async def test_retrain_happy_path(monkeypatch):
     dataset = [{"title": "t", "description": "d", "category": "Application"}]
     data_path = base / "data.json"
     data_path.write_text(json.dumps(dataset))
-    monkeypatch.setattr(rc, "download_datasets_from_minio", lambda out: [str(data_path)])
+    monkeypatch.setattr(
+        rc, "download_datasets_from_minio", lambda out: [str(data_path)]
+    )
 
     # no override labels
     async def fake_overrides():

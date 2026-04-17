@@ -14,7 +14,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -27,33 +27,38 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@postgres:5432/tickets_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@postgres:5432/tickets_db"
+)
 RETENTION_DAYS = int(os.getenv("PURGE_RETENTION_DAYS", "365"))
 
 
 async def purge_deleted_folders() -> dict:
     """
     Purge soft-deleted folders and their associations older than RETENTION_DAYS.
-    
+
     Returns:
         dict: Statistics about the purge operation
     """
     engine = create_async_engine(DATABASE_URL, echo=False)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    
+
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)
-    
-    logger.info(f"purge_started", extra={
-        "cutoff_date": cutoff_date.isoformat(),
-        "retention_days": RETENTION_DAYS
-    })
-    
+
+    logger.info(
+        "purge_started",
+        extra={
+            "cutoff_date": cutoff_date.isoformat(),
+            "retention_days": RETENTION_DAYS,
+        },
+    )
+
     stats = {
         "folders_purged": 0,
         "associations_purged": 0,
         "cutoff_date": cutoff_date.isoformat(),
     }
-    
+
     try:
         async with async_session() as session:
             async with session.begin():
@@ -63,48 +68,49 @@ async def purge_deleted_folders() -> dict:
                     WHERE deleted_at IS NOT NULL
                     AND deleted_at < :cutoff_date
                 """)
-                
-                result = await session.execute(find_folders_query, {"cutoff_date": cutoff_date})
+
+                result = await session.execute(
+                    find_folders_query, {"cutoff_date": cutoff_date}
+                )
                 folder_ids = [row[0] for row in result.fetchall()]
-                
+
                 if not folder_ids:
                     logger.info("purge_completed_no_folders")
                     return stats
-                
-                logger.info(f"purge_folders_found", extra={"count": len(folder_ids)})
-                
+
+                logger.info("purge_folders_found", extra={"count": len(folder_ids)})
+
                 # Delete associations for these folders
                 delete_associations_query = text("""
                     DELETE FROM ticket_folder_associations
                     WHERE folder_id = ANY(:folder_ids)
                 """)
-                
+
                 associations_result = await session.execute(
-                    delete_associations_query,
-                    {"folder_ids": folder_ids}
+                    delete_associations_query, {"folder_ids": folder_ids}
                 )
                 stats["associations_purged"] = associations_result.rowcount
-                
-                logger.info(f"purge_associations_deleted", extra={
-                    "count": stats["associations_purged"]
-                })
-                
+
+                logger.info(
+                    "purge_associations_deleted",
+                    extra={"count": stats["associations_purged"]},
+                )
+
                 # Delete the folders themselves
                 delete_folders_query = text("""
                     DELETE FROM folders
                     WHERE id = ANY(:folder_ids)
                 """)
-                
+
                 folders_result = await session.execute(
-                    delete_folders_query,
-                    {"folder_ids": folder_ids}
+                    delete_folders_query, {"folder_ids": folder_ids}
                 )
                 stats["folders_purged"] = folders_result.rowcount
-                
-                logger.info(f"purge_folders_deleted", extra={
-                    "count": stats["folders_purged"]
-                })
-                
+
+                logger.info(
+                    "purge_folders_deleted", extra={"count": stats["folders_purged"]}
+                )
+
                 # Write audit log entry
                 audit_query = text("""
                     INSERT INTO audit_log (
@@ -125,30 +131,32 @@ async def purge_deleted_folders() -> dict:
                         :metadata::jsonb
                     )
                 """)
-                
-                await session.execute(audit_query, {
-                    "timestamp": datetime.now(timezone.utc),
-                    "metadata": {
-                        "folders_purged": stats["folders_purged"],
-                        "associations_purged": stats["associations_purged"],
-                        "cutoff_date": cutoff_date.isoformat(),
-                        "retention_days": RETENTION_DAYS,
-                    }
-                })
-                
+
+                await session.execute(
+                    audit_query,
+                    {
+                        "timestamp": datetime.now(timezone.utc),
+                        "metadata": {
+                            "folders_purged": stats["folders_purged"],
+                            "associations_purged": stats["associations_purged"],
+                            "cutoff_date": cutoff_date.isoformat(),
+                            "retention_days": RETENTION_DAYS,
+                        },
+                    },
+                )
+
                 logger.info("purge_completed_successfully", extra=stats)
-                
+
     except Exception as e:
-        logger.error(f"purge_failed", extra={
-            "error": str(e),
-            "error_type": type(e).__name__
-        })
+        logger.error(
+            "purge_failed", extra={"error": str(e), "error_type": type(e).__name__}
+        )
         stats["error"] = str(e)
         raise
-    
+
     finally:
         await engine.dispose()
-    
+
     return stats
 
 
@@ -160,10 +168,9 @@ async def main():
         logger.info("purge_job_completed", extra=stats)
         sys.exit(0)
     except Exception as e:
-        logger.error(f"purge_job_failed", extra={
-            "error": str(e),
-            "error_type": type(e).__name__
-        })
+        logger.error(
+            "purge_job_failed", extra={"error": str(e), "error_type": type(e).__name__}
+        )
         sys.exit(1)
 
 

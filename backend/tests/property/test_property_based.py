@@ -1,9 +1,10 @@
-from hypothesis import given, settings, assume, example, HealthCheck
 import hypothesis.strategies as st
-from src.ml.classifier import CATEGORY_DEFINITIONS
-from src.schemas.ticket import Category, TicketStatus, RoutingStatus
-from src.ml.embedding_service import embedding_service
 import numpy as np
+from hypothesis import HealthCheck, assume, example, given, settings
+
+from src.ml.classifier import CATEGORY_DEFINITIONS
+from src.ml.embedding_service import embedding_service
+from src.schemas.ticket import Category, RoutingStatus, TicketStatus
 
 
 class TestPropertyBasedClassification:

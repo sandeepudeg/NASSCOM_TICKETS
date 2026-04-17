@@ -1,13 +1,10 @@
 from fastapi import APIRouter, Depends, Header, Query
-from typing import Optional
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repositories.database import get_db
 from src.repositories.ticket_repository import TicketRepository
-from src.repositories.audit_repository import AuditLogRepository, AgentOverrideRepository
-from src.schemas.ticket import Category, TicketResponse, TicketListResponse
-from src.schemas.errors import ProblemDetail, HTTPError
+from src.schemas.errors import ProblemDetail
+from src.schemas.ticket import Category, TicketListResponse, TicketResponse
 
 router = APIRouter(prefix="/escalations", tags=["escalations"])
 
@@ -15,7 +12,7 @@ router = APIRouter(prefix="/escalations", tags=["escalations"])
 @router.get("", response_model=TicketListResponse)
 async def get_escalation_queue(
     page_size: int = Query(25, ge=1, le=200),
-    cursor: Optional[str] = Query(None),
+    cursor: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     """List all escalated tickets sorted oldest-first (minimises SLA breach risk)."""
@@ -43,7 +40,7 @@ async def override_routing(
     ticket_id: str,
     corrected_category: Category,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     """Override the classifier's routing decision and record the label for retraining."""

@@ -1,14 +1,15 @@
 import os
 from typing import Optional
-import numpy as np
 
+import numpy as np
 from sentence_transformers import SentenceTransformer
+
 from src.schemas.settings import settings
 
 
 class EmbeddingService:
     _instance: Optional["EmbeddingService"] = None
-    _model: Optional[SentenceTransformer] = None
+    _model: SentenceTransformer | None = None
     _allow_remote_download: bool = (
         os.getenv("ALLOW_EMBEDDING_DOWNLOAD", "false").lower() == "true"
     )
@@ -83,10 +84,15 @@ class EmbeddingService:
     @property
     def model_name(self) -> str:
         # sentence-transformers >= 3.x stores it differently
-        return getattr(self._model, "name_or_path",
-               getattr(self._model, "model_card_data", {}).get("model_name", "all-MiniLM-L6-v2"))
+        return getattr(
+            self._model,
+            "name_or_path",
+            getattr(self._model, "model_card_data", {}).get(
+                "model_name", "all-MiniLM-L6-v2"
+            ),
+        )
 
-    def reload(self, model_name: Optional[str] = None) -> None:
+    def reload(self, model_name: str | None = None) -> None:
         if model_name:
             os.environ["EMBEDDING_MODEL"] = model_name
         self._model = None

@@ -1,7 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AuditAction(str, Enum):
@@ -29,13 +30,13 @@ class AuditLogEntry(BaseModel):
     action_type: AuditAction
     target_resource_id: str
     timestamp: datetime
-    source_ip: Optional[str] = None
+    source_ip: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class AuditLogListResponse(BaseModel):
     entries: list[AuditLogEntry]
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
     total: int
 
 
@@ -56,9 +57,9 @@ class PatternAlert(BaseModel):
     time_window_days: int
     ticket_ids: list[str]
     status: PatternAlertStatus = PatternAlertStatus.ACTIVE
-    snooze_until: Optional[datetime] = None
+    snooze_until: datetime | None = None
     created_at: datetime
-    acknowledged_at: Optional[datetime] = None
+    acknowledged_at: datetime | None = None
 
 
 class PatternAlertResponse(BaseModel):

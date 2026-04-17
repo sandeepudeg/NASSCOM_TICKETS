@@ -1,10 +1,8 @@
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from src.repositories.models import Folder, TicketFolderAssignment
 
@@ -28,7 +26,7 @@ class FolderRepository:
 
     async def get_by_id(
         self, folder_id: str, owner_id: str, include_deleted: bool = False
-    ) -> Optional[Folder]:
+    ) -> Folder | None:
         query = select(Folder).where(
             Folder.id == folder_id, Folder.owner_id == owner_id
         )
@@ -39,7 +37,7 @@ class FolderRepository:
 
     async def get_by_name(
         self, name: str, owner_id: str, include_deleted: bool = False
-    ) -> Optional[Folder]:
+    ) -> Folder | None:
         query = select(Folder).where(
             Folder.name == name.strip(), Folder.owner_id == owner_id
         )
@@ -59,12 +57,12 @@ class FolderRepository:
         self,
         owner_id: str,
         page_size: int = 50,
-        cursor: Optional[str] = None,
-        name_filter: Optional[str] = None,
+        cursor: str | None = None,
+        name_filter: str | None = None,
         sort_by: str = "created_at",
         sort_dir: str = "desc",
         include_deleted: bool = False,
-    ) -> tuple[list[Folder], Optional[str]]:
+    ) -> tuple[list[Folder], str | None]:
         query = select(Folder).where(Folder.owner_id == owner_id)
 
         if not include_deleted:
@@ -133,35 +131,43 @@ class FolderRepository:
     async def get_all_stats(self, owner_id: str) -> list[dict]:
         """Aggregate statistics for all folders owned by a user."""
         from src.repositories.models import Ticket
-        
+
         # Base query to get folders and their counts
         query = (
             select(
                 Folder.id,
                 Folder.name,
                 func.count(Ticket.id).label("total_tickets"),
-                func.count(func.nullif(Ticket.status == "resolved", False)).label("resolved_tickets"),
-                func.count(func.nullif(Ticket.status != "resolved", False)).label("open_tickets"),
+                func.count(func.nullif(Ticket.status == "resolved", False)).label(
+                    "resolved_tickets"
+                ),
+                func.count(func.nullif(Ticket.status != "resolved", False)).label(
+                    "open_tickets"
+                ),
             )
-            .outerjoin(TicketFolderAssignment, Folder.id == TicketFolderAssignment.folder_id)
+            .outerjoin(
+                TicketFolderAssignment, Folder.id == TicketFolderAssignment.folder_id
+            )
             .outerjoin(Ticket, TicketFolderAssignment.ticket_id == Ticket.id)
             .where(Folder.owner_id == owner_id, Folder.deleted_at.is_(None))
             .group_by(Folder.id, Folder.name)
         )
-        
+
         result = await self.session.execute(query)
         stats = []
         for row in result.all():
             total = row[2]
             resolved = row[3]
             efficiency = (resolved / total * 100) if total > 0 else 0.0
-            
-            stats.append({
-                "id": row[0],
-                "name": row[1],
-                "total_tickets": total,
-                "resolved_tickets": resolved,
-                "open_tickets": row[4],
-                "efficiency": round(efficiency, 1)
-            })
+
+            stats.append(
+                {
+                    "id": row[0],
+                    "name": row[1],
+                    "total_tickets": total,
+                    "resolved_tickets": resolved,
+                    "open_tickets": row[4],
+                    "efficiency": round(efficiency, 1),
+                }
+            )
         return stats

@@ -1,5 +1,5 @@
-import sqlite3
 import os
+import sqlite3
 
 db_path = "d:/Learning/Self_learning/Nasscom/Tickets/backend/tickets.db"
 
@@ -22,7 +22,9 @@ except sqlite3.OperationalError as e:
 
 try:
     print("Adding 'is_automation_candidate' column...")
-    cursor.execute("ALTER TABLE tickets ADD COLUMN is_automation_candidate BOOLEAN DEFAULT 0 NOT NULL")
+    cursor.execute(
+        "ALTER TABLE tickets ADD COLUMN is_automation_candidate BOOLEAN DEFAULT 0 NOT NULL"
+    )
     print("Column 'is_automation_candidate' added successfully.")
 except sqlite3.OperationalError as e:
     if "duplicate column name" in str(e):

@@ -55,9 +55,7 @@ def build_ticket_text(ticket: Ticket) -> str:
 
 async def fetch_resolved_tickets(session: AsyncSession) -> list[Ticket]:
     """Load all resolved tickets (our RAG knowledge base)."""
-    result = await session.execute(
-        select(Ticket).where(Ticket.status == "resolved")
-    )
+    result = await session.execute(select(Ticket).where(Ticket.status == "resolved"))
     return result.scalars().all()
 
 
@@ -68,10 +66,20 @@ async def fetch_already_indexed_ids(session: AsyncSession) -> set[str]:
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="Embed all resolved tickets for RAG retrieval")
-    parser.add_argument("--reindex", action="store_true", help="Delete all embeddings and re-embed from scratch")
-    parser.add_argument("--batch-size", type=int, default=32, help="Embedding batch size (default: 32)")
-    parser.add_argument("--dry-run", action="store_true", help="Show stats without writing embeddings")
+    parser = argparse.ArgumentParser(
+        description="Embed all resolved tickets for RAG retrieval"
+    )
+    parser.add_argument(
+        "--reindex",
+        action="store_true",
+        help="Delete all embeddings and re-embed from scratch",
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=32, help="Embedding batch size (default: 32)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show stats without writing embeddings"
+    )
     args = parser.parse_args()
 
     engine = create_async_engine(settings.database_url, echo=False)
@@ -87,7 +95,9 @@ async def main():
             logger.info("    Done.")
 
         resolved_tickets = await fetch_resolved_tickets(session)
-        logger.info(f"📋  Found {len(resolved_tickets)} resolved tickets in the database.")
+        logger.info(
+            f"📋  Found {len(resolved_tickets)} resolved tickets in the database."
+        )
 
         already_indexed = await fetch_already_indexed_ids(session)
         logger.info(f"🔑  Already embedded: {len(already_indexed)} tickets.")
@@ -96,7 +106,9 @@ async def main():
         logger.info(f"📝  Tickets needing embedding: {len(to_embed)}")
 
         if not to_embed:
-            logger.info("✅  Nothing to do — all resolved tickets are already vectorized.")
+            logger.info(
+                "✅  Nothing to do — all resolved tickets are already vectorized."
+            )
             return
 
         if args.dry_run:
@@ -124,13 +136,15 @@ async def main():
                     model_version=model_version,
                 )
                 session.add(te)
-            
+
             await session.commit()
             embedded_count += len(batch)
             logger.info(f"    Embedded {embedded_count}/{len(to_embed)} tickets...")
 
         logger.info(f"✅  Done! {embedded_count} new embeddings stored.")
-        logger.info("    RAG service will automatically use these for resolution suggestions.")
+        logger.info(
+            "    RAG service will automatically use these for resolution suggestions."
+        )
 
 
 if __name__ == "__main__":

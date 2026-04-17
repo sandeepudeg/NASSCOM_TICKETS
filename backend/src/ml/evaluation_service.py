@@ -1,16 +1,18 @@
 import json
 import logging
-from typing import Optional
+
 from ollama import AsyncClient
+
 from src.schemas.settings import settings
-from src.schemas.ticket import EvaluationMatrix, Category
+from src.schemas.ticket import Category, EvaluationMatrix
 
 logger = logging.getLogger(__name__)
+
 
 class EvaluationService:
     def __init__(self):
         self.ollama_model = settings.ollama_model
-        self._client: Optional[AsyncClient] = None
+        self._client: AsyncClient | None = None
 
     @property
     def client(self) -> AsyncClient:
@@ -31,7 +33,9 @@ class EvaluationService:
         Evaluate the AI's ticket processing using LLM-as-a-judge.
         If enable_judge is True, performs a more intensive cross-reference check.
         """
-        judge_type = "High-Intensity Shadow Auditor" if enable_judge else "Senior Technical Lead"
+        judge_type = (
+            "High-Intensity Shadow Auditor" if enable_judge else "Senior Technical Lead"
+        )
         extra_criteria = ""
         if enable_judge:
             extra_criteria = """
@@ -90,7 +94,7 @@ Example:
                 content = content.split("```")[-1].split("```")[0].strip()
 
             data = json.loads(content)
-            
+
             return EvaluationMatrix(
                 accuracy=float(data.get("accuracy", confidence_score)),
                 solution_design=float(data.get("solution_design", 0.0)),
@@ -98,15 +102,20 @@ Example:
                 feasibility=float(data.get("feasibility", 0.0)),
                 security=float(data.get("security", 0.0)),
                 innovation=float(data.get("innovation", 0.0)),
-                semantic_similarity=float(confidence_score), # Using confidence as a proxy for similarity
-                judge_explanation=data.get("judge_explanation", "Evaluation completed.")
+                semantic_similarity=float(
+                    confidence_score
+                ),  # Using confidence as a proxy for similarity
+                judge_explanation=data.get(
+                    "judge_explanation", "Evaluation completed."
+                ),
             )
 
         except Exception as e:
             logger.error(f"Evaluation failed: {e}")
             return EvaluationMatrix(
                 accuracy=confidence_score,
-                judge_explanation=f"Shadow evaluation failed: {str(e)}"
+                judge_explanation=f"Shadow evaluation failed: {str(e)}",
             )
+
 
 evaluation_service = EvaluationService()

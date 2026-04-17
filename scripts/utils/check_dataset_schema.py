@@ -2,9 +2,6 @@
 """
 Quick script to check Kaggle dataset schema compatibility with database fields.
 """
-import json
-import sys
-from pathlib import Path
 
 # Expected database fields for tickets
 DB_FIELDS = {
@@ -23,12 +20,17 @@ DB_FIELDS = {
     "parse_warning": "Text - OPTIONAL",
     "created_at": "DateTime",
     "updated_at": "DateTime",
-    "resolved_at": "DateTime - OPTIONAL"
+    "resolved_at": "DateTime - OPTIONAL",
 }
 
 VALID_CATEGORIES = [
-    "Infrastructure", "Application", "Security", "Database",
-    "Storage", "Network", "Access Management"
+    "Infrastructure",
+    "Application",
+    "Security",
+    "Database",
+    "Storage",
+    "Network",
+    "Access Management",
 ]
 
 print("=" * 80)

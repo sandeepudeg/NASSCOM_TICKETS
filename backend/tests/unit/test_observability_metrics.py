@@ -4,28 +4,26 @@ Unit tests for Prometheus metric registration and increment.
 **Validates: Requirements design observability**
 """
 
-import pytest
-from prometheus_client import REGISTRY, CollectorRegistry
-from prometheus_client.core import Counter, Histogram, Gauge
+from prometheus_client.core import Counter, Gauge, Histogram
 
 from config.observability import (
-    REQUEST_COUNT,
-    REQUEST_LATENCY,
-    CLASSIFIER_CONFIDENCE_SCORE,
+    BULK_ASSIGN_BATCH_SIZE,
     CLASSIFIER_CATEGORY_TOTAL,
+    CLASSIFIER_CONFIDENCE_SCORE,
     ESCALATION_QUEUE_DEPTH,
     PATTERN_ALERT_COUNT,
     PII_REDACTIONS_TOTAL,
     RAG_RETRIEVAL_DURATION_SECONDS,
-    BULK_ASSIGN_BATCH_SIZE,
+    REQUEST_COUNT,
+    REQUEST_LATENCY,
     WEBHOOK_DELIVERY_FAILURES_TOTAL,
+    record_bulk_assign_batch,
     record_classifier_prediction,
     record_pii_redaction,
     record_rag_retrieval_duration,
-    record_bulk_assign_batch,
+    record_webhook_delivery_failure,
     set_escalation_queue_depth,
     set_pattern_alert_count,
-    record_webhook_delivery_failure,
 )
 
 
@@ -95,8 +93,10 @@ class TestPrometheusMetrics:
         confidence = 0.87
 
         # Get initial values
-        initial_counter = CLASSIFIER_CATEGORY_TOTAL.labels(category=category)._value.get()
-        
+        initial_counter = CLASSIFIER_CATEGORY_TOTAL.labels(
+            category=category
+        )._value.get()
+
         # Record prediction
         record_classifier_prediction(category, confidence)
 
@@ -105,16 +105,20 @@ class TestPrometheusMetrics:
         assert final_counter == initial_counter + 1
 
         # Verify histogram recorded (check sample count increased)
-        histogram_samples = CLASSIFIER_CONFIDENCE_SCORE.labels(category=category)._sum.get()
+        histogram_samples = CLASSIFIER_CONFIDENCE_SCORE.labels(
+            category=category
+        )._sum.get()
         assert histogram_samples >= confidence
 
     def test_pii_redaction_increments_counter(self):
         """Verify record_pii_redaction increments counter."""
         entity_type = "email"
-        
+
         # Get initial value
-        initial_value = PII_REDACTIONS_TOTAL.labels(entity_type=entity_type)._value.get()
-        
+        initial_value = PII_REDACTIONS_TOTAL.labels(
+            entity_type=entity_type
+        )._value.get()
+
         # Record redaction
         record_pii_redaction(entity_type, count=3)
 
@@ -125,10 +129,10 @@ class TestPrometheusMetrics:
     def test_rag_retrieval_duration_records_histogram(self):
         """Verify record_rag_retrieval_duration records to histogram."""
         duration = 0.123
-        
+
         # Get initial sum (histograms track sum, not count directly)
         initial_sum = RAG_RETRIEVAL_DURATION_SECONDS._sum.get()
-        
+
         # Record duration
         record_rag_retrieval_duration(duration)
 
@@ -139,10 +143,10 @@ class TestPrometheusMetrics:
     def test_bulk_assign_batch_records_histogram(self):
         """Verify record_bulk_assign_batch records to histogram."""
         batch_size = 50
-        
+
         # Get initial sum
         initial_sum = BULK_ASSIGN_BATCH_SIZE._sum.get()
-        
+
         # Record batch
         record_bulk_assign_batch(batch_size)
 
@@ -153,7 +157,7 @@ class TestPrometheusMetrics:
     def test_escalation_queue_depth_sets_gauge(self):
         """Verify set_escalation_queue_depth sets gauge value."""
         depth = 42
-        
+
         # Set gauge
         set_escalation_queue_depth(depth)
 
@@ -164,7 +168,7 @@ class TestPrometheusMetrics:
         """Verify set_pattern_alert_count sets gauge value."""
         status = "active"
         count = 15
-        
+
         # Set gauge
         set_pattern_alert_count(status, count)
 
@@ -175,7 +179,7 @@ class TestPrometheusMetrics:
         """Verify record_webhook_delivery_failure increments counter."""
         # Get initial value
         initial_value = WEBHOOK_DELIVERY_FAILURES_TOTAL._value.get()
-        
+
         # Record failure
         record_webhook_delivery_failure()
 
@@ -188,15 +192,19 @@ class TestPrometheusMetrics:
         method = "POST"
         path = "/api/v1/tickets"
         status = "201"
-        
+
         # Get initial value
-        initial_value = REQUEST_COUNT.labels(method=method, path=path, status_code=status)._value.get()
-        
+        initial_value = REQUEST_COUNT.labels(
+            method=method, path=path, status_code=status
+        )._value.get()
+
         # Simulate API call
         REQUEST_COUNT.labels(method=method, path=path, status_code=status).inc()
 
         # Verify counter incremented
-        final_value = REQUEST_COUNT.labels(method=method, path=path, status_code=status)._value.get()
+        final_value = REQUEST_COUNT.labels(
+            method=method, path=path, status_code=status
+        )._value.get()
         assert final_value == initial_value + 1
 
     def test_http_request_duration_records_latency(self):
@@ -205,21 +213,27 @@ class TestPrometheusMetrics:
         path = "/api/v1/folders"
         status = "200"
         duration = 0.045
-        
+
         # Get initial sum
-        initial_sum = REQUEST_LATENCY.labels(method=method, path=path, status_code=status)._sum.get()
-        
+        initial_sum = REQUEST_LATENCY.labels(
+            method=method, path=path, status_code=status
+        )._sum.get()
+
         # Record latency
-        REQUEST_LATENCY.labels(method=method, path=path, status_code=status).observe(duration)
+        REQUEST_LATENCY.labels(method=method, path=path, status_code=status).observe(
+            duration
+        )
 
         # Verify histogram recorded (sum increased)
-        final_sum = REQUEST_LATENCY.labels(method=method, path=path, status_code=status)._sum.get()
+        final_sum = REQUEST_LATENCY.labels(
+            method=method, path=path, status_code=status
+        )._sum.get()
         assert final_sum >= initial_sum + duration
 
     def test_multiple_categories_tracked_independently(self):
         """Verify different categories are tracked independently."""
         categories = ["Infrastructure", "Application", "Security"]
-        
+
         for category in categories:
             initial = CLASSIFIER_CATEGORY_TOTAL.labels(category=category)._value.get()
             record_classifier_prediction(category, 0.9)
@@ -229,7 +243,7 @@ class TestPrometheusMetrics:
     def test_multiple_pii_entity_types_tracked_independently(self):
         """Verify different PII entity types are tracked independently."""
         entity_types = ["email", "phone", "ip_address"]
-        
+
         for entity_type in entity_types:
             initial = PII_REDACTIONS_TOTAL.labels(entity_type=entity_type)._value.get()
             record_pii_redaction(entity_type, count=1)

@@ -2,29 +2,29 @@
 Unit tests for evaluate_classifier.py metric computation.
 Requirements: 14.1–14.3
 """
-import pytest
-import types
-import sys
 
 import sys
+import types
 from pathlib import Path
+
+import pytest
 
 # Add scripts/ml to path for importing
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "ml"))
 
 from evaluate_classifier import (
-    compute_f1_scores,
-    compute_recall_per_category,
-    compute_class_imbalance,
-    compute_semantic_similarity,
-    check_promotion_gate,
-    VALID_CATEGORIES,
+    EQUITABLE_RECALL_THRESHOLD,
+    JUDGE_SCORE_THRESHOLD,
     MACRO_F1_THRESHOLD,
+    MIN_SAMPLES_PER_CATEGORY,
     PER_CATEGORY_F1_THRESHOLD,
     SEMANTIC_SIMILARITY_THRESHOLD,
-    JUDGE_SCORE_THRESHOLD,
-    EQUITABLE_RECALL_THRESHOLD,
-    MIN_SAMPLES_PER_CATEGORY,
+    VALID_CATEGORIES,
+    check_promotion_gate,
+    compute_class_imbalance,
+    compute_f1_scores,
+    compute_recall_per_category,
+    compute_semantic_similarity,
 )
 
 
@@ -42,6 +42,7 @@ def fake_embedding_module(monkeypatch):
 # ---------------------------------------------------------------------------
 # compute_f1_scores
 # ---------------------------------------------------------------------------
+
 
 def test_perfect_predictions_give_f1_of_1():
     # Use all 7 categories so macro average is 1.0
@@ -90,6 +91,7 @@ def test_partial_correct_predictions():
 # compute_recall_per_category
 # ---------------------------------------------------------------------------
 
+
 def test_recall_perfect():
     y_true = ["Infrastructure", "Application"]
     y_pred = ["Infrastructure", "Application"]
@@ -116,6 +118,7 @@ def test_recall_all_categories_present():
 # ---------------------------------------------------------------------------
 # compute_class_imbalance
 # ---------------------------------------------------------------------------
+
 
 def test_class_imbalance_no_warnings_when_sufficient():
     y_true = ["Infrastructure"] * 150 + ["Application"] * 150
@@ -149,6 +152,7 @@ def test_class_imbalance_counts_all_categories():
 # compute_semantic_similarity
 # ---------------------------------------------------------------------------
 
+
 def test_semantic_similarity_returns_zero_on_empty(fake_embedding_module):
     assert compute_semantic_similarity([], []) == 0.0
 
@@ -165,7 +169,9 @@ def test_semantic_similarity_uses_embeddings(monkeypatch, fake_embedding_module)
             return [[0.5, 0.866, 0]]
         return [[1, 0, 0] for _ in texts]
 
-    monkeypatch.setattr(fake_embedding_module.embedding_service, "get_embeddings", fake_get_embeddings)
+    monkeypatch.setattr(
+        fake_embedding_module.embedding_service, "get_embeddings", fake_get_embeddings
+    )
     sim = compute_semantic_similarity(["a"], ["b"])
     assert 0.49 < sim < 0.51  # approx 0.5
     # embedding service should be called twice (preds and ground truths)
@@ -176,7 +182,9 @@ def test_semantic_similarity_handles_exception(monkeypatch, fake_embedding_modul
     def broken(_):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(fake_embedding_module.embedding_service, "get_embeddings", broken)
+    monkeypatch.setattr(
+        fake_embedding_module.embedding_service, "get_embeddings", broken
+    )
     sim = compute_semantic_similarity(["a"], ["b"])
     assert sim == 0.0
 
@@ -184,6 +192,7 @@ def test_semantic_similarity_handles_exception(monkeypatch, fake_embedding_modul
 # ---------------------------------------------------------------------------
 # check_promotion_gate
 # ---------------------------------------------------------------------------
+
 
 def _passing_metrics():
     return {
@@ -262,6 +271,7 @@ def test_promotion_gate_multiple_failures():
 # ---------------------------------------------------------------------------
 # Threshold constants
 # ---------------------------------------------------------------------------
+
 
 def test_threshold_values_match_requirements():
     """Verify thresholds match requirements_v2_1.md."""

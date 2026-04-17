@@ -1,9 +1,10 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
-from src.schemas.settings import settings
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.repositories.models import Base
+from src.schemas.settings import settings
 
 is_sqlite = settings.database_url.startswith("sqlite")
 
@@ -33,8 +34,9 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
         if is_sqlite:
             from sqlalchemy import text
+
             await conn.execute(text("PRAGMA journal_mode=WAL"))
-        
+
         # Seeding logic: Ensure departmental folders exist for 'admin'
         await seed_department_folders()
 
@@ -42,30 +44,34 @@ async def init_db() -> None:
 async def seed_department_folders() -> None:
     """Ensure all 7 departmental folders exist for the 'admin' user."""
     from sqlalchemy import select
+
     from src.repositories.models import Folder
-    from src.schemas.ticket import Category
-    
+
     admin_id = "admin"
     categories = [
-        "Infrastructure", "Application", "Security", 
-        "Database", "Storage", "Network", "Access Management"
+        "Infrastructure",
+        "Application",
+        "Security",
+        "Database",
+        "Storage",
+        "Network",
+        "Access Management",
     ]
-    
+
     async with async_session_maker() as session:
         try:
             for cat in categories:
                 folder_name = f"{cat} Department"
                 # Check if folder exists
                 stmt = select(Folder).where(
-                    Folder.name == folder_name,
-                    Folder.owner_id == admin_id
+                    Folder.name == folder_name, Folder.owner_id == admin_id
                 )
                 result = await session.execute(stmt)
                 if not result.scalar_one_or_none():
                     # Create folder
                     new_folder = Folder(name=folder_name, owner_id=admin_id)
                     session.add(new_folder)
-            
+
             await session.commit()
         except Exception:
             await session.rollback()

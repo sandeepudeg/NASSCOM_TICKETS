@@ -1,27 +1,24 @@
 from fastapi import APIRouter, Depends, Header, Query
 from fastapi.responses import JSONResponse
-from typing import Optional
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repositories.database import get_db
-from src.services.folder_service import FolderService
-from src.services.ticket_assignment_service import TicketAssignmentService
+from src.schemas.errors import ProblemDetail
 from src.schemas.folder import (
     FolderCreate,
-    FolderUpdate,
-    FolderResponse,
     FolderListResponse,
     FolderPaginationParams,
+    FolderResponse,
     FolderStatsResponse,
+    FolderUpdate,
 )
 from src.schemas.ticket import (
     BulkAssignRequest,
-    BulkAssignResponse,
     TicketListResponse,
     TicketPaginationParams,
 )
-from src.schemas.errors import ProblemDetail
+from src.services.folder_service import FolderService
+from src.services.ticket_assignment_service import TicketAssignmentService
 
 router = APIRouter(prefix="/folders", tags=["folders"])
 
@@ -32,7 +29,7 @@ router = APIRouter(prefix="/folders", tags=["folders"])
 async def create_folder(
     folder_data: FolderCreate,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = FolderService(db)
@@ -70,8 +67,8 @@ async def get_folder(
 @router.get("", response_model=FolderListResponse)
 async def list_folders(
     page_size: int = Query(50, ge=1, le=200),
-    cursor: Optional[str] = Query(None),
-    name_filter: Optional[str] = Query(None),
+    cursor: str | None = Query(None),
+    name_filter: str | None = Query(None),
     sort_by: str = Query("created_at", pattern="^(created_at|name)$"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     include_deleted: bool = Query(False),
@@ -103,7 +100,7 @@ async def rename_folder(
     folder_id: str,
     folder_data: FolderUpdate,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = FolderService(db)
@@ -121,7 +118,7 @@ async def rename_folder(
 async def delete_folder(
     folder_id: str,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = FolderService(db)
@@ -145,11 +142,12 @@ async def get_folder_ticket_count(
 
 # --- Ticket assignment sub-routes under /folders/{folder_id}/tickets ---
 
+
 @router.get("/{folder_id}/tickets", response_model=TicketListResponse)
 async def get_folder_tickets(
     folder_id: str,
     page_size: int = Query(50, ge=1, le=200),
-    cursor: Optional[str] = Query(None),
+    cursor: str | None = Query(None),
     sort_by: str = Query("assigned_at", pattern="^(assigned_at|status|created_at)$"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     x_user_id: str = Header(default="system"),
@@ -175,7 +173,7 @@ async def assign_ticket_to_folder(
     folder_id: str,
     ticket_id: str,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketAssignmentService(db)
@@ -197,7 +195,7 @@ async def remove_ticket_from_folder(
     folder_id: str,
     ticket_id: str,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketAssignmentService(db)
@@ -221,7 +219,7 @@ async def bulk_assign_tickets(
     folder_id: str,
     request: BulkAssignRequest,
     x_user_id: str = Header(default="system"),
-    x_forwarded_for: Optional[str] = Header(None),
+    x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketAssignmentService(db)

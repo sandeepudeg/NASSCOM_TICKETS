@@ -1,6 +1,4 @@
-from typing import Optional
 import json
-from datetime import datetime
 
 
 class StructuredInputParser:
@@ -19,7 +17,7 @@ class StructuredInputParser:
                     return "prometheus_alert"
                 if "level" in data or "message" in data or "timestamp" in data:
                     return "json_log"
-            except:
+            except Exception:
                 pass
 
         return "text"
@@ -44,7 +42,7 @@ class StructuredInputParser:
                 context["timestamps"].append(data["timestamp"])
 
             return context
-        except:
+        except Exception:
             return {
                 "error_codes": [],
                 "service_names": [],
@@ -83,7 +81,7 @@ class StructuredInputParser:
                     context["timestamps"].append(span["startTimeUnixNano"])
 
             return context
-        except:
+        except Exception:
             return {
                 "error_codes": [],
                 "service_names": [],
@@ -116,7 +114,7 @@ class StructuredInputParser:
                 context["timestamps"].append(alerts[0]["startsAt"])
 
             return context
-        except:
+        except Exception:
             return {
                 "error_codes": [],
                 "service_names": [],
@@ -125,7 +123,7 @@ class StructuredInputParser:
             }
 
     @staticmethod
-    def parse(payload: str) -> tuple[dict, Optional[str], Optional[str]]:
+    def parse(payload: str) -> tuple[dict, str | None, str | None]:
         format_type = StructuredInputParser.detect_format(payload)
         parse_warning = None
 

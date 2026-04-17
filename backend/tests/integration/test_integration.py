@@ -3,39 +3,43 @@ Integration tests using a real PostgreSQL testcontainer.
 Tests folder CRUD, bulk-assign atomicity, ticket-deletion cascade, and audit log.
 Requirements: 1.7, 2.4, 3.5, 4.2, 5.7, 5.8, 8.1, 8.2
 """
-import pytest
+
 import asyncio
 from uuid import uuid4
-from datetime import datetime
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+import pytest
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.repositories.models import Base
-from src.repositories.folder_repository import FolderRepository
-from src.repositories.ticket_repository import TicketRepository, TicketAssignmentRepository
-from src.repositories.audit_repository import AuditLogRepository
+from src.repositories.ticket_repository import (
+    TicketAssignmentRepository,
+    TicketRepository,
+)
+from src.schemas.errors import HTTPError
+from src.schemas.folder import FolderCreate, FolderPaginationParams, FolderUpdate
+from src.schemas.ticket import BulkAssignRequest, TicketCreate
 from src.services.folder_service import FolderService
 from src.services.ticket_assignment_service import TicketAssignmentService
 from src.services.ticket_service import TicketService
-from src.schemas.folder import FolderCreate, FolderUpdate, FolderPaginationParams
-from src.schemas.ticket import BulkAssignRequest, TicketCreate
-from src.schemas.errors import HTTPError
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="module")
 def postgres_url():
     """Start a real PostgreSQL container and return the async connection URL."""
     try:
         from testcontainers.postgres import PostgresContainer
+
         with PostgresContainer("postgres:14") as pg:
             sync_url = pg.get_connection_url()
             # Convert to asyncpg URL
-            async_url = sync_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+            async_url = sync_url.replace(
+                "postgresql+psycopg2://", "postgresql+asyncpg://"
+            )
             yield async_url
     except Exception:
         # Fall back to SQLite for environments without Docker
@@ -53,7 +57,9 @@ def event_loop():
 async def db_engine(postgres_url):
     is_sqlite = "sqlite" in postgres_url
     if is_sqlite:
-        engine = create_async_engine(postgres_url, connect_args={"check_same_thread": False})
+        engine = create_async_engine(
+            postgres_url, connect_args={"check_same_thread": False}
+        )
     else:
         engine = create_async_engine(postgres_url)
     async with engine.begin() as conn:
@@ -64,7 +70,9 @@ async def db_engine(postgres_url):
 
 @pytest.fixture
 async def db_session(db_engine):
-    session_maker = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    session_maker = async_sessionmaker(
+        db_engine, class_=AsyncSession, expire_on_commit=False
+    )
     async with session_maker() as session:
         yield session
         await session.rollback()
@@ -73,6 +81,7 @@ async def db_session(db_engine):
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
 
 async def create_test_ticket(session, owner_id="user-1"):
     repo = TicketRepository(session)
@@ -89,11 +98,14 @@ async def create_test_ticket(session, owner_id="user-1"):
 # Task 10.1: Folder CRUD with real DB
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_create_folder_success(db_session):
     """Folder creation stores record with correct fields."""
     service = FolderService(db_session)
-    result = await service.create_folder(FolderCreate(name="My Folder"), owner_id="user-1")
+    result = await service.create_folder(
+        FolderCreate(name="My Folder"), owner_id="user-1"
+    )
     assert result.id is not None
     assert result.name == "My Folder"
     assert result.owner_id == "user-1"
@@ -133,7 +145,9 @@ async def test_soft_delete_cascades_associations(db_session):
     assign_service = TicketAssignmentService(db_session)
     owner = f"user-{uuid4()}"
 
-    folder = await service.create_folder(FolderCreate(name=f"cascade-{uuid4()}"), owner_id=owner)
+    folder = await service.create_folder(
+        FolderCreate(name=f"cascade-{uuid4()}"), owner_id=owner
+    )
     ticket = await create_test_ticket(db_session, owner)
 
     await assign_service.assign_ticket(ticket.id, folder.id, owner)
@@ -150,14 +164,20 @@ async def test_optimistic_lock_conflict(db_session):
     """Rename with wrong version must return 409."""
     service = FolderService(db_session)
     owner = f"user-{uuid4()}"
-    folder = await service.create_folder(FolderCreate(name=f"lock-{uuid4()}"), owner_id=owner)
+    folder = await service.create_folder(
+        FolderCreate(name=f"lock-{uuid4()}"), owner_id=owner
+    )
 
     # Rename once to bump version to 2
-    await service.rename_folder(folder.id, FolderUpdate(name=f"renamed-{uuid4()}", version=1), owner)
+    await service.rename_folder(
+        folder.id, FolderUpdate(name=f"renamed-{uuid4()}", version=1), owner
+    )
 
     # Try to rename again with old version=1 (should be 2 now)
     with pytest.raises(HTTPError) as exc_info:
-        await service.rename_folder(folder.id, FolderUpdate(name=f"conflict-{uuid4()}", version=1), owner)
+        await service.rename_folder(
+            folder.id, FolderUpdate(name=f"conflict-{uuid4()}", version=1), owner
+        )
     assert exc_info.value.problem.status == 409
 
 
@@ -168,7 +188,9 @@ async def test_cursor_pagination_completeness(db_session):
     owner = f"user-{uuid4()}"
     total = 7
     for i in range(total):
-        await service.create_folder(FolderCreate(name=f"page-folder-{i}-{uuid4()}"), owner_id=owner)
+        await service.create_folder(
+            FolderCreate(name=f"page-folder-{i}-{uuid4()}"), owner_id=owner
+        )
 
     collected = []
     cursor = None
@@ -190,6 +212,7 @@ async def test_cursor_pagination_completeness(db_session):
 # Task 10.2: Bulk-assign atomicity with real DB
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_bulk_assign_atomicity_rollback(db_session):
     """Bulk assign with one invalid ticket must roll back all assignments."""
@@ -197,7 +220,9 @@ async def test_bulk_assign_atomicity_rollback(db_session):
     assign_service = TicketAssignmentService(db_session)
     owner = f"user-{uuid4()}"
 
-    folder = await service.create_folder(FolderCreate(name=f"bulk-{uuid4()}"), owner_id=owner)
+    folder = await service.create_folder(
+        FolderCreate(name=f"bulk-{uuid4()}"), owner_id=owner
+    )
     ticket = await create_test_ticket(db_session, owner)
 
     # Mix valid and invalid ticket IDs
@@ -218,6 +243,7 @@ async def test_bulk_assign_atomicity_rollback(db_session):
 # Task 10.3: Ticket deletion cascade with real DB
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_ticket_deletion_removes_all_associations(db_session):
     """Deleting a ticket must remove all folder associations."""
@@ -228,7 +254,9 @@ async def test_ticket_deletion_removes_all_associations(db_session):
     ticket = await create_test_ticket(db_session, owner)
     folders = []
     for i in range(3):
-        f = await service.create_folder(FolderCreate(name=f"del-folder-{i}-{uuid4()}"), owner_id=owner)
+        f = await service.create_folder(
+            FolderCreate(name=f"del-folder-{i}-{uuid4()}"), owner_id=owner
+        )
         folders.append(f)
         await assign_service.assign_ticket(ticket.id, f.id, owner)
 
@@ -247,6 +275,7 @@ async def test_ticket_deletion_removes_all_associations(db_session):
 # Task 10.4: Full classification pipeline with mocked Ollama
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_classification_pipeline_mocked_ollama(db_session):
     """Ticket submission populates category, confidence_score, routing_status."""
@@ -261,10 +290,9 @@ async def test_classification_pipeline_mocked_ollama(db_session):
 
     # Mock Ollama response
     mock_response = MagicMock()
-    mock_response.message.content = json.dumps({
-        "category": "Infrastructure",
-        "confidence": 0.92
-    })
+    mock_response.message.content = json.dumps(
+        {"category": "Infrastructure", "confidence": 0.92}
+    )
 
     with patch("ml.classifier.TicketClassifier.client") as mock_client:
         mock_client.chat = AsyncMock(return_value=mock_response)
@@ -279,7 +307,6 @@ async def test_classification_pipeline_mocked_ollama(db_session):
 @pytest.mark.asyncio
 async def test_classification_timeout_sets_pending(db_session):
     """When Ollama times out, ticket is created with pending_classification status."""
-    import asyncio
     from unittest.mock import AsyncMock, patch
 
     owner = f"user-{uuid4()}"
@@ -289,7 +316,7 @@ async def test_classification_timeout_sets_pending(db_session):
     )
 
     async def raise_timeout(*args, **kwargs):
-        raise asyncio.TimeoutError()
+        raise TimeoutError()
 
     with patch("ml.classifier.TicketClassifier.client") as mock_client:
         mock_client.chat = AsyncMock(side_effect=raise_timeout)
@@ -304,11 +331,14 @@ async def test_classification_timeout_sets_pending(db_session):
 # Task 10.5: Escalation webhook retry
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_escalation_webhook_retry_on_failure(db_session):
     """Webhook retries on failure and logs audit event on exhaustion."""
+    from unittest.mock import patch
+
     import httpx
-    from unittest.mock import AsyncMock, patch, MagicMock
+
     from ml.escalation_service import EscalationService
 
     service = EscalationService()
@@ -338,8 +368,10 @@ async def test_escalation_webhook_retry_on_failure(db_session):
 @pytest.mark.asyncio
 async def test_escalation_webhook_succeeds_on_retry(db_session):
     """Webhook succeeds on second attempt after initial failure."""
+    from unittest.mock import MagicMock, patch
+
     import httpx
-    from unittest.mock import AsyncMock, patch, MagicMock
+
     from ml.escalation_service import EscalationService
 
     service = EscalationService()
@@ -374,6 +406,7 @@ async def test_escalation_webhook_succeeds_on_retry(db_session):
 # Task 10.6: Audit log append-only enforcement
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_audit_log_records_are_created(db_session):
     """Audit log entries are written for folder operations."""
@@ -381,10 +414,14 @@ async def test_audit_log_records_are_created(db_session):
 
     service = FolderService(db_session)
     owner = f"user-{uuid4()}"
-    await service.create_folder(FolderCreate(name=f"audit-test-{uuid4()}"), owner_id=owner)
+    await service.create_folder(
+        FolderCreate(name=f"audit-test-{uuid4()}"), owner_id=owner
+    )
 
     audit_repo = AuditLogRepository(db_session)
-    logs, _ = await audit_repo.list_logs(actor_user_id=owner, action_type="folder_create")
+    logs, _ = await audit_repo.list_logs(
+        actor_user_id=owner, action_type="folder_create"
+    )
     assert len(logs) >= 1
     assert logs[0].actor_user_id == owner
     assert logs[0].action_type == "folder_create"
@@ -394,26 +431,29 @@ async def test_audit_log_records_are_created(db_session):
 async def test_audit_log_update_blocked_by_sqlalchemy(db_session):
     """Direct UPDATE on audit_log should not be possible via normal ORM (append-only design)."""
     from repositories.audit_repository import AuditLogRepository
-    from repositories.models import AuditLog
 
     # Create an audit entry
     audit_repo = AuditLogRepository(db_session)
-    entry = await audit_repo.create(
+    await audit_repo.create(
         actor_user_id="test-user",
         action_type="folder_create",
         target_resource_id=str(uuid4()),
     )
-    original_action = entry.action_type
 
     # Attempt to modify via raw SQL — in SQLite this will succeed (no RLS),
     # but we verify the ORM layer doesn't expose an update method
-    assert not hasattr(audit_repo, "update"), "AuditLogRepository must not expose an update method"
-    assert not hasattr(audit_repo, "delete"), "AuditLogRepository must not expose a delete method"
+    assert not hasattr(
+        audit_repo, "update"
+    ), "AuditLogRepository must not expose an update method"
+    assert not hasattr(
+        audit_repo, "delete"
+    ), "AuditLogRepository must not expose a delete method"
 
 
 # ---------------------------------------------------------------------------
 # Task 27.1: Audit log RLS policy enforcement
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_audit_log_rls_blocks_update(db_session):
@@ -422,7 +462,7 @@ async def test_audit_log_rls_blocks_update(db_session):
     Requirements: 28.2
     """
     from repositories.audit_repository import AuditLogRepository
-    
+
     # Create an audit entry
     audit_repo = AuditLogRepository(db_session)
     entry = await audit_repo.create(
@@ -431,19 +471,18 @@ async def test_audit_log_rls_blocks_update(db_session):
         target_resource_id=str(uuid4()),
     )
     await db_session.commit()
-    
+
     # Attempt to UPDATE via raw SQL - should be blocked by RLS
     try:
         await db_session.execute(
             text("UPDATE audit_log SET action_type = 'folder_delete' WHERE id = :id"),
-            {"id": entry.id}
+            {"id": entry.id},
         )
         await db_session.commit()
         # If we reach here in PostgreSQL with RLS, the test should fail
         # In SQLite (no RLS), this will succeed, so we check row count
         result = await db_session.execute(
-            text("SELECT action_type FROM audit_log WHERE id = :id"),
-            {"id": entry.id}
+            text("SELECT action_type FROM audit_log WHERE id = :id"), {"id": entry.id}
         )
         row = result.fetchone()
         # In PostgreSQL with RLS, UPDATE should have been blocked (0 rows affected)
@@ -453,7 +492,11 @@ async def test_audit_log_rls_blocks_update(db_session):
     except Exception as e:
         # PostgreSQL with RLS will raise an error
         error_msg = str(e).lower()
-        assert "permission denied" in error_msg or "policy" in error_msg or "row" in error_msg
+        assert (
+            "permission denied" in error_msg
+            or "policy" in error_msg
+            or "row" in error_msg
+        )
 
 
 @pytest.mark.asyncio
@@ -463,7 +506,7 @@ async def test_audit_log_rls_blocks_delete(db_session):
     Requirements: 28.2
     """
     from repositories.audit_repository import AuditLogRepository
-    
+
     # Create an audit entry
     audit_repo = AuditLogRepository(db_session)
     entry = await audit_repo.create(
@@ -472,22 +515,20 @@ async def test_audit_log_rls_blocks_delete(db_session):
         target_resource_id=str(uuid4()),
     )
     await db_session.commit()
-    
+
     # Attempt to DELETE via raw SQL - should be blocked by RLS
     try:
-        result = await db_session.execute(
-            text("DELETE FROM audit_log WHERE id = :id"),
-            {"id": entry.id}
+        await db_session.execute(
+            text("DELETE FROM audit_log WHERE id = :id"), {"id": entry.id}
         )
         await db_session.commit()
-        
+
         # Check if row still exists
         check_result = await db_session.execute(
-            text("SELECT COUNT(*) FROM audit_log WHERE id = :id"),
-            {"id": entry.id}
+            text("SELECT COUNT(*) FROM audit_log WHERE id = :id"), {"id": entry.id}
         )
         count = check_result.scalar()
-        
+
         # In PostgreSQL with RLS, DELETE should have been blocked (count = 1)
         # In SQLite, it will succeed (count = 0)
         if count == 0:
@@ -498,7 +539,11 @@ async def test_audit_log_rls_blocks_delete(db_session):
     except Exception as e:
         # PostgreSQL with RLS will raise an error
         error_msg = str(e).lower()
-        assert "permission denied" in error_msg or "policy" in error_msg or "row" in error_msg
+        assert (
+            "permission denied" in error_msg
+            or "policy" in error_msg
+            or "row" in error_msg
+        )
 
 
 @pytest.mark.asyncio
@@ -508,7 +553,7 @@ async def test_audit_log_rls_allows_insert(db_session):
     Requirements: 28.2
     """
     from repositories.audit_repository import AuditLogRepository
-    
+
     # INSERT should work normally
     audit_repo = AuditLogRepository(db_session)
     entry = await audit_repo.create(
@@ -517,7 +562,7 @@ async def test_audit_log_rls_allows_insert(db_session):
         target_resource_id=str(uuid4()),
     )
     await db_session.commit()
-    
+
     assert entry.id is not None
     assert entry.action_type == "ticket_assign"
 
@@ -529,7 +574,7 @@ async def test_audit_log_rls_allows_select(db_session):
     Requirements: 28.2
     """
     from repositories.audit_repository import AuditLogRepository
-    
+
     # Create an audit entry
     audit_repo = AuditLogRepository(db_session)
     entry = await audit_repo.create(
@@ -538,7 +583,7 @@ async def test_audit_log_rls_allows_select(db_session):
         target_resource_id=str(uuid4()),
     )
     await db_session.commit()
-    
+
     # SELECT should work normally
     logs, _ = await audit_repo.list_logs(actor_user_id="test-user-rls-select")
     assert len(logs) >= 1

@@ -1,23 +1,21 @@
-from datetime import datetime
-from typing import Optional
-from uuid import uuid4
-
-from sqlalchemy.ext.asyncio import AsyncSession
 from opentelemetry import trace
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repositories.folder_repository import FolderRepository
-from src.repositories.ticket_repository import TicketRepository, TicketAssignmentRepository
+from config.observability import record_bulk_assign_batch
 from src.repositories.audit_repository import AuditLogRepository
+from src.repositories.folder_repository import FolderRepository
+from src.repositories.ticket_repository import (
+    TicketAssignmentRepository,
+    TicketRepository,
+)
+from src.schemas.errors import HTTPError
 from src.schemas.ticket import (
     BulkAssignRequest,
     BulkAssignResponse,
-    TicketResponse,
     TicketPaginationParams,
+    TicketResponse,
 )
-from src.schemas.errors import HTTPError
-from src.schemas.settings import settings
 from src.services.converters import ticket_to_response
-from config.observability import record_bulk_assign_batch
 
 
 class TicketAssignmentService:
@@ -35,7 +33,7 @@ class TicketAssignmentService:
         ticket_id: str,
         folder_id: str,
         user_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> dict:
         ticket = await self.ticket_repo.get_by_id(ticket_id)
         if not ticket:
@@ -70,7 +68,7 @@ class TicketAssignmentService:
         ticket_id: str,
         folder_id: str,
         user_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> None:
         folder = await self.folder_repo.get_by_id(folder_id, user_id)
         if not folder:
@@ -96,15 +94,15 @@ class TicketAssignmentService:
         folder_id: str,
         request: BulkAssignRequest,
         user_id: str,
-        source_ip: Optional[str] = None,
+        source_ip: str | None = None,
     ) -> BulkAssignResponse:
         tracer = trace.get_tracer("services.ticket_assignment")
-        
+
         with tracer.start_as_current_span("bulk_assign.transaction") as span:
             batch_size = len(request.ticket_ids)
             record_bulk_assign_batch(batch_size)
             span.set_attribute("bulk_assign.batch_size", batch_size)
-            
+
             if batch_size > self.MAX_BULK_ASSIGN:
                 raise HTTPError.validation_error(
                     f"Cannot assign more than {self.MAX_BULK_ASSIGN} tickets at once"
@@ -122,9 +120,16 @@ class TicketAssignmentService:
                 if not ticket:
                     failed.append({"ticket_id": ticket_id, "error": "Ticket not found"})
                     continue
-                is_assigned = await self.assignment_repo.is_assigned(ticket_id, folder_id)
+                is_assigned = await self.assignment_repo.is_assigned(
+                    ticket_id, folder_id
+                )
                 if is_assigned:
-                    failed.append({"ticket_id": ticket_id, "error": "Ticket already assigned to this folder"})
+                    failed.append(
+                        {
+                            "ticket_id": ticket_id,
+                            "error": "Ticket already assigned to this folder",
+                        }
+                    )
                     continue
                 valid_ticket_ids.append(ticket_id)
 
@@ -132,10 +137,14 @@ class TicketAssignmentService:
             if failed:
                 span.set_attribute("bulk_assign.failed_count", len(failed))
                 span.set_attribute("bulk_assign.success", False)
-                return BulkAssignResponse(successful=[], failed=failed + [
-                    {"ticket_id": tid, "error": "Rolled back due to other failures"}
-                    for tid in valid_ticket_ids
-                ])
+                return BulkAssignResponse(
+                    successful=[],
+                    failed=failed
+                    + [
+                        {"ticket_id": tid, "error": "Rolled back due to other failures"}
+                        for tid in valid_ticket_ids
+                    ],
+                )
 
             # All valid — write atomically
             successful = []
@@ -151,14 +160,16 @@ class TicketAssignmentService:
                     source_ip=source_ip,
                     metadata={"ticket_ids": successful, "total": len(successful)},
                 )
-                
+
                 span.set_attribute("bulk_assign.success_count", len(successful))
                 span.set_attribute("bulk_assign.success", True)
                 await self.session.commit()
             except Exception as e:
                 await self.session.rollback()
                 span.set_attribute("bulk_assign.success", False)
-                raise HTTPError.internal_error(f"Bulk assign failed and was rolled back: {e}")
+                raise HTTPError.internal_error(
+                    f"Bulk assign failed and was rolled back: {e}"
+                ) from e
 
             return BulkAssignResponse(successful=successful, failed=[])
 
