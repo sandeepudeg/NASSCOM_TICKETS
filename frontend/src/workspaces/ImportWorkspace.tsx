@@ -28,11 +28,29 @@ const { Title, Text } = Typography
 const { Dragger } = Upload
 
 const GlassCard = designSystemStyled(Card)`
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-bg-surface) !important;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-primary) !important;
   border-radius: 16px;
   overflow: hidden;
+  
+  .ant-card-head {
+    background: transparent !important;
+    border-bottom: 1px solid var(--color-border-primary) !important;
+  }
+  
+  .ant-card-head-title {
+    color: var(--color-text-primary) !important;
+  }
+
+  .ant-alert-info {
+    background-color: var(--color-bg-secondary) !important;
+    border: 1px solid var(--color-border-primary) !important;
+  }
+
+  .ant-alert-message, .ant-alert-description {
+    color: var(--color-text-primary) !important;
+  }
 `
 
 const MappingRow = designSystemStyled.div`
@@ -40,10 +58,10 @@ const MappingRow = designSystemStyled.div`
   align-items: center;
   gap: 16px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-bg-secondary);
   border-radius: 8px;
   margin-bottom: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-primary);
 `
 
 const TargetField = designSystemStyled.div`

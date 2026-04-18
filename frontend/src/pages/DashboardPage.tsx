@@ -35,25 +35,28 @@ const StatCard = designSystemStyled(Card)`
   overflow: hidden;
   .ant-card-body {
     padding: var(--spacing-5) !important;
+    text-align: center;
   }
 `
 
 const StatValue = designSystemStyled.div`
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--color-text-primary);
   margin-top: var(--spacing-1);
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: var(--spacing-2);
 `
 
 const StatLabel = designSystemStyled.div`
   color: var(--color-text-secondary);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  text-align: center;
 `
 
 const getSimulatedTrend = (baseValue: number, seed: string) => {

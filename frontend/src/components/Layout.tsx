@@ -17,6 +17,7 @@ import { designSystemStyled, useThemeMode } from '@ticketiq/design-system'
 import FolderSidebar from './FolderSidebar'
 import { clearAuthToken } from '../auth/tokenStorage'
 import { useFolderStore } from '../stores/folderStore'
+import { useLayoutStore } from '../stores/layoutStore'
 import { useTokenRefresh } from '../auth/useTokenRefresh'
 import type { MenuProps } from 'antd'
 
@@ -100,10 +101,32 @@ const ThemeToggleButton = designSystemStyled(Button)`
   }
 `
 
+const StyledFooter = designSystemStyled.footer`
+  position: sticky;
+  bottom: 0;
+  z-index: 1000;
+  padding: 12px 40px;
+  background: rgba(var(--color-bg-surface-rgb, 255, 255, 255), 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--color-border-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  height: 64px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  
+  /* Transition for light/dark mode changes */
+  transition: background 0.3s ease, border-color 0.3s ease;
+`
+
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { setMobileDrawerOpen } = useFolderStore()
+  const { footerActions } = useLayoutStore()
   const [isMobile, setIsMobile] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { currentTheme, setTheme } = useThemeMode()
@@ -288,6 +311,27 @@ export default function Layout() {
         <StyledContent>
           <Outlet />
         </StyledContent>
+
+        <StyledFooter>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: 24, height: 24, background: 'var(--color-primary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '10px' }}>IQ</div>
+              <Text style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '-0.02em' }}>TicketIQ <span style={{ fontWeight: 400, opacity: 0.5 }}>Enterprise</span></Text>
+            </div>
+            <Space size="middle" style={{ opacity: 0.6 }}>
+              <Text style={{ fontSize: '11px' }}>© 2026 Intelligence Hub</Text>
+              <Tag bordered={false} style={{ fontSize: '9px', borderRadius: '4px', background: 'var(--color-bg-secondary)' }}>v2.8.4-STABLE</Tag>
+            </Space>
+          </div>
+          
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+            {footerActions && (
+              <div style={{ paddingLeft: '24px', borderLeft: '1px solid var(--color-border-primary)', display: 'flex', alignItems: 'center' }}>
+                {footerActions}
+              </div>
+            )}
+          </div>
+        </StyledFooter>
       </AntLayout>
 
       {/* Mobile navigation drawer */}

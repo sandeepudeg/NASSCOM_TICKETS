@@ -121,3 +121,11 @@ Test "Mapping Persistence" across multiple restart cycles.
 Manual Verification
 Navigating to Settings -> Data Ingestion and successfully loading a "Legal Discovery" spreadsheet.
 Verifying the "Redaction Audit" totals match the expected sensitive data scrubbing.
+=========================================================================================
+Future deploys — when you change the frontend:
+cd frontend; npm run build
+# Remove any .map files first:
+Remove-Item frontend/dist/assets/*.map -ErrorAction SilentlyContinue
+git add -f frontend/dist
+git commit -m "chore: rebuild frontend"
+git push origin main; git push hf main

@@ -79,7 +79,10 @@ const SidebarContent = designSystemStyled.div`
 `
 
 const SidebarFooter = designSystemStyled.div`
-  padding: 16px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
   border-top: 1px solid var(--color-border-primary);
   
   .settings-link {

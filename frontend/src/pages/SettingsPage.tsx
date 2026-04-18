@@ -29,17 +29,21 @@ import {
   ThunderboltOutlined,
   GlobalOutlined,
   LockOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from '@ant-design/icons'
 import { designSystemStyled } from '@ticketiq/design-system'
 import ImportWorkspace from '../workspaces/ImportWorkspace'
 import { HistoryOutlined } from '@ant-design/icons'
+import { useLayoutStore } from '../stores/layoutStore'
+import { apiClient } from '../api/client'
 
 const { Title, Text } = Typography
 
 const PageContainer = designSystemStyled.div`
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 0 40px;
+  padding: 0 var(--spacing-6) 40px;
 `
 
 const SettingsCard = designSystemStyled(Card)`
@@ -49,12 +53,13 @@ const SettingsCard = designSystemStyled(Card)`
   
   .ant-tabs-nav {
     margin-bottom: 24px;
-    padding: 0 24px;
+    padding: 0 12px;
     border-bottom: 1px solid var(--color-border-primary);
   }
   
   .ant-tabs-tab {
-    padding: 16px 16px;
+    padding: 16px 12px;
+    margin: 0 !important;
     font-weight: 500;
     color: var(--color-text-secondary) !important;
     transition: all 0.3s;
@@ -67,6 +72,17 @@ const SettingsCard = designSystemStyled(Card)`
       color: var(--color-primary) !important;
       font-weight: 700;
     }
+  }
+
+  .ant-tabs-nav-list {
+    display: flex;
+    justify-content: flex-start;
+  }
+  
+  .ant-tabs-extra-content {
+    display: flex;
+    justify-content: flex-end;
+    margin-left: 24px;
   }
 
   .ant-tabs-ink-bar {
@@ -104,6 +120,8 @@ export default function SettingsPage() {
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState('intel')
 
+  const { setFooterActions, clearFooterActions } = useLayoutStore()
+
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab) setActiveTab(tab)
@@ -114,6 +132,32 @@ export default function SettingsPage() {
   const [alertForm] = Form.useForm()
   const [sysForm] = Form.useForm()
   const [profileForm] = Form.useForm()
+  const [generatingReport, setGeneratingReport] = useState(false)
+
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true)
+    try {
+      const response = await apiClient.get('/compliance/report', {
+        responseType: 'blob'
+      })
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      const timestamp = new Date().toISOString().split('T')[0]
+      link.setAttribute('download', `TicketIQ_Compliance_Report_${timestamp}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      
+      message.success('Compliance report generated successfully')
+    } catch (error) {
+      console.error('Failed to generate report:', error)
+      message.error('Failed to generate compliance report')
+    } finally {
+      setGeneratingReport(false)
+    }
+  }
 
   const handleSave = (section: string) => {
     message.success(`${section} settings updated successfully`)
@@ -443,7 +487,15 @@ export default function SettingsPage() {
             </Form.Item>
 
             <Form.Item label={<Text strong>Privacy Impact Assessment (PIA)</Text>}>
-              <Button ghost type="primary">Generate Compliance Report (PDF)</Button>
+              <Button 
+                ghost 
+                type="primary" 
+                onClick={handleGenerateReport}
+                loading={generatingReport}
+                icon={<SafetyCertificateOutlined />}
+              >
+                Generate Compliance Report (PDF)
+              </Button>
             </Form.Item>
           </Form>
         </div>
@@ -485,6 +537,46 @@ export default function SettingsPage() {
     }
   ]
 
+  const currentIndex = tabs.findIndex(t => t.key === activeTab);
+  const isFirst = currentIndex === 0;
+  const isLast = currentIndex === tabs.length - 1;
+
+  const previousButton = (
+    <Button 
+      type="primary"
+      icon={<LeftOutlined />} 
+      onClick={() => {
+        if (currentIndex > 0) setActiveTab(tabs[currentIndex - 1].key);
+      }}
+      disabled={isFirst}
+      style={{
+        boxShadow: isFirst ? 'none' : '0 4px 12px rgba(var(--color-primary-rgb), 0.2)',
+        opacity: isFirst ? 0.5 : 1
+      }}
+    >
+      Previous Section
+    </Button>
+  );
+
+  const nextButton = (
+    <Button 
+      type="primary"
+      onClick={() => {
+        if (currentIndex < tabs.length - 1) {
+          setActiveTab(tabs[currentIndex + 1].key);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          message.info("You've reached the final configuration section.");
+        }
+      }}
+      style={{
+        boxShadow: '0 4px 12px rgba(var(--color-primary-rgb), 0.2)'
+      }}
+    >
+      {isLast ? "Finish Setup" : "Next Section"} <RightOutlined />
+    </Button>
+  );
+
   return (
     <PageContainer>
       <div style={{ marginBottom: '32px' }}>
@@ -499,12 +591,24 @@ export default function SettingsPage() {
           activeKey={activeTab}
           onChange={setActiveTab}
           items={tabs}
+          style={{ width: '100%' }}
           tabBarExtraContent={
             <div style={{ padding: '0 24px' }}>
               <Tag color="cyan" icon={<SafetyCertificateOutlined />} bordered={false}>Enterprise License: ACTIVE</Tag>
             </div>
           }
         />
+        <div style={{ 
+          padding: '20px 24px', 
+          borderTop: '1px solid var(--color-border-primary)', 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'rgba(var(--color-primary-rgb), 0.02)'
+        }}>
+          {previousButton}
+          {nextButton}
+        </div>
       </SettingsCard>
     </PageContainer>
   )
