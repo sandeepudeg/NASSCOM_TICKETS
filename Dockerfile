@@ -27,6 +27,12 @@ COPY requirements.txt /app/requirements.txt
 # Install backend dependencies from the copied requirements file
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
+# Download the embedding model for offline use
+RUN python -c "from huggingface_hub import snapshot_download; \
+    snapshot_download('sentence-transformers/all-MiniLM-L6-v2', \
+    local_dir='/root/.cache/huggingface/hub/all-MiniLM-L6-v2', \
+    token=None)"
+
 # Set essential environment variables for Hugging Face
 ENV PORT=7860 \
     HOST=0.0.0.0 \
