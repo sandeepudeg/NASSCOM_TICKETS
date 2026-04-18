@@ -21,8 +21,11 @@ WORKDIR /app/backend
 # Copy prebuilt frontend assets (compiled locally via `npm run build`)
 COPY frontend/dist /app/backend/static
 
-# Install backend dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the top-level requirements file into the image
+COPY requirements.txt /app/requirements.txt
+
+# Install backend dependencies from the copied requirements file
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Set essential environment variables for Hugging Face
 ENV PORT=7860 \
