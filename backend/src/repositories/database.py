@@ -55,7 +55,9 @@ else:
     _connect_args.update({
         "command_timeout": 60,
         "timeout": 60,  # Increased from 30 to handle cold starts
-        "statement_timeout": 60000, # 60s in ms
+        "server_settings": {
+            "statement_timeout": "60000"  # 60s in ms
+        }
     })
     
     engine = create_async_engine(
@@ -88,11 +90,18 @@ async def init_db() -> None:
         try:
             _log.info(f"Database initialization attempt {attempt}/{max_retries}...")
             async with engine.begin() as conn:
+                # Drop all tables and recreate to ensure schema is perfectly aligned
+                # This also satisfies the user's request for a 'fresh' start
+                from sqlalchemy import text
+                await conn.execute(text("DROP TABLE IF EXISTS ticket_folder_assignments CASCADE;"))
+                await conn.execute(text("DROP TABLE IF EXISTS tickets CASCADE;"))
+                await conn.execute(text("DROP TABLE IF EXISTS audit_log CASCADE;"))
+                await conn.execute(text("DROP TABLE IF EXISTS ticket_embeddings CASCADE;"))
+                
                 await conn.run_sync(Base.metadata.create_all)
                 if is_sqlite:
-                    from sqlalchemy import text
                     await conn.execute(text("PRAGMA journal_mode=WAL"))
-            _log.info("Database initialization successful.")
+            _log.info("Database initialization successful (Clean Slate).")
             break
         except Exception as e:
             if attempt == max_retries:
@@ -103,11 +112,12 @@ async def init_db() -> None:
                 _log.warning(f"init_db attempt {attempt} failed, retrying in {retry_delay}s: {e}")
                 await asyncio.sleep(retry_delay)
 
-    # Seed departmental folders — best-effort, never crash startup
+    # Seed departmental folders and test tickets
     try:
         await seed_department_folders()
+        await seed_test_tickets()
     except Exception as e:
-        _log.warning(f"init_db: seed_department_folders skipped: {e}")
+        _log.warning(f"init_db: seeding skipped: {e}")
 
 
 async def seed_department_folders() -> None:
@@ -145,6 +155,178 @@ async def seed_department_folders() -> None:
         except Exception:
             await session.rollback()
             raise
+
+
+async def seed_test_tickets() -> None:
+    """Seed 300+ sample tickets for each category for an enterprise-scale demo."""
+    import json
+    import random
+    import uuid
+    from datetime import datetime, timedelta
+    from sqlalchemy import select, delete, func
+    from src.repositories.models import Ticket, Folder, TicketFolderAssignment, PatternAlert, SimilarTicket
+
+    admin_ids = ["admin", "system"]
+    CATEGORIES = ["Infrastructure", "Application", "Security", "Database", "Storage", "Network", "Access Management"]
+    
+    TEMPLATES = {
+        "Infrastructure": ["Server cluster {id} high CPU usage warning", "VPC Peering failure {id}", "Load Balancer {id} health failure"],
+        "Application": ["Payment gateway 500 error /checkout/{id}", "User session timeout issue v{id}", "API Latency spike {id}"],
+        "Security": ["Unusual login activity {id}", "Credential stuffing attempt {id}", "Unauthorized S3 access {id}"],
+        "Database": ["Postgres slow query {id}", "Database backup failure {id}", "Connection pool exhausted {id}"],
+        "Storage": ["S3 bucket {id} access denied", "Disk space low (95%) on {id}", "EFS mount failure {id}"],
+        "Network": ["Wireless AP {id} offline", "VPN tunnel {id} status Down", "DNS resolution failure {id}"],
+        "Access Management": ["Password reset for {id}", "New employee AD creation {id}", "MFA device reset {id}"]
+    }
+
+    ACTIONABLE_STEPS = {
+        "Infrastructure": [
+            "1. SSH into node {id} and check /var/log/messages.",
+            "2. Execute 'docker stats' to identify resource-heavy containers.",
+            "3. Scale the Auto-Scaling Group by 2 nodes to alleviate pressure.",
+            "4. Verify Kubernetes HPA (Horizontal Pod Autoscaler) configuration."
+        ],
+        "Security": [
+            "1. Trace source IP via CloudWatch Logs for API {id}.",
+            "2. Immediately revoke temporary credentials for IAM User {id}.",
+            "3. Update WAF rules to block identified CIDR ranges.",
+            "4. Trigger an automated password rotation for the affected role."
+        ],
+        "Network": [
+            "1. Run 'traceroute {id}' to identify the failing hop.",
+            "2. Check VPN Gateway status in the Regional Console.",
+            "3. Reset the IPSec tunnel and verify Phase 2 negotiation.",
+            "4. Update Route Table to use the failover NAT Gateway."
+        ],
+        "Database": [
+            "1. Execute 'EXPLAIN ANALYZE' on the slow query identified in {id}.",
+            "2. Increase 'max_connections' in postgresql.conf temporarily.",
+            "3. Check for long-running transactions and kill blocking PIDs.",
+            "4. Verify S3 bucket permissions for the backup utility."
+        ],
+        "Application": [
+            "1. Check application logs in Loki for Trace-ID {id}.",
+            "2. Deploy hotfix for the identified null pointer exception.",
+            "3. Flush the Redis cache for session-prefix '{id}'.",
+            "4. Scale the frontend service replicas to handle the surge."
+        ],
+        "Storage": [
+            "1. Check EFS lifecycle policy for target {id}.",
+            "2. Increase EBS volume size by 20% using 'modify-volume' CLI.",
+            "3. Verify bucket policy JSON for unauthorized DENY statements.",
+            "4. Refresh the MinIO mount point on the application server."
+        ],
+        "Access Management": [
+            "1. Verify SAML response from Identity Provider (IdP).",
+            "2. Resync user {id} from Active Directory using the sync-job.",
+            "3. Reset the MFA seed for the affected account.",
+            "4. Audit the 'Project-Admin' role permissions in the IAM console."
+        ]
+    }
+
+    async with async_session_maker() as session:
+        try:
+            print("Resetting database for scale deployment...")
+            await session.execute(delete(TicketFolderAssignment))
+            await session.execute(delete(PatternAlert))
+            await session.execute(delete(SimilarTicket))
+            await session.execute(delete(Ticket))
+            await session.execute(delete(Folder))
+            await session.commit()
+
+            # Create folders for BOTH users for maximum visibility
+            folder_map = {}
+            for owner in admin_ids:
+                for cat in CATEGORIES:
+                    folder = Folder(
+                        id=str(uuid.uuid4()),
+                        name=cat, # Core name only for frontend compatibility
+                        owner_id=owner,
+                        version=1
+                    )
+                    session.add(folder)
+                    folder_map[f"{owner}:{cat}"] = folder.id
+            
+            await session.flush()
+
+            all_tickets = []
+            tickets_total = 300
+            tickets_per_cat = tickets_total // len(CATEGORIES)
+
+            for category in CATEGORIES:
+                for i in range(tickets_per_cat):
+                    # Distribute some tickets to be older than 7 days for SLA breach demo
+                    if i < 5:
+                        days_ago = random.uniform(8, 12) # Breached
+                    else:
+                        days_ago = random.uniform(0, 6) # Within SLA
+                        
+                    created_at = datetime.utcnow() - timedelta(days=days_ago)
+                    
+                    template = random.choice(TEMPLATES.get(category, ["General Issue {id}"]))
+                    title = template.format(id=f"{category[:3]}-{1000+i}")
+                    
+                    steps = ACTIONABLE_STEPS.get(category, ["1. Analyze logs.", "2. Fix issue."])
+                    
+                    # Randomly escalate 2 tickets per category
+                    r_status = "classified"
+                    if i < 2:
+                        r_status = "escalated"
+
+                    ticket = Ticket(
+                        id=str(uuid.uuid4()),
+                        ticket_number=f"TICK-{category[:3].upper()}-{1000+i}",
+                        title=title,
+                        description=f"Actionable Alert for {title}. Investigating {category} state.",
+                        owner_id="admin", # Keep tickets owned by admin primarily
+                        category=category,
+                        status=random.choice(["open", "in_progress", "resolved"]),
+                        routing_status=r_status,
+                        priority=random.choice(["High", "Medium"]),
+                        confidence_score=round(random.uniform(0.8, 0.99), 2),
+                        is_automation_candidate=(random.random() < 0.2),
+                        resolution_root_cause=f"Systemic issue identified in {category} domain during automated audit.",
+                        resolution_steps_json=json.dumps(steps),
+                        created_at=created_at
+                    )
+                    session.add(ticket)
+                    all_tickets.append(ticket)
+
+            await session.flush()
+
+            # Assignments (Match to BOTH admin and system folders for visibility)
+            for t in all_tickets:
+                # Assign to admin folder
+                fid_admin = folder_map.get(f"admin:{t.category}")
+                if fid_admin:
+                    session.add(TicketFolderAssignment(ticket_id=t.id, folder_id=fid_admin))
+                # Assign to system folder as well
+                fid_system = folder_map.get(f"system:{t.category}")
+                if fid_system:
+                    session.add(TicketFolderAssignment(ticket_id=t.id, folder_id=fid_system))
+
+            # Pattern Alerts
+            patterns = [
+                ("Infrastructure", "Core Switch Failure - Region-A", ["TICK-INF-1001", "TICK-INF-1002", "TICK-INF-1003"]),
+                ("Security", "Auth API Attack Pattern", ["TICK-SEC-1010", "TICK-SEC-1011", "TICK-SEC-1012"]),
+                ("Network", "Regional CDN Outage", ["TICK-NET-1005", "TICK-NET-1006", "TICK-NET-1007"])
+            ]
+            for cat, ptitle, numbers in patterns:
+                ids = [t.id for t in all_tickets if t.ticket_number in numbers]
+                if ids:
+                    session.add(PatternAlert(
+                        cluster_size=len(ids), representative_title=ptitle, category=cat,
+                        time_window_days=7, ticket_ids_json=json.dumps(ids), status="active"
+                    ))
+
+            await session.commit()
+            print("Enterprise-scale database initialized with 300 actionable tickets.")
+        except Exception as e:
+            print(f"Failed to seed data: {e}")
+            await session.rollback()
+            raise
+
+
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

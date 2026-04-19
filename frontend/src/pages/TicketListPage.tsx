@@ -61,7 +61,7 @@ export default function TicketListPage() {
       title: 'Sr. No.',
       key: 'serial',
       width: 70,
-      render: (_, __, index) => <Text type="secondary" style={{ fontSize: '11px' }}>{index + 1}</Text>,
+      render: (_, __, index) => <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{index + 1}</Text>,
     },
     {
       title: 'REF',
@@ -118,7 +118,7 @@ export default function TicketListPage() {
         return (
           <Space size={6}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[status] || '#94a3b8' }} />
-            <Text style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>{status}</Text>
+            <Text style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{status}</Text>
           </Space>
         )
       },

@@ -194,10 +194,13 @@ export default function LoginPage() {
     // Pre-load images optionally, but browsers usually handle it well with AnimatePresence
   }, [])
 
-  const onFinish = async (_values: any) => {
+  const onFinish = async (values: any) => {
     setLoading(true)
     try {
-      await authApi.login({ username: 'admin', password: 'admin' })
+      await authApi.login({ 
+        username: values.username || 'admin', 
+        password: values.password || 'admin' 
+      })
       message.success('Synchronizing secure perimeter...')
       setTimeout(() => navigate('/dashboard'), 1200)
     } catch (e) {
@@ -258,10 +261,10 @@ export default function LoginPage() {
           <Text style={{ display: 'block', marginBottom: '40px', color: activeTheme.dark ? 'rgba(255,255,255,0.5)' : '#64748b' }}>Authenticate to access your secure IT workspace.</Text>
 
           <Form layout="vertical" onFinish={onFinish} size="large" requiredMark={false}>
-            <Form.Item label={<Text strong style={{ color: activeTheme.dark ? 'rgba(255,255,255,0.4)' : '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Enterprise Email</Text>}>
+            <Form.Item name="username" label={<Text strong style={{ color: activeTheme.dark ? 'rgba(255,255,255,0.4)' : '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Enterprise Email</Text>}>
               <Input placeholder="admin@company.com" prefix={<MailOutlined style={{ opacity: 0.3 }} />} style={{ borderRadius: '12px', background: activeTheme.dark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: activeTheme.dark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0', color: activeTheme.dark ? '#fff' : '#020617' }} />
             </Form.Item>
-            <Form.Item label={<Text strong style={{ color: activeTheme.dark ? 'rgba(255,255,255,0.4)' : '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Key</Text>}>
+            <Form.Item name="password" label={<Text strong style={{ color: activeTheme.dark ? 'rgba(255,255,255,0.4)' : '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Key</Text>}>
               <Input.Password placeholder="••••••••" prefix={<LockOutlined style={{ opacity: 0.3 }} />} style={{ borderRadius: '12px', background: activeTheme.dark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: activeTheme.dark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0' }} />
             </Form.Item>
 

@@ -39,3 +39,4 @@ mypy==1.13.0
 types-requests==2.32.0.20241016
 celery==5.4.0
 redis==5.2.0
+fpdf2==2.8.2

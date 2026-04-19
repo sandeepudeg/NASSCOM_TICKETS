@@ -141,10 +141,18 @@ async def get_escalation_queue(
         sort_by="created_at",
         sort_dir="asc",
     )
+    
+    from sqlalchemy import select, func
+    from src.repositories.models import Ticket
+    
+    total_query = select(func.count(Ticket.id)).where(Ticket.routing_status == "escalated")
+    total_result = await db.execute(total_query)
+    total = total_result.scalar() or 0
+    
     return {
         "escalations": [ticket_to_response(t) for t in tickets],
         "next_cursor": next_cursor,
-        "total": len(tickets),
+        "total": total,
     }
 
 

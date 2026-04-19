@@ -6,11 +6,6 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  // Bypass auth for local development
-  if (import.meta.env.DEV) {
-    return <>{children}</>
-  }
-
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
   }

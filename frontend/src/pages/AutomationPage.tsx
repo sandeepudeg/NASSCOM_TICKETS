@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Table,
@@ -164,8 +164,7 @@ export default function AutomationPage() {
     },
   ]
 
-  // We need to define navigate since it is used in the Review button
-  const navigate = (path: string) => window.location.href = path
+  const navigate = useNavigate()
 
   return (
     <PageContainer>

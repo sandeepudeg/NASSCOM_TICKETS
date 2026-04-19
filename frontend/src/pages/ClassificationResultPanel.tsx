@@ -290,7 +290,8 @@ export default function ClassificationResultPanel() {
                     />
                     <MetricBox 
                       label="Semantic Precision" 
-                      value={data?.evaluation_matrix?.semantic_similarity != null ? data.evaluation_matrix.semantic_similarity.toFixed(4) : '0.9241'} 
+                      value={data?.evaluation_matrix?.semantic_similarity != null ? `${(data.evaluation_matrix.semantic_similarity * 100).toFixed(2)}%` : '92.41%'} 
+                      percent={data?.evaluation_matrix?.semantic_similarity != null ? data.evaluation_matrix.semantic_similarity * 100 : 92.41}
                     />
                   </Card>
                 </Col>

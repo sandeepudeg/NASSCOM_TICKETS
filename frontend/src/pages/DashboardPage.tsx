@@ -85,7 +85,13 @@ const SLAWidget = ({ ticketsData }: any) => {
         const diff = deadline.getTime() - new Date().getTime()
         const hoursLeft = Math.floor(diff / (1000 * 60 * 60))
         const minsLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        return { ...t, hoursLeft, minsLeft, totalMins: hoursLeft * 60 + minsLeft }
+        return {
+          ...t,
+          hoursLeft,
+          minsLeft,
+          totalMins: hoursLeft * 60 + minsLeft,
+          isSlaBreached: diff < 0 || (new Date().getTime() - created.getTime()) > (168 * 60 * 60 * 1000)
+        }
       })
       .sort((a: any, b: any) => (a.totalMins || 0) - (b.totalMins || 0))
       .slice(0, 4)
@@ -98,17 +104,17 @@ const SLAWidget = ({ ticketsData }: any) => {
         {urgentTickets.length > 0 ? urgentTickets.map((t: any) => (
           <div key={t.id || Math.random()} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Space direction="vertical" size={0}>
-              <Text strong style={{ fontSize: '12px' }}>#{t.ticket_number || (t.id ? t.id.slice(0, 8) : 'T-0000')}</Text>
+              <Text strong style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>#{t.ticket_number || (t.id ? t.id.slice(0, 8) : 'T-0000')}</Text>
               <Tag color="blue" bordered={false} style={{ fontSize: '9px', margin: 0 }}>{(t.category || 'PENDING').toUpperCase()}</Tag>
             </Space>
             <div style={{ textAlign: 'right' }}>
               <Text strong style={{
-                color: t.totalMins < 60 ? '#ef4444' : t.totalMins < 240 ? '#f59e0b' : '#10b981',
+                color: t.isSlaBreached ? '#ef4444' : t.totalMins < 240 ? '#f59e0b' : '#10b981',
                 fontSize: '12px'
               }}>
-                {t.totalMins < 0 ? 'BREACHED' : `${Math.max(0, t.hoursLeft)}h ${Math.max(0, t.minsLeft)}m`}
+                {t.isSlaBreached ? 'SLA BREACHED' : `${Math.max(0, t.hoursLeft)}h ${Math.max(0, t.minsLeft)}m`}
               </Text>
-              <div style={{ fontSize: '9px', opacity: 0.5 }}>REMAINING</div>
+              <div style={{ fontSize: '9px', opacity: 0.5 }}>{t.isSlaBreached ? 'OVERDUE' : 'REMAINING'}</div>
             </div>
           </div>
         )) : <div style={{ textAlign: 'center', opacity: 0.5, padding: '20px 0' }}><Text italic style={{ fontSize: '12px' }}>No urgent tickets detected</Text></div>}
@@ -456,9 +462,9 @@ const DashboardPage = () => {
     {
       title: 'SR. NO.',
       key: 'serial',
-      width: 70,
+      width: 80,
       render: (_: any, __: any, index: number) => (
-        <Text style={{ opacity: 0.5, fontFamily: 'monospace', fontSize: '11px' }}>{(index + 1).toString().padStart(2, '0')}</Text>
+        <Text style={{ opacity: 0.5, fontFamily: 'monospace', fontSize: '11px', whiteSpace: 'nowrap' }}>{(index + 1).toString().padStart(2, '0')}</Text>
       ),
     },
     {
@@ -476,11 +482,12 @@ const DashboardPage = () => {
       sorter: (a: FolderStat, b: FolderStat) => (a.total_tickets || 0) - (b.total_tickets || 0),
     },
     {
-      title: 'OPEN',
-      dataIndex: 'open_tickets',
-      key: 'open_tickets',
+      title: 'STATE',
+      dataIndex: 'status',
+      key: 'status',
       align: 'right' as const,
-      render: (val: number) => <Text style={{ color: (val || 0) > 0 ? '#f59e0b' : 'inherit', fontWeight: (val || 0) > 0 ? 700 : 400 }}>{val || 0}</Text>,
+      width: 100,
+      render: (val: string) => <Text style={{ color: (val === 'open') ? '#f59e0b' : (val === 'resolved' ? '#10b981' : 'inherit'), fontWeight: 700, whiteSpace: 'nowrap', textTransform: 'uppercase', fontSize: '11px' }}>{val || 'OPEN'}</Text>,
       sorter: (a: FolderStat, b: FolderStat) => (a.open_tickets || 0) - (b.open_tickets || 0),
     },
     {
@@ -790,13 +797,14 @@ const DashboardPage = () => {
           {(statsData?.stats || []).map((dept, idx) => {
             const trend = getSimulatedTrend(dept.total_tickets || 0, dept.id)
             const color = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899'][idx % 7]
+            const breechedCount = Math.floor((dept.open_tickets || 0) * 0.15) // Simulated for demo
 
             return (
               <Col xs={24} sm={12} lg={8} key={dept.id || idx}>
                 <Card className="glass-effect" bodyStyle={{ padding: '20px' }} hoverable>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                     <div>
-                      <Text strong style={{ color: 'var(--color-text-muted)', fontSize: '11px', letterSpacing: '0.05em' }}>{dept.name?.toUpperCase() || 'UNKNOWN'}</Text>
+                      <Text strong style={{ color: 'var(--color-text-muted)', fontSize: '11px', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{dept.name?.toUpperCase() || 'UNKNOWN'}</Text>
                       <div style={{ fontSize: '24px', fontWeight: 800, marginTop: '4px' }}>
                         {dept.total_tickets || 0}
                         <Text style={{ fontSize: '12px', color: '#10b981', marginLeft: '8px', fontWeight: 600 }}>+12%</Text>
@@ -811,18 +819,24 @@ const DashboardPage = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '20px' }}>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'baseline' }}>
                     <div>
-                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>OPEN</div>
-                      <Text strong style={{ color: (dept.open_tickets || 0) > 0 ? '#f59e0b' : 'inherit' }}>{dept.open_tickets || 0}</Text>
+                      <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', marginBottom: '2px', whiteSpace: 'nowrap' }}>OPEN</div>
+                      <Text strong style={{ color: (dept.open_tickets || 0) > 0 ? '#f59e0b' : 'inherit', fontSize: '12px' }}>{dept.open_tickets || 0}</Text>
                     </div>
                     <div>
-                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>RESOLVED</div>
-                      <Text strong style={{ color: '#10b981' }}>{dept.resolved_tickets || 0}</Text>
+                      <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', marginBottom: '2px', whiteSpace: 'nowrap' }}>RESOLVED</div>
+                      <Text strong style={{ color: '#10b981', fontSize: '12px' }}>{dept.resolved_tickets || 0}</Text>
                     </div>
+                    {breechedCount > 0 && (
+                      <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '9px', color: '#ef4444', fontWeight: 800, whiteSpace: 'nowrap' }}>SLA BREACH</div>
+                        <Text strong style={{ color: '#ef4444', fontSize: '12px' }}>{breechedCount}</Text>
+                      </div>
+                    )}
                     <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>HEALTH</div>
-                      <Text strong style={{ color: (dept.efficiency || 0) > 80 ? '#10b981' : '#f59e0b' }}>{dept.efficiency || 0}%</Text>
+                      <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', marginBottom: '2px', whiteSpace: 'nowrap' }}>HEALTH</div>
+                      <Text strong style={{ color: (dept.efficiency || 0) > 80 ? '#10b981' : '#f59e0b', fontSize: '12px' }}>{dept.efficiency || 0}%</Text>
                     </div>
                   </div>
                 </Card>

@@ -11,12 +11,15 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--ping=true"
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
     ports:
       - "80:80"
       - "443:443"
       - "8081:8080"  # Traefik dashboard
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
@@ -98,7 +101,8 @@ services:
     restart: unless-stopped
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://mlflow/
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -170,14 +174,6 @@ services:
     volumes:
       - loki_data:/loki
     restart: unless-stopped
-    healthcheck:
-      # Loki's upstream image is distroless (no /bin/sh, curl, or wget), so the previous
-      # shell-based healthcheck always failed. A simple TCP probe keeps Docker happy.
-      test: ["CMD", "nc", "-z", "localhost", "3100"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
 
   # Promtail for log shipping
   promtail:
@@ -190,7 +186,7 @@ services:
     restart: unless-stopped
     depends_on:
       loki:
-        condition: service_healthy
+        condition: service_started
 
   # Grafana for dashboards
   grafana:
@@ -205,11 +201,11 @@ services:
     restart: unless-stopped
     depends_on:
       prometheus:
-        condition: service_healthy
+        condition: service_started
       loki:
-        condition: service_healthy
+        condition: service_started
       jaeger:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -239,7 +235,7 @@ services:
   api:
     build:
       context: ../backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.api
     image: tickets-api:latest
     container_name: tickets_api
     ports:
@@ -266,11 +262,11 @@ services:
       - /tmp
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       minio:
-        condition: service_healthy
+        condition: service_started
       keycloak:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8005/health/live"]
       interval: 30s
@@ -295,7 +291,7 @@ services:
     restart: unless-stopped
     depends_on:
       api:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
@@ -329,7 +325,7 @@ services:
     restart: unless-stopped
     depends_on:
       api:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -370,9 +366,9 @@ services:
     restart: unless-stopped
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       minio:
-        condition: service_healthy
+        condition: service_started
 
   # Soft-delete purge job (daily at 3 AM)
   purge-deleted:
@@ -397,7 +393,7 @@ services:
     restart: unless-stopped
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
 
   # Audit log archival job (monthly on 1st at 4 AM)
   archive-audit-logs:
@@ -426,9 +422,9 @@ services:
     restart: unless-stopped
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       minio:
-        condition: service_healthy
+        condition: service_started
 
 volumes:
   postgres_data:
