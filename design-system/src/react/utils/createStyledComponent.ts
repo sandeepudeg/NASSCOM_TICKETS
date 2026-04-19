@@ -24,7 +24,7 @@ export function createStyledComponent<P extends object>(
   DesignSystemTheme
 >;
 
-export function createStyledComponent(tagOrComponent: any) {
+export function createStyledComponent(tagOrComponent: any): any {
   return designSystemStyled(tagOrComponent);
 }
 

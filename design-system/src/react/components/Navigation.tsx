@@ -181,15 +181,16 @@ export const Navigation = forwardRef<HTMLElement, NavigationProps>(({
     );
   }
   
+  const StyledNavListAny = StyledNavList as any;
+  
   return (
-    <StyledNavList
+    <StyledNavListAny
       ref={ref as any}
       className={getNavigationClasses()}
-      variant={variant as any}
       {...props}
     >
       {children}
-    </StyledNavList>
+    </StyledNavListAny>
   );
 });
 

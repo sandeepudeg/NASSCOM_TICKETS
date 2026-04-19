@@ -176,18 +176,20 @@ export const Button = forwardRef<any, ButtonProps>(({
   // Use isLoading or loading prop
   const isButtonLoading = !!(isLoading || loading);
   
+  const StyledButtonAny = StyledButton as any;
+  
   return (
-    <StyledButton
+    <StyledButtonAny
       ref={ref}
-      size={antdSize as any}
+      size={antdSize}
       loading={isButtonLoading}
-      variant={variant as any}
+      variant={variant}
       fullWidth={fullWidth}
       isLoading={isButtonLoading}
       {...props}
     >
       {children}
-    </StyledButton>
+    </StyledButtonAny>
   );
 });
 

@@ -221,7 +221,7 @@ export const Loading = forwardRef<HTMLDivElement, LoadingProps>(({
       {...props}
     >
       {children}
-    </StyledLoading>
+    </StyledLoadingAny>
   );
   
   // Wrap in overlay if needed

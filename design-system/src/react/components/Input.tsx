@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import { Input as AntdInput, InputProps as AntdInputProps, InputRef } from 'antd';
 import { designSystemStyled, colors, spacing, borderRadius, transitions, focusRing } from '../styled';
 
-export interface InputProps extends Omit<AntdInputProps, 'size'> {
+export interface InputProps extends Omit<any, 'size'> {
   /**
    * Input size
    */
@@ -139,12 +139,14 @@ export const Input = forwardRef<InputRef, InputProps>(({
   if (error) inputStatus = 'error';
   // Note: Ant Design Input doesn't support 'success' status, so we handle it with custom styling
   
+  const StyledInputAny = StyledInput as any;
+  
   return (
-    <StyledInput
+    <StyledInputAny
       ref={ref}
-      size={antdSize as any}
+      size={antdSize}
       status={inputStatus}
-      variant={variant as any}
+      variant={variant}
       error={error}
       success={success}
       {...props}
@@ -220,11 +222,13 @@ export const TextArea = forwardRef<HTMLTextAreaElement, InputProps>(({
   let inputStatus: "" | "warning" | "error" | undefined = status;
   if (error) inputStatus = 'error';
 
+  const StyledTextAreaAny = StyledTextArea as any;
+
   return (
-    <StyledTextArea
+    <StyledTextAreaAny
       ref={ref}
-      size={(size === 'medium' ? 'middle' : size) as any}
-      variant={variant as any}
+      size={(size === 'medium' ? 'middle' : size)}
+      variant={variant}
       status={inputStatus}
       error={error}
       success={success}

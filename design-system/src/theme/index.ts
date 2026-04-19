@@ -61,7 +61,7 @@ function saveThemePreference(theme: ThemeMode): void {
 /**
  * Detect system theme preference
  */
-function getSystemTheme(): ThemeMode {
+function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') {
     return 'dark';
   }
