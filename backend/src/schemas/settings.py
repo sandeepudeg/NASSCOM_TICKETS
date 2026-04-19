@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:latest"
     groq_api_key: str | None = None
+    groq_model: str = "llama-3.3-70b-versatile"
 
     mlflow_tracking_uri: str = "http://localhost:5000"
     mlflow_enabled: bool = True

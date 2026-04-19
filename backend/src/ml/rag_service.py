@@ -40,11 +40,11 @@ class RAGService:
         """Get response from the configured LLM provider (Groq or Ollama)."""
         if settings.groq_api_key:
             response = await self.groq_client.chat.completions.create(
-                model=self.ollama_model,
+                model=settings.groq_model,
                 messages=[{"role": "user", "content": prompt}],
                 response_format=(
                     {"type": "json_object"}
-                    if "llama-3" in self.ollama_model.lower()
+                    if "llama-3" in settings.groq_model.lower()
                     else None
                 ),
             )

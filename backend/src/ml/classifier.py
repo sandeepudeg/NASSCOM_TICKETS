@@ -87,11 +87,11 @@ class TicketClassifier:
         """Get response from the configured LLM provider (Groq or Ollama)."""
         if settings.groq_api_key:
             response = await self.groq_client.chat.completions.create(
-                model=settings.ollama_model,  # We use the same setting for model name
+                model=settings.groq_model,
                 messages=[{"role": "user", "content": prompt}],
                 response_format=(
                     {"type": "json_object"}
-                    if "llama-3" in settings.ollama_model.lower()
+                    if "llama-3" in settings.groq_model.lower()
                     else None
                 ),
             )
