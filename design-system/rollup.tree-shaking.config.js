@@ -29,7 +29,8 @@ export default [
         tsconfig: './tsconfig.json',
         declaration: true,
         declarationDir: 'dist',
-        rootDir: 'src'
+        rootDir: 'src',
+        exclude: ['dist/**']
       })
     ],
     external: [
@@ -67,7 +68,8 @@ export default [
         tsconfig: './tsconfig.json',
         declaration: true,
         declarationDir: 'dist/modular',
-        rootDir: 'src'
+        rootDir: 'src',
+        exclude: ['dist/**']
       })
     ],
     external: [
@@ -106,7 +108,8 @@ export default [
         tsconfig: './tsconfig.json',
         declaration: true,
         declarationDir: 'dist/categories',
-        rootDir: 'src'
+        rootDir: 'src',
+        exclude: ['dist/**']
       })
     ],
     external: [
@@ -142,7 +145,8 @@ export default [
         tsconfig: './tsconfig.json',
         declaration: true,
         declarationDir: 'dist/categories',
-        rootDir: 'src'
+        rootDir: 'src',
+        exclude: ['dist/**']
       })
     ],
     external: ['react', 'react-dom', 'antd', '@emotion/react', '@emotion/styled']
@@ -170,7 +174,8 @@ export default [
         tsconfig: './tsconfig.json',
         declaration: true,
         declarationDir: 'dist/categories',
-        rootDir: 'src'
+        rootDir: 'src',
+        exclude: ['dist/**']
       })
     ],
     external: [
@@ -206,7 +211,8 @@ export default [
         tsconfig: './tsconfig.json',
         declaration: true,
         declarationDir: 'dist/categories',
-        rootDir: 'src'
+        rootDir: 'src',
+        exclude: ['dist/**']
       })
     ],
     external: [

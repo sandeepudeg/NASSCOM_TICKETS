@@ -160,21 +160,21 @@ export function LazyImage({
 }
 
 /**
- * Skeleton component for loading states
+ * LazySkeleton component for loading states
  */
-interface SkeletonProps {
+interface LazySkeletonProps {
   variant?: 'text' | 'button' | 'input' | 'card' | 'image';
   width?: string | number;
   height?: string | number;
   className?: string;
 }
 
-export function Skeleton({ 
+export function LazySkeleton({ 
   variant = 'text', 
   width, 
   height, 
   className = '' 
-}: SkeletonProps) {
+}: LazySkeletonProps) {
   const getVariantClass = () => {
     switch (variant) {
       case 'button': return 'btn-skeleton';

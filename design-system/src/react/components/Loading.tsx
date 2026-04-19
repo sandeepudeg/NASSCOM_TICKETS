@@ -43,7 +43,7 @@ export interface SkeletonLoadingProps extends SkeletonProps {
 const StyledLoading = designSystemStyled(AntdSpin)<LoadingProps>`
   /* Custom spinner styles */
   .ant-spin-dot {
-    ${props => props.color && `
+    ${(props: any) => props.color && `
       .ant-spin-dot-item {
         background-color: ${props.color};
       }
@@ -51,7 +51,7 @@ const StyledLoading = designSystemStyled(AntdSpin)<LoadingProps>`
   }
   
   /* Size variants */
-  ${props => {
+  ${(props: any) => {
     switch (props.size) {
       case 'small':
         return `
@@ -90,7 +90,7 @@ const StyledLoading = designSystemStyled(AntdSpin)<LoadingProps>`
   }}
   
   /* Centered variant */
-  ${props => props.centered && `
+  ${(props: any) => props.centered && `
     display: flex;
     align-items: center;
     justify-content: center;
@@ -98,7 +98,7 @@ const StyledLoading = designSystemStyled(AntdSpin)<LoadingProps>`
   `}
   
   /* Overlay variant */
-  ${props => props.overlay && `
+  ${(props: any) => props.overlay && `
     position: fixed;
     top: 0;
     left: 0;
@@ -114,7 +114,7 @@ const StyledLoading = designSystemStyled(AntdSpin)<LoadingProps>`
   
   /* Text color */
   .ant-spin-text {
-    color: ${colors.text};
+    color: ${(props: any) => colors.text(props)};
   }
 `;
 
@@ -125,10 +125,10 @@ const DotsIndicator = designSystemStyled.div<{ size?: string; color?: string }>`
   gap: 4px;
   
   .dot {
-    width: ${props => props.size === 'small' ? '6px' : props.size === 'large' ? '10px' : '8px'};
-    height: ${props => props.size === 'small' ? '6px' : props.size === 'large' ? '10px' : '8px'};
+    width: ${(props: any) => props.size === 'small' ? '6px' : props.size === 'large' ? '10px' : '8px'};
+    height: ${(props: any) => props.size === 'small' ? '6px' : props.size === 'large' ? '10px' : '8px'};
     border-radius: 50%;
-    background-color: ${props => props.color || colors.primary(props)};
+    background-color: ${(props: any) => props.color || colors.primary(props)};
     animation: dotPulse 1.4s ease-in-out infinite both;
     
     &:nth-child(1) { animation-delay: -0.32s; }
@@ -149,10 +149,10 @@ const DotsIndicator = designSystemStyled.div<{ size?: string; color?: string }>`
 `;
 
 const PulseIndicator = designSystemStyled.div<{ size?: string; color?: string }>`
-  width: ${props => props.size === 'small' ? '24px' : props.size === 'large' ? '48px' : '32px'};
-  height: ${props => props.size === 'small' ? '24px' : props.size === 'large' ? '48px' : '32px'};
+  width: ${(props: any) => props.size === 'small' ? '24px' : props.size === 'large' ? '48px' : '32px'};
+  height: ${(props: any) => props.size === 'small' ? '24px' : props.size === 'large' ? '48px' : '32px'};
   border-radius: 50%;
-  background-color: ${props => props.color || colors.primary(props)};
+  background-color: ${(props: any) => props.color || colors.primary(props)};
   animation: pulse 2s ease-in-out infinite;
   
   @keyframes pulse {
@@ -209,9 +209,9 @@ export const Loading = forwardRef<HTMLDivElement, LoadingProps>(({
   const loadingContent = (
     <StyledLoading
       ref={ref}
-      size={size === 'medium' ? 'default' : size}
+      size={(size === 'medium' ? 'default' : size) as any}
       spinning={spinning}
-      indicator={customIndicator}
+      indicator={customIndicator as any}
       tip={text}
       centered={centered}
       overlay={overlay}

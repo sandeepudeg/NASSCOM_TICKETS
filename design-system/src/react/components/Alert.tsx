@@ -26,7 +26,7 @@ const StyledAlert = designSystemStyled(AntdAlert)<AlertProps>`
   transition: all ${transitions.fast};
   
   /* Size variants */
-  ${props => {
+  ${(props: any) => {
     switch (props.size) {
       case 'small':
         return `
@@ -59,7 +59,7 @@ const StyledAlert = designSystemStyled(AntdAlert)<AlertProps>`
   }}
   
   /* Type and variant combinations */
-  ${props => {
+  ${(props: any) => {
     const getAlertStyles = (type: string) => {
       const colorMap = {
         success: colors.success(props),
@@ -134,7 +134,7 @@ const StyledAlert = designSystemStyled(AntdAlert)<AlertProps>`
   /* Message and description */
   .ant-alert-message {
     font-weight: 500;
-    margin-bottom: ${props => props.description ? spacing.xs(props) : '0'};
+    margin-bottom: ${(props: any) => props.description ? spacing.xs(props) : '0'};
   }
   
   .ant-alert-description {
@@ -153,17 +153,17 @@ const StyledAlert = designSystemStyled(AntdAlert)<AlertProps>`
   
   /* Action button */
   .ant-alert-action {
-    margin-left: ${spacing.sm};
+    margin-left: ${(props: any) => spacing.sm(props)};
   }
   
   /* Bordered variant */
-  ${props => !props.bordered && 'border: none;'}
+  ${(props: any) => !props.bordered && 'border: none;'}
 `;
 
 /**
  * Enhanced Alert component that extends Ant Design Alert with design system tokens
  */
-export const Alert = forwardRef<HTMLDivElement, AlertProps>(({
+export const Alert = forwardRef<any, AlertProps>(({
   variant = 'subtle',
   size = 'medium',
   type = 'info',

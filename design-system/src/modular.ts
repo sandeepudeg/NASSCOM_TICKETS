@@ -11,5 +11,4 @@ export * from './categories/animation';
 export * from './categories/feedback';
 export * from './categories/utilities';
 
-// Version
-export const VERSION = '1.0.0';
+// Modular exports finished

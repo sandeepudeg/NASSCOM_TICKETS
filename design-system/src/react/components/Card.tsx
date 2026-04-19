@@ -31,10 +31,10 @@ export interface CardProps extends Omit<AntdCardProps, 'size' | 'variant'> {
 
 const StyledCard = designSystemStyled(AntdCard)<CardProps>`
   transition: all ${transitions.normal};
-  border: 1px solid ${colors.border};
+  border: 1px solid ${(props: any) => colors.border(props)};
   
   /* Variant styles */
-  ${props => {
+  ${(props: any) => {
     switch (props.variant) {
       case 'outlined':
         return `
@@ -64,7 +64,7 @@ const StyledCard = designSystemStyled(AntdCard)<CardProps>`
   }}
   
   /* Size variants */
-  ${props => {
+  ${(props: any) => {
     switch (props.size) {
       case 'small':
         return `
@@ -107,7 +107,7 @@ const StyledCard = designSystemStyled(AntdCard)<CardProps>`
   }}
   
   /* Padding override */
-  ${props => {
+  ${(props: any) => {
     if (props.padding === 'none') {
       return `
         .ant-card-body {
@@ -132,7 +132,7 @@ const StyledCard = designSystemStyled(AntdCard)<CardProps>`
   }}
   
   /* Interactive styles */
-  ${props => props.interactive && `
+  ${(props: any) => props.interactive && `
     cursor: pointer;
     
     &:hover {
@@ -148,33 +148,33 @@ const StyledCard = designSystemStyled(AntdCard)<CardProps>`
   
   /* Card header styles */
   .ant-card-head {
-    border-bottom: 1px solid ${colors.border};
+    border-bottom: 1px solid ${(props: any) => colors.border(props)};
     background-color: transparent;
     
     .ant-card-head-title {
-      color: ${colors.text};
+      color: ${(props: any) => colors.text(props)};
       font-weight: 600;
     }
   }
   
   /* Card body styles */
   .ant-card-body {
-    color: ${colors.text};
+    color: ${(props: any) => colors.text(props)};
   }
   
   /* Card actions styles */
   .ant-card-actions {
-    border-top: 1px solid ${colors.border};
-    background-color: ${colors.surface};
+    border-top: 1px solid ${(props: any) => colors.border(props)};
+    background-color: ${(props: any) => colors.surface(props)};
     
     > li {
       margin: 0;
       
       > span {
-        color: ${colors.text};
+        color: ${(props: any) => colors.text(props)};
         
         &:hover {
-          color: ${colors.primary};
+          color: ${(props: any) => colors.primary(props)};
         }
       }
     }
@@ -182,30 +182,30 @@ const StyledCard = designSystemStyled(AntdCard)<CardProps>`
 `;
 
 const CardHeader = designSystemStyled.div<{ size?: 'small' | 'medium' | 'large' }>`
-  padding: ${props => {
+  padding: ${(props: any) => {
     switch (props.size) {
       case 'small': return spacing.sm(props);
       case 'large': return spacing.xl(props);
       default: return spacing.lg(props);
     }
   }};
-  border-bottom: 1px solid ${colors.border};
-  background-color: ${colors.surface};
+  border-bottom: 1px solid ${(props: any) => colors.border(props)};
+  background-color: ${(props: any) => colors.surface(props)};
   font-weight: 600;
-  color: ${colors.text};
+  color: ${(props: any) => colors.text(props)};
 `;
 
 const CardFooter = designSystemStyled.div<{ size?: 'small' | 'medium' | 'large' }>`
-  padding: ${props => {
+  padding: ${(props: any) => {
     switch (props.size) {
       case 'small': return spacing.sm(props);
       case 'large': return spacing.xl(props);
       default: return spacing.lg(props);
     }
   }};
-  border-top: 1px solid ${colors.border};
-  background-color: ${colors.surface};
-  color: ${colors.text};
+  border-top: 1px solid ${(props: any) => colors.border(props)};
+  background-color: ${(props: any) => colors.surface(props)};
+  color: ${(props: any) => colors.text(props)};
 `;
 
 /**
@@ -236,8 +236,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
     <StyledCard
       ref={ref}
       title={cardTitle}
-      variant={variant}
-      size={size}
+      variant={variant as any}
+      size={size as any}
       interactive={interactive}
       padding={padding}
       {...props}

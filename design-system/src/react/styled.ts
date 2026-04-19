@@ -1,84 +1,20 @@
 import styled from '@emotion/styled';
 import { Theme } from '@emotion/react';
 
-// Import design tokens with fallback
-let tokens: any = {};
-try {
-  // Try to import from build output
-  const tokenModule = (typeof require !== 'undefined') ? require('../../dist/js/tokens') : {};
-  tokens = tokenModule.tokens || tokenModule.default || {};
-} catch (error) {
-  // Fallback to default tokens structure
-  tokens = {
-    color: {
-      theme: {
-        primary: '#4f46e5',
-        secondary: '#6b7280',
-        success: '#10b981',
-        warning: '#f59e0b',
-        danger: '#ef4444',
-        info: '#3b82f6',
-        text: '#ffffff',
-        textMuted: '#9ca3af',
-        background: '#111827',
-        background2: '#1f2937',
-        background3: '#374151',
-        surface: '#1f2937',
-        border: '#374151',
-      }
-    },
-    typography: {
-      fontFamily: {
-        sans: 'Segoe UI, system-ui, sans-serif'
-      },
-      fontSize: {
-        base: '16px',
-        h1: '32px',
-        h2: '28px',
-        h3: '24px',
-        h4: '20px',
-        h5: '18px'
-      },
-      fontWeight: {
-        normal: '400',
-        medium: '500',
-        semibold: '600',
-        bold: '700'
-      },
-      lineHeight: {
-        tight: '1.25',
-        base: '1.5',
-        relaxed: '1.75'
-      }
-    },
-    spacing: {
-      xs: '4px',
-      sm: '8px',
-      base: '16px',
-      lg: '24px',
-      xl: '32px',
-      xxl: '48px'
-    },
-    borderRadius: {
-      sm: '4px',
-      base: '8px',
-      lg: '12px',
-      xl: '16px',
-      full: '9999px'
-    },
-    shadow: {
-      small: '0 1px 3px rgba(0, 0, 0, 0.12)',
-      medium: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      large: '0 10px 15px rgba(0, 0, 0, 0.1)'
-    }
-  };
-}
+import { tokens as baseTokens } from '../tokens/base';
 
-// Define the theme interface for Emotion
+// Define the theme interface
 export interface DesignSystemTheme {
-  tokens: typeof tokens;
+  tokens: typeof baseTokens;
   mode: 'light' | 'dark';
 }
+
+// Augment Emotion's theme
+declare module '@emotion/react' {
+  export interface Theme extends DesignSystemTheme {}
+}
+
+const tokens = baseTokens;
 
 // Create typed styled components
 export const designSystemStyled = styled;

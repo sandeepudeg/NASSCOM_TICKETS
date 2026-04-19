@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import { Input as AntdInput, InputProps as AntdInputProps } from 'antd';
+import { Input as AntdInput, InputProps as AntdInputProps, InputRef } from 'antd';
 import { designSystemStyled, colors, spacing, borderRadius, transitions, focusRing } from '../styled';
 
 export interface InputProps extends Omit<AntdInputProps, 'size'> {
@@ -59,33 +59,33 @@ const StyledInput = designSystemStyled(AntdInput)<InputProps>`
   
   /* Variant styles */
   .ant-input {
-    background-color: ${props => 
+    background-color: ${(props: any) => 
       props.variant === 'filled' ? colors.surface(props) : 
       props.variant === 'borderless' ? 'transparent' : colors.background(props)
     };
-    border-color: ${colors.border};
-    color: ${colors.text};
+    border-color: ${(props: any) => colors.border(props)};
+    color: ${(props: any) => colors.text(props)};
     
-    ${props => props.variant === 'borderless' && 'border: none;'}
+    ${(props: any) => props.variant === 'borderless' && 'border: none;'}
     
     &::placeholder {
-      color: ${colors.textMuted};
+      color: ${(props: any) => colors.textMuted(props)};
     }
     
     &:hover {
-      border-color: ${colors.primary};
+      border-color: ${(props: any) => colors.primary(props)};
     }
     
     &:focus,
     &:focus-within {
-      border-color: ${colors.primary};
-      box-shadow: 0 0 0 2px ${colors.primary}20;
+      border-color: ${(props: any) => colors.primary(props)};
+      box-shadow: 0 0 0 2px ${(props: any) => colors.primary(props)}20;
       ${focusRing}
     }
   }
   
   /* Error state */
-  ${props => props.error && `
+  ${(props: any) => props.error && `
     .ant-input {
       border-color: ${colors.danger(props)};
       
@@ -99,7 +99,7 @@ const StyledInput = designSystemStyled(AntdInput)<InputProps>`
   `}
   
   /* Success state */
-  ${props => props.success && `
+  ${(props: any) => props.success && `
     .ant-input {
       border-color: ${colors.success(props)};
       
@@ -114,8 +114,8 @@ const StyledInput = designSystemStyled(AntdInput)<InputProps>`
   
   /* Disabled state */
   &.ant-input-disabled .ant-input {
-    background-color: ${colors.background2};
-    color: ${colors.textMuted};
+    background-color: ${(props: any) => colors.background2(props)};
+    color: ${(props: any) => colors.textMuted(props)};
     cursor: not-allowed;
   }
 `;
@@ -123,7 +123,7 @@ const StyledInput = designSystemStyled(AntdInput)<InputProps>`
 /**
  * Enhanced Input component that extends Ant Design Input with design system tokens
  */
-export const Input = forwardRef<HTMLInputElement, InputProps>(({
+export const Input = forwardRef<InputRef, InputProps>(({
   size = 'medium',
   variant = 'default',
   error = false,
@@ -144,7 +144,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       ref={ref}
       size={antdSize}
       status={inputStatus}
-      variant={variant}
+      variant={variant as any}
       error={error}
       success={success}
       {...props}
@@ -157,30 +157,30 @@ Input.displayName = 'Input';
 // Export TextArea component
 const StyledTextArea = designSystemStyled(AntdInput.TextArea)<InputProps>`
   .ant-input {
-    background-color: ${colors.background};
-    border-color: ${colors.border};
-    color: ${colors.text};
-    border-radius: ${borderRadius.base};
+    background-color: ${(props: any) => colors.background(props)};
+    border-color: ${(props: any) => colors.border(props)};
+    color: ${(props: any) => colors.text(props)};
+    border-radius: ${(props: any) => borderRadius.base(props)};
     transition: all ${transitions.fast};
     
     &::placeholder {
-      color: ${colors.textMuted};
+      color: ${(props: any) => colors.textMuted(props)};
     }
     
     &:hover {
-      border-color: ${colors.primary};
+      border-color: ${(props: any) => colors.primary(props)};
     }
     
     &:focus,
     &:focus-within {
-      border-color: ${colors.primary};
-      box-shadow: 0 0 0 2px ${colors.primary}20;
+      border-color: ${(props: any) => colors.primary(props)};
+      box-shadow: 0 0 0 2px ${(props: any) => colors.primary(props)}20;
       ${focusRing}
     }
   }
   
   /* Error state */
-  ${props => props.error && `
+  ${(props: any) => props.error && `
     .ant-input {
       border-color: ${colors.danger(props)};
       
@@ -194,7 +194,7 @@ const StyledTextArea = designSystemStyled(AntdInput.TextArea)<InputProps>`
   `}
   
   /* Success state */
-  ${props => props.success && `
+  ${(props: any) => props.success && `
     .ant-input {
       border-color: ${colors.success(props)};
       

@@ -31,7 +31,7 @@ const StyledBadge = designSystemStyled(AntdBadge)<BadgeProps>`
   .ant-badge-dot {
     transition: all ${transitions.fast};
     
-    ${props => {
+    ${(props: any) => {
       const getColorValue = (colorScheme: string) => {
         switch (colorScheme) {
           case 'primary': return colors.primary(props);
@@ -74,7 +74,7 @@ const StyledBadge = designSystemStyled(AntdBadge)<BadgeProps>`
     }}
     
     /* Size variants */
-    ${props => {
+    ${(props: any) => {
       switch (props.size) {
         case 'small':
           return `
@@ -107,7 +107,7 @@ const StyledBadge = designSystemStyled(AntdBadge)<BadgeProps>`
     }}
     
     /* Pulse animation */
-    ${props => props.pulse && `
+    ${(props: any) => props.pulse && `
       animation: badgePulse 2s ease-in-out infinite;
       
       @keyframes badgePulse {
@@ -128,7 +128,7 @@ const StyledBadge = designSystemStyled(AntdBadge)<BadgeProps>`
   }
   
   /* Dot variant specific styles */
-  ${props => props.variant === 'dot' && `
+  ${(props: any) => props.variant === 'dot' && `
     .ant-badge-dot {
       ${props.size === 'small' ? 'width: 6px; height: 6px;' : 
         props.size === 'large' ? 'width: 12px; height: 12px;' : 
@@ -138,7 +138,7 @@ const StyledBadge = designSystemStyled(AntdBadge)<BadgeProps>`
   
   /* Status badge styles */
   .ant-badge-status-dot {
-    ${props => {
+    ${(props: any) => {
       const getColorValue = (colorScheme: string) => {
         switch (colorScheme) {
           case 'primary': return colors.primary(props);
@@ -163,12 +163,12 @@ const StyledBadge = designSystemStyled(AntdBadge)<BadgeProps>`
   }
   
   .ant-badge-status-text {
-    color: ${colors.text};
-    font-size: ${props => 
+    color: ${(props: any) => colors.text(props)};
+    font-size: ${(props: any) => 
       props.size === 'small' ? '12px' : 
       props.size === 'large' ? '16px' : '14px'
     };
-    margin-left: ${spacing.xs};
+    margin-left: ${(props: any) => spacing.xs(props)};
   }
 `;
 
@@ -191,7 +191,7 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(({
     <StyledBadge
       ref={ref}
       variant={variant}
-      size={size}
+      size={size as any}
       colorScheme={colorScheme}
       customColor={badgeColor}
       pulse={pulse}

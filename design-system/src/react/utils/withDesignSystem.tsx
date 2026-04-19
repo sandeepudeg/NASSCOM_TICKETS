@@ -13,7 +13,7 @@ export function withDesignSystem<P extends object>(
   const WrappedComponent = (props: P) => {
     return (
       <DesignSystemThemeProvider {...themeConfig}>
-        <ThemeProvider theme={createTheme(themeConfig?.theme || 'dark')}>
+        <ThemeProvider theme={createTheme((themeConfig?.theme === 'auto' ? 'dark' : themeConfig?.theme) as any || 'dark')}>
           <Component {...props} />
         </ThemeProvider>
       </DesignSystemThemeProvider>

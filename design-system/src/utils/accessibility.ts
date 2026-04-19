@@ -174,7 +174,8 @@ export class KeyboardNavigation {
   ): () => void {
     let currentIndex = 0;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: Event) => {
+      const kbEvent = event as KeyboardEvent;
       const items = Array.from(container.querySelectorAll(itemSelector)) as HTMLElement[];
       const activeElement = document.activeElement as HTMLElement;
       const activeIndex = items.indexOf(activeElement);
@@ -183,7 +184,7 @@ export class KeyboardNavigation {
         currentIndex = activeIndex;
       }
 
-      currentIndex = this.handleArrowNavigation(event, items, currentIndex, {
+      currentIndex = this.handleArrowNavigation(kbEvent, items, currentIndex, {
         ...options,
         onSelect: options.onSelect ? (index) => options.onSelect!(items[index], index) : undefined
       });
@@ -530,15 +531,3 @@ export class AccessibilityTester {
     }
   }
 }
-
-// Export all utilities
-export {
-  FocusManager,
-  KeyboardNavigation,
-  ScreenReaderAnnouncer,
-  ColorContrast,
-  MotionPreferences,
-  FormValidation,
-  TouchTargets,
-  AccessibilityTester
-};

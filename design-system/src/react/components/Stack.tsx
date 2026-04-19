@@ -120,9 +120,9 @@ export const Stack = forwardRef<HTMLDivElement, StackProps>(({
     <StyledStack
       ref={ref}
       direction={direction === 'horizontal' ? 'horizontal' : 'vertical'}
-      size={spaceSize}
-      align={align}
-      justify={justify}
+      size={spaceSize as any}
+      align={align as any}
+      justify={justify as any}
       wrap={wrap}
       fullWidth={fullWidth}
       {...props}

@@ -32,8 +32,8 @@ export type { AlertProps } from './Alert';
 export { toast, msg } from './Toast';
 export type { ToastOptions, MessageOptions } from './Toast';
 
-export { Loading, SkeletonLoading } from './Loading';
-export type { LoadingProps, SkeletonLoadingProps } from './Loading';
+export { Loading, SkeletonLoading as Skeleton } from './Loading';
+export type { LoadingProps, SkeletonLoadingProps as SkeletonProps } from './Loading';
 
 export { Badge, StatusBadge } from './Badge';
 export type { BadgeProps, StatusBadgeProps } from './Badge';
@@ -91,7 +91,7 @@ export {
   Popconfirm,
   Progress,
   Result,
-  Skeleton,
+  Skeleton as AntdSkeleton,
   Spin,
   Anchor,
   BackTop,
@@ -153,7 +153,7 @@ export type {
   PopconfirmProps,
   ProgressProps,
   ResultProps,
-  SkeletonProps,
+  SkeletonProps as AntdSkeletonProps,
   SpinProps,
   AnchorProps,
   ConfigProviderProps,

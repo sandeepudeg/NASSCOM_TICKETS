@@ -34,7 +34,7 @@ const StyledButton = designSystemStyled(AntdButton)<ButtonProps>`
   ${(props: ButtonProps & { theme: any }) => props.fullWidth && 'width: 100%;'}
   
   /* Size variants */
-  ${(props: ButtonProps & { theme: any }) => {
+  ${(props: any) => {
     switch (props.size) {
       case 'small':
         return `
@@ -61,7 +61,7 @@ const StyledButton = designSystemStyled(AntdButton)<ButtonProps>`
   }}
   
   /* Variant styles */
-  ${(props: ButtonProps & { theme: any }) => {
+  ${(props: any) => {
     switch (props.variant) {
       case 'secondary':
         return `
@@ -152,7 +152,7 @@ const StyledButton = designSystemStyled(AntdButton)<ButtonProps>`
   }
   
   /* Loading styles */
-  ${(props: ButtonProps & { theme: any }) => props.isLoading && `
+  ${(props: any) => props.isLoading && `
     cursor: wait;
     opacity: 0.8;
   `}
@@ -161,7 +161,7 @@ const StyledButton = designSystemStyled(AntdButton)<ButtonProps>`
 /**
  * Enhanced Button component that extends Ant Design Button with design system tokens
  */
-export const Button = forwardRef<HTMLElement, ButtonProps>(({
+export const Button = forwardRef<any, ButtonProps>(({
   variant = 'primary',
   size = 'medium',
   fullWidth = false,
@@ -174,7 +174,7 @@ export const Button = forwardRef<HTMLElement, ButtonProps>(({
   const antdSize = size === 'small' ? 'small' : size === 'large' ? 'large' : 'middle';
   
   // Use isLoading or loading prop
-  const isButtonLoading = isLoading || loading;
+  const isButtonLoading = !!(isLoading || loading);
   
   return (
     <StyledButton

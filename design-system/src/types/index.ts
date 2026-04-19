@@ -1,6 +1,6 @@
 // Design System TypeScript Definitions
 
-import { tokens } from '../../dist/js/tokens';
+import { tokens } from '../tokens/base';
 
 // Token types
 export type Tokens = typeof tokens;
@@ -107,7 +107,7 @@ export interface FormFieldProps extends ComponentBaseProps, AccessibilityProps {
 }
 
 // Layout types
-export interface LayoutProps extends ComponentBaseProps {
+export interface DesignSystemLayoutProps extends ComponentBaseProps {
   padding?: 'none' | 'small' | 'medium' | 'large';
   margin?: 'none' | 'small' | 'medium' | 'large';
   fullWidth?: boolean;

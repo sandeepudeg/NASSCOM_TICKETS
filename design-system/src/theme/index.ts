@@ -1,14 +1,8 @@
 // Theme utilities for TicketIQ Design System
 
-export type ThemeMode = 'light' | 'dark' | 'auto';
+import { ThemeMode, ThemeConfig } from '../types';
 
-export interface ThemeConfig {
-  mode: ThemeMode;
-  tokens?: Record<string, any>;
-  autoDetect?: boolean;
-  persistPreference?: boolean;
-  storageKey?: string;
-}
+export type { ThemeMode, ThemeConfig };
 
 export interface ThemeChangeEvent {
   theme: ThemeMode;
@@ -82,7 +76,7 @@ function resolveTheme(mode: ThemeMode): 'light' | 'dark' {
   if (mode === 'auto') {
     return getSystemTheme();
   }
-  return mode;
+  return mode as 'light' | 'dark';
 }
 
 /**

@@ -56,11 +56,11 @@ export interface FlexProps extends AntdFlexProps {
 }
 
 const StyledFlex = designSystemStyled(AntdFlex)<FlexProps>`
-  ${props => props.fullWidth && 'width: 100%;'}
-  ${props => props.fullHeight && 'height: 100%;'}
+  ${(props: any) => props.fullWidth && 'width: 100%;'}
+  ${(props: any) => props.fullHeight && 'height: 100%;'}
   
   /* Custom gap handling for responsive gaps */
-  ${props => {
+  ${(props: any) => {
     if (props.responsiveGap) {
       const getGapValue = (gapSize: string | number) => {
         if (typeof gapSize === 'number') return `${gapSize}px`;
@@ -161,8 +161,8 @@ export const Flex = forwardRef<HTMLDivElement, FlexProps>(({
     <StyledFlex
       ref={ref}
       vertical={direction === 'column' || direction === 'column-reverse'}
-      align={alignItems}
-      justify={justifyContent}
+      align={alignItems as any}
+      justify={justifyContent as any}
       wrap={wrap}
       gap={flexGap}
       fullWidth={fullWidth}
