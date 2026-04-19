@@ -50,8 +50,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
     SENTENCE_TRANSFORMERS_HOME=/home/user/model_cache \
-    TRANSFORMERS_OFFLINE=1 \
-    HF_DATASETS_OFFLINE=1
+    # Allow online mode during build for model downloads
+    TRANSFORMERS_OFFLINE=0 \
+    HF_DATASETS_OFFLINE=0
 
 # Create non-root user (Hugging Face requirement)
 RUN useradd -m -u 1000 user
@@ -77,9 +78,9 @@ COPY backend/ ./
 RUN chown -R user:user /home/user/app
 USER user
 
-# Pre-download AI models
+# Pre-download AI models (explicitly ensure offline mode is disabled for this step)
 RUN mkdir -p /home/user/model_cache && \
-    python -c "from huggingface_hub import snapshot_download; \
+    HF_HUB_OFFLINE=0 python -c "from huggingface_hub import snapshot_download; \
     snapshot_download('sentence-transformers/all-MiniLM-L6-v2', \
     local_dir='/home/user/model_cache/all-MiniLM-L6-v2', \
     token=None)"
