@@ -136,7 +136,7 @@ export const Navigation = forwardRef<HTMLElement, NavigationProps>(({
         <StyledNavigation
           ref={ref}
           className={getNavigationClasses()}
-          variant={variant}
+          variant={variant as any}
           {...props}
         >
           {brand && (
@@ -163,7 +163,7 @@ export const Navigation = forwardRef<HTMLElement, NavigationProps>(({
       <StyledNavigation
         ref={ref}
         className={getNavigationClasses()}
-        variant={variant}
+        variant={variant as any}
         {...props}
       >
         {brand && <div className="navbar-brand">{brand}</div>}
@@ -185,7 +185,7 @@ export const Navigation = forwardRef<HTMLElement, NavigationProps>(({
     <StyledNavList
       ref={ref as any}
       className={getNavigationClasses()}
-      variant={variant}
+      variant={variant as any}
       {...props}
     >
       {children}

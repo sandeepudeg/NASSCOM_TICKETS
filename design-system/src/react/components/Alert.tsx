@@ -176,8 +176,8 @@ export const Alert = forwardRef<any, AlertProps>(({
     <StyledAlert
       ref={ref}
       type={type}
-      variant={variant}
-      size={size}
+      variant={variant as any}
+      size={size as any}
       bordered={bordered}
       showIcon={showIcon}
       icon={icon}

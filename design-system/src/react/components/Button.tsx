@@ -179,9 +179,9 @@ export const Button = forwardRef<any, ButtonProps>(({
   return (
     <StyledButton
       ref={ref}
-      size={antdSize}
+      size={antdSize as any}
       loading={isButtonLoading}
-      variant={variant}
+      variant={variant as any}
       fullWidth={fullWidth}
       isLoading={isButtonLoading}
       {...props}

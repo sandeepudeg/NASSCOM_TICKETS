@@ -142,7 +142,7 @@ export const Input = forwardRef<InputRef, InputProps>(({
   return (
     <StyledInput
       ref={ref}
-      size={antdSize}
+      size={antdSize as any}
       status={inputStatus}
       variant={variant as any}
       error={error}
@@ -209,6 +209,8 @@ const StyledTextArea = designSystemStyled(AntdInput.TextArea)<InputProps>`
 `;
 
 export const TextArea = forwardRef<HTMLTextAreaElement, InputProps>(({
+  size = 'medium',
+  variant = 'default',
   error = false,
   success = false,
   status,
@@ -217,11 +219,12 @@ export const TextArea = forwardRef<HTMLTextAreaElement, InputProps>(({
   // Determine status based on error/success props
   let inputStatus: "" | "warning" | "error" | undefined = status;
   if (error) inputStatus = 'error';
-  // Note: Ant Design TextArea doesn't support 'success' status, so we handle it with custom styling
-  
+
   return (
     <StyledTextArea
       ref={ref}
+      size={(size === 'medium' ? 'middle' : size) as any}
+      variant={variant as any}
       status={inputStatus}
       error={error}
       success={success}

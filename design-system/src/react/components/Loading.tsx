@@ -206,8 +206,10 @@ export const Loading = forwardRef<HTMLDivElement, LoadingProps>(({
   
   const customIndicator = renderCustomIndicator();
   
+  const StyledLoadingAny = StyledLoading as any;
+  
   const loadingContent = (
-    <StyledLoading
+    <StyledLoadingAny
       ref={ref}
       size={(size === 'medium' ? 'default' : size) as any}
       spinning={spinning}
