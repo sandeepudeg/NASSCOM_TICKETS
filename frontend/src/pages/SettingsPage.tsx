@@ -35,7 +35,6 @@ import {
 import { designSystemStyled } from '@ticketiq/design-system'
 import ImportWorkspace from '../workspaces/ImportWorkspace'
 import { HistoryOutlined } from '@ant-design/icons'
-import { useLayoutStore } from '../stores/layoutStore'
 import { apiClient } from '../api/client'
 
 const { Title, Text } = Typography
@@ -120,12 +119,10 @@ export default function SettingsPage() {
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState('intel')
 
-  const { setFooterActions, clearFooterActions } = useLayoutStore()
-
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab) setActiveTab(tab)
-  }, [searchParams])
+  }, [searchParams, setActiveTab])
 
   const [intelForm] = Form.useForm()
   const [guardForm] = Form.useForm()
