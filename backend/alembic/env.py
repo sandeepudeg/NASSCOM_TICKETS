@@ -72,10 +72,19 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # Add timeouts and connection arguments to handle serverless cold starts
+    connect_args = {}
+    if "postgresql" in database_url:
+        connect_args = {
+            "connect_timeout": 60,
+            "options": "-c statement_timeout=60000"
+        }
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     with connectable.connect() as connection:

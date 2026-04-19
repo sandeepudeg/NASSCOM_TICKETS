@@ -284,7 +284,15 @@ def setup_tracing(
         return trace.get_tracer_provider()  # type: ignore[return-value]
 
     # Allow local dev to disable OTLP to avoid noisy connection errors when no collector is running.
-    if os.getenv("DISABLE_OTEL_EXPORTER", "false").lower() == "true":
+    disable_otel = os.getenv("DISABLE_OTEL_EXPORTER", "false").lower() == "true"
+    
+    # Auto-disable if endpoint is localhost and we are likely in a restricted environment (HF Spaces)
+    if not disable_otel and "localhost" in settings.otel_exporter_otlp_endpoint:
+        if os.getenv("SPACE_ID") or os.getenv("HF_SPACE"): # Detect Hugging Face
+            logging.info("Detected Hugging Face Space; disabling local OTLP exporter to avoid connection errors.")
+            disable_otel = True
+
+    if disable_otel:
         app.state.tracing_configured = True
         return trace.get_tracer_provider()  # type: ignore[return-value]
 

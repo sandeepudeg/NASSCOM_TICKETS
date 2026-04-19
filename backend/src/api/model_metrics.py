@@ -14,12 +14,14 @@ async def get_model_metrics(version: str | None = Query(None)):
     """
     try:
         from src.schemas.settings import settings
-
-        if not settings.mlflow_enabled:
-            raise Exception("MLflow disabled")
         import mlflow
 
-        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", settings.mlflow_tracking_uri)
+        
+        # Skip connection attempt if on HF Spaces and pointing to localhost
+        if (os.getenv("SPACE_ID") or os.getenv("HF_SPACE")) and "localhost" in tracking_uri:
+            raise Exception("MLflow tracking on localhost ignored in Spaces")
+
         mlflow.set_tracking_uri(tracking_uri)
         client = mlflow.tracking.MlflowClient()
 

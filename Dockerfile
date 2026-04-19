@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend source
+# Copy backend source first to install requirements
 COPY backend /app/backend
 WORKDIR /app/backend
 
@@ -27,17 +27,22 @@ COPY requirements.txt /app/requirements.txt
 # Install backend dependencies from the copied requirements file
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# Download the embedding model for offline use
-RUN python -c "from huggingface_hub import snapshot_download; \
+# Download the embedding model for offline use during build
+# This stores it in /app/model_cache/all-MiniLM-L6-v2
+RUN mkdir -p /app/model_cache && \
+    python -c "from huggingface_hub import snapshot_download; \
     snapshot_download('sentence-transformers/all-MiniLM-L6-v2', \
-    local_dir='/root/.cache/huggingface/hub/all-MiniLM-L6-v2', \
+    local_dir='/app/model_cache/all-MiniLM-L6-v2', \
     token=None)"
 
-# Set essential environment variables for Hugging Face
+# Set environment variables for Hugging Face and offline model loading
 ENV PORT=7860 \
     HOST=0.0.0.0 \
     PYTHONUNBUFFERED=1 \
-    UVICORN_PORT=7860
+    UVICORN_PORT=7860 \
+    SENTENCE_TRANSFORMERS_HOME=/app/model_cache \
+    TRANSFORMERS_OFFLINE=1 \
+    HF_DATASETS_OFFLINE=1
 
 # Expose the standard HF Spaces port
 EXPOSE 7860

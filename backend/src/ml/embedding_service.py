@@ -25,10 +25,18 @@ class EmbeddingService:
 
     def _load_model(self) -> None:
         model_name = os.getenv("EMBEDDING_MODEL", settings.embedding_model)
+        
+        # 1. Check if model exists in the expected HF Spaces local cache directory
+        # This path is populated during the Docker build process.
+        local_cache_path = f"/app/model_cache/{model_name}"
+        
+        # 2. Prefer the local path if it exists to satisfy TRANSFORMERS_OFFLINE requirement
+        model_to_load = local_cache_path if os.path.exists(local_cache_path) else model_name
+        
         try:
             # Avoid network downloads in offline/dev by default
             self._model = SentenceTransformer(
-                model_name, local_files_only=not self._allow_remote_download
+                model_to_load, local_files_only=not self._allow_remote_download
             )
         except Exception as exc:
             # Fallback to lightweight dummy embeddings so the API can still start

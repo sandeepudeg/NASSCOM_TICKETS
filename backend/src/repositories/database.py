@@ -49,12 +49,24 @@ if is_sqlite:
         echo=settings.debug,
     )
 else:
+    # asyncpg-specific connection arguments
+    # command_timeout: timeout for individual queries
+    # timeout: timeout for establishing a connection
+    _connect_args.update({
+        "command_timeout": 60,
+        "timeout": 60,  # Increased from 30 to handle cold starts
+        "statement_timeout": 60000, # 60s in ms
+    })
+    
     engine = create_async_engine(
         _async_url,
         pool_size=settings.database_pool_size,
         max_overflow=settings.database_max_overflow,
         connect_args=_connect_args,
         echo=settings.debug,
+        pool_recycle=1800, # Reduced to 30m to stay fresh with serverless
+        pool_pre_ping=True, # Verify connection is alive before use
+        pool_use_lifo=True, # Improved performance for serverless pools
     )
 
 async_session_maker = async_sessionmaker(
@@ -65,19 +77,31 @@ async_session_maker = async_sessionmaker(
 
 async def init_db() -> None:
     import logging
+    import asyncio
     _log = logging.getLogger(__name__)
 
-    # Try to create any missing tables. This is a no-op if they exist.
-    # On Neon, enum types may already exist from a prior migration, which
-    # causes create_all to raise ProgrammingError — catch it and continue.
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            if is_sqlite:
-                from sqlalchemy import text
-                await conn.execute(text("PRAGMA journal_mode=WAL"))
-    except Exception as e:
-        _log.warning(f"init_db: create_all skipped (schema likely already exists): {e}")
+    # Retry logic for initial connection - helpful for slow startup or serverless wake-up
+    max_retries = 10 # Increased from 5
+    retry_delay = 10 # Increased from 5
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            _log.info(f"Database initialization attempt {attempt}/{max_retries}...")
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                if is_sqlite:
+                    from sqlalchemy import text
+                    await conn.execute(text("PRAGMA journal_mode=WAL"))
+            _log.info("Database initialization successful.")
+            break
+        except Exception as e:
+            if attempt == max_retries:
+                _log.error(f"init_db failed after {max_retries} attempts: {e}")
+                # We don't raise here to allow the app to start even if DB is transiently down,
+                # though most features will fail.
+            else:
+                _log.warning(f"init_db attempt {attempt} failed, retrying in {retry_delay}s: {e}")
+                await asyncio.sleep(retry_delay)
 
     # Seed departmental folders — best-effort, never crash startup
     try:
