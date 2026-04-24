@@ -146,7 +146,7 @@ const KnowledgeWidget = () => {
 const SentimentWidget = ({ analyticsData }: any) => {
   const sentiment = analyticsData?.avg_sentiment_percent || 50;
   const isPositive = sentiment >= 60;
-  
+
   return (
     <div style={{ padding: '24px 40px' }}>
       <Title level={5} style={{ fontSize: '13px', marginBottom: '20px', color: 'var(--color-primary)', letterSpacing: '0.1em' }}>SENTIMENT PULSE</Title>
@@ -200,7 +200,7 @@ const ActionWidget = () => (
       {[
         { label: 'SYNC ALL', icon: <SyncOutlined /> },
         { label: 'GEN REPORT', icon: <FileTextOutlined /> },
-        { label: 'IMPORT DATA', icon: <CloudUploadOutlined onClick={() => window.location.href='/settings?tab=ingestion'} /> },
+        { label: 'IMPORT DATA', icon: <CloudUploadOutlined onClick={() => window.location.href = '/settings?tab=ingestion'} /> },
         { label: 'ESCALATE', icon: <WarningOutlined /> }
       ].map((action, i) => (
         <Col span={12} key={i}>
@@ -692,11 +692,11 @@ const DashboardPage = () => {
                 />
 
                 {optimizationInsight ? (
-                  <div style={{ 
-                    marginTop: '16px', 
-                    padding: '12px 20px', 
-                    background: 'rgba(99, 102, 241, 0.03)', 
-                    borderRadius: '12px', 
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '12px 20px',
+                    background: 'rgba(99, 102, 241, 0.03)',
+                    borderRadius: '12px',
                     border: '1px solid rgba(99, 102, 241, 0.08)',
                     display: 'flex',
                     alignItems: 'center',
@@ -704,14 +704,14 @@ const DashboardPage = () => {
                     gap: '24px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '0 0 auto' }}>
-                      <div style={{ 
-                        width: '32px', 
-                        height: '32px', 
-                        borderRadius: '8px', 
-                        background: 'rgba(99, 102, 241, 0.1)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center' 
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        background: 'rgba(99, 102, 241, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}>
                         <BulbOutlined style={{ color: '#818cf8', fontSize: '16px' }} />
                       </div>
@@ -821,8 +821,8 @@ const DashboardPage = () => {
         <Row gutter={[20, 20]}>
           {/* Vertical Global Snapshot Sidebar */}
           <Col xs={24} lg={6}>
-            <Card 
-              className="glass-effect shadow-accent" 
+            <Card
+              className="glass-effect shadow-accent"
               bodyStyle={{ padding: '32px 24px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
               style={{ background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.02) 100%)', height: '100%', borderRadius: '16px' }}
             >
@@ -832,9 +832,9 @@ const DashboardPage = () => {
               </div>
 
               <div style={{ position: 'relative', margin: '20px 0 40px' }}>
-                <Progress 
-                  type="circle" 
-                  percent={Math.round((statsData?.stats || []).reduce((acc, s) => acc + (s.efficiency || 0), 0) / ((statsData?.stats || []).length || 1))} 
+                <Progress
+                  type="circle"
+                  percent={Math.round((statsData?.stats || []).reduce((acc, s) => acc + (s.efficiency || 0), 0) / ((statsData?.stats || []).length || 1))}
                   strokeColor={{ '0%': '#6366f1', '100%': '#10b981' }}
                   strokeWidth={10}
                   width={140}
@@ -885,11 +885,11 @@ const DashboardPage = () => {
 
                   return (
                     <Col xs={24} sm={12} lg={8} key={dept.id || idx}>
-                      <Card 
-                        className="glass-effect shadow-accent" 
-                        bodyStyle={{ padding: '16px' }} 
+                      <Card
+                        className="glass-effect shadow-accent"
+                        bodyStyle={{ padding: '16px' }}
                         hoverable
-                        style={{ 
+                        style={{
                           height: '100%',
                           borderTop: `3px solid ${statusColor}`,
                           borderRadius: '12px'
@@ -898,10 +898,10 @@ const DashboardPage = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <div style={{ 
-                                width: '6px', 
-                                height: '6px', 
-                                borderRadius: '50%', 
+                              <div style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
                                 background: statusColor,
                                 boxShadow: `0 0 8px ${statusColor}`,
                                 animation: healthStatus !== 'healthy' ? 'pulse 2s infinite' : 'none'
@@ -916,7 +916,7 @@ const DashboardPage = () => {
                             </div>
                           </div>
                           <div style={{ width: '60px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                             <Tag color="blue" bordered={false} style={{ fontSize: '10px', margin: 0 }}>LIVE</Tag>
+                            <Tag color="blue" bordered={false} style={{ fontSize: '10px', margin: 0 }}>LIVE</Tag>
                           </div>
                         </div>
 
@@ -930,16 +930,16 @@ const DashboardPage = () => {
                             <Text strong style={{ color: '#10b981', fontSize: '11px' }}>{dept.resolved_tickets || 0}</Text>
                           </Col>
                           <Col span={8}>
-                             <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>HEALTH</div>
-                             <Text strong style={{ color: statusColor, fontSize: '11px' }}>{dept.efficiency || 0}%</Text>
+                            <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>HEALTH</div>
+                            <Text strong style={{ color: statusColor, fontSize: '11px' }}>{dept.efficiency || 0}%</Text>
                           </Col>
                         </Row>
-                        
+
                         {dept.breechedCount > 0 && (
-                          <div style={{ 
-                            background: `${statusColor}15`, 
-                            padding: '4px 8px', 
-                            borderRadius: '6px', 
+                          <div style={{
+                            background: `${statusColor}15`,
+                            padding: '4px 8px',
+                            borderRadius: '6px',
                             border: `1px solid ${statusColor}30`,
                             display: 'flex',
                             justifyContent: 'space-between',
@@ -956,11 +956,11 @@ const DashboardPage = () => {
 
               {/* [NEW] AIOps Intelligence Hub Card */}
               <Col xs={24} sm={12} lg={8}>
-                <Card 
-                  className="glass-effect shadow-accent" 
-                  bodyStyle={{ padding: '16px' }} 
+                <Card
+                  className="glass-effect shadow-accent"
+                  bodyStyle={{ padding: '16px' }}
                   hoverable
-                  style={{ 
+                  style={{
                     height: '100%',
                     borderTop: `3px solid var(--color-primary)`,
                     borderRadius: '12px',
@@ -980,7 +980,7 @@ const DashboardPage = () => {
                     </div>
                     <BulbOutlined style={{ fontSize: '20px', color: 'var(--color-primary)', opacity: 0.6 }} />
                   </div>
-                  
+
                   <Row gutter={8} style={{ marginBottom: '12px' }}>
                     <Col span={8}>
                       <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>ACCURACY</div>
@@ -991,8 +991,8 @@ const DashboardPage = () => {
                       <Text strong style={{ color: 'var(--color-primary)', fontSize: '11px' }}>{(metricsData?.semantic_similarity || 0.82).toFixed(2)}</Text>
                     </Col>
                     <Col span={8}>
-                       <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>DRIFT</div>
-                       <Text strong style={{ color: '#10b981', fontSize: '11px' }}>0.02</Text>
+                      <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>DRIFT</div>
+                      <Text strong style={{ color: '#10b981', fontSize: '11px' }}>0.02</Text>
                     </Col>
                   </Row>
 
@@ -1005,11 +1005,11 @@ const DashboardPage = () => {
 
               {/* [NEW] Automation ROI Impact Card */}
               <Col xs={24} sm={12} lg={8}>
-                <Card 
-                  className="glass-effect shadow-accent" 
-                  bodyStyle={{ padding: '16px' }} 
+                <Card
+                  className="glass-effect shadow-accent"
+                  bodyStyle={{ padding: '16px' }}
                   hoverable
-                  style={{ 
+                  style={{
                     height: '100%',
                     borderTop: `3px solid #10b981`,
                     borderRadius: '12px',
@@ -1029,7 +1029,7 @@ const DashboardPage = () => {
                     </div>
                     <ThunderboltOutlined style={{ fontSize: '20px', color: '#10b981', opacity: 0.6 }} />
                   </div>
-                  
+
                   <Row gutter={8} style={{ marginBottom: '12px' }}>
                     <Col span={8}>
                       <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>EFFICIENCY</div>
@@ -1040,8 +1040,8 @@ const DashboardPage = () => {
                       <Text strong style={{ color: '#10b981', fontSize: '11px' }}>28%</Text>
                     </Col>
                     <Col span={8}>
-                       <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>RELIABILITY</div>
-                       <Text strong style={{ color: '#10b981', fontSize: '11px' }}>99.4%</Text>
+                      <div style={{ fontSize: '8px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>RELIABILITY</div>
+                      <Text strong style={{ color: '#10b981', fontSize: '11px' }}>99.4%</Text>
                     </Col>
                   </Row>
 

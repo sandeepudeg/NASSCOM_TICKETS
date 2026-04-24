@@ -15,11 +15,10 @@ groups:
               from: 300
               to: 0
             model:
-              datasourceUid: 'prometheus'
+              datasource:
+                type: 'prometheus'
+                uid: 'prometheus'
               expr: 'up{job="api"} == 0'
-              hide: false
-              intervalMs: 1000
-              maxDataPoints: 43200
               refId: 'A'
         noDataState: 'NoData'
         execErrState: 'Error'
