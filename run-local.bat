@@ -19,7 +19,8 @@ echo (This may take a minute on the first run)
 echo.
 
 cd docker
-docker compose --profile vector-store down
+docker compose --profile vector-store stop
+docker compose --profile vector-store down --remove-orphans
 docker compose --profile vector-store up -d --build --force-recreate
 
 if %errorlevel% neq 0 (
