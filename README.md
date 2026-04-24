@@ -17,13 +17,13 @@ The Tickets Folder feature is a self-hosted IT ticket routing and resolution sys
 
 **Key capabilities:**
 - Automatic ticket classification into 7 categories (including Access Management)
-- RAG-based resolution suggestions with high-confidence indexing
-- Automation Intelligence Workspace for identifying recurring issues
-- Intelligence Hub Live (Command Center) for operational control
-- Escalation & Automation Available real-time badges
-- Pattern detection and auditing across hierarchical folders
-- PII scrubbing with auditable redaction metrics
-- Cross-Domain ETL pipeline ready (Health, Legal, Gov)
+- **Zero-Dummy Intelligence Dashboard**: Real-time hourly trends and sentiment analysis
+- **Unified SLA Breach Watchdog**: Precise 7-day breach monitoring synchronized across sidebar and global views
+- **Intelligence Alerts Lifecycle**: Full Resolve/Snooze/Dismiss workflow for Pattern Alerts
+- **RAG-based Resolution Suggestions**: High-confidence indexing with local LLM citations
+- **Automation Intelligence Workspace**: Identifying recurring issues for self-service promotion
+- **Promoted to Urgent Logic**: Automated priority escalation based on technical impact and sentiment
+- **Enterprise Documentation**: 17+ detailed guides for infrastructure, AI, and domain adaptation
 
 ## Quick Start
 
@@ -138,13 +138,17 @@ curl -X POST http://localhost:8000/api/v1/tickets \
 
 ## Features
 
-### Flask Admin Interface
-- **Dashboard**: Overview of system metrics, throughput trends, and system pulse
-- **Intelligence Hub**: Real-time Quick Command Center for SYNC ALL and BULK ROUTE actions
-- **Folder Management**: Enterprise-grade ticket organization with live count badges
-- **Automation Review**: Dedicated workspace for investigating high-confidence AI solutions
-- **Classification Testing**: Domain-agnostic testing of the inference engine
-- **Responsive Design**: Bootstrap 5-based UI that works on desktop and mobile devices
+### Intelligence Dashboard (Strategic Command Grid)
+- **Zero-Dummy Metrics**: Every chart and percentage is driven by real-time database analytics.
+- **Hourly Traffic Trend**: Live 24-hour visualization of ticket creation spikes.
+- **Sentiment Pulse**: Aggregated customer emotion analysis across all incoming tickets.
+- **Unified SLA precision**: Accurate breach counts matching the sidebar source-of-truth.
+- **Orchestration Insights**: AI-suggested agent shifting based on departmental load.
+
+### Intelligence Alerts & Patterns
+- **Pattern Detection**: Automated clustering of repeated issues (≥3 cases, ≥0.80 similarity).
+- **Alert Lifecycle**: Full management of system alerts with Resolve, Snooze (duration-based), and Dismiss actions.
+- **Sidebar Integration**: Reactive badge counts that update instantly upon alert resolution.
 
 ### Folder Management
 - Create, rename, delete ticket folders
@@ -411,9 +415,19 @@ See `requirements_v2_1.md` for complete requirements covering:
 - Security and audit logging (Requirements 28-29)
 - UI/Frontend specifications (Requirements 30-38)
 
-- **[docs/architecture/PROJECT_STRUCTURE.md](docs/architecture/PROJECT_STRUCTURE.md)** — Project layout
-- **[docs/deployment/DEPLOYMENT.md](docs/deployment/DEPLOYMENT.md)** — Detailed instructions
-- **[docs/proposals/implementation_plan.md](docs/proposals/implementation_plan.md)** — Archival planning logs
+## Documentation Suite
+
+The `/docs` directory contains a comprehensive manual for every layer of the system:
+
+| Guide | Description |
+|---|---|
+| [DOMAIN_ADAPTATION.md](docs/DOMAIN_ADAPTATION.md) | How to customize TicketIQ for HR, Finance, or Legal |
+| [DASHBOARD_USER_MANUAL.md](docs/DASHBOARD_USER_MANUAL.md) | Layman-friendly guide to metrics and trends |
+| [GRAFANA_VIZ_GUIDE.md](docs/GRAFANA_VIZ_GUIDE.md) | Setting up SRE dashboards and log-to-trace deep links |
+| [CORE_API_GUIDE.md](docs/CORE_API_GUIDE.md) | Developer reference for the FastAPI backend |
+| [OLLAMA_LLM_GUIDE.md](docs/OLLAMA_LLM_GUIDE.md) | Managing local LLMs and prompt engineering |
+| [PROMETHEUS_METRICS.md](docs/PROM_METRICS_GUIDE.md) | Monitoring system throughput and error rates |
+| ... and 11 others covering Traefik, Keycloak, MinIO, and more. | |
 
 ## Troubleshooting
 
