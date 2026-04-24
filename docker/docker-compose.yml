@@ -12,6 +12,11 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--ping=true"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entryPoint=web"
+      - "--accesslog=true"
+      - "--tracing.otlp=true"
+      - "--tracing.otlp.http.endpoint=http://jaeger:4318"
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
     ports:
@@ -19,7 +24,7 @@ services:
       - "443:443"
       - "8081:8080"  # Traefik dashboard
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - //var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
@@ -34,7 +39,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: tickets_db
+      POSTGRES_DB: tickets
     ports:
       - "5432:5432"
     volumes:
@@ -66,8 +71,7 @@ services:
       timeout: 20s
       retries: 3
 
-  # Ollama for local LLM - using host Ollama to avoid port conflict
-  # If you don't have Ollama on host, uncomment this service and change API's OLLAMA_BASE_URL
+  # Ollama for local LLM
   ollama:
     image: ollama/ollama:latest
     container_name: tickets_ollama
@@ -104,7 +108,7 @@ services:
         condition: service_started
     command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://mlflow/
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health').read()"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -193,11 +197,15 @@ services:
     image: grafana/grafana:latest
     container_name: tickets_grafana
     ports:
-      - "3002:3000"  # Changed to 3002 to avoid conflict with frontend on 3000
+      - "3002:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - grafana_data:/var/lib/grafana
+      - ../config/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ../config/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ../config/grafana/dashboards/master_control.json:/etc/grafana/provisioning/dashboards/master_control.json:ro
+      - ../config/grafana/alerting.yml:/etc/grafana/provisioning/alerting/alerting.yml:ro
     restart: unless-stopped
     depends_on:
       prometheus:
@@ -207,12 +215,12 @@ services:
       jaeger:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Qdrant vector store (optional, profile-based)
+  # Qdrant vector store
   qdrant:
     image: qdrant/qdrant:latest
     container_name: tickets_qdrant
@@ -224,12 +232,10 @@ services:
     profiles:
       - vector-store
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/6333 && echo -e 'GET /healthz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && echo -e 'GET /healthz HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-
 
   # FastAPI backend
   api:
@@ -239,9 +245,9 @@ services:
     image: tickets-api:latest
     container_name: tickets_api
     ports:
-      - "8005:8005"  
+      - "8005:8005"
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/tickets_db
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/tickets
       OLLAMA_BASE_URL: http://ollama:11434
       MLFLOW_TRACKING_URI: http://mlflow:5000
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
@@ -255,6 +261,7 @@ services:
       UVICORN_RELOAD: "true"
       TRANSFORMERS_CACHE: /tmp/huggingface
       HF_HOME: /tmp/huggingface
+      ALLOW_EMBEDDING_DOWNLOAD: "true"
     volumes:
       - ../backend:/app
     restart: unless-stopped
@@ -276,6 +283,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
       - "traefik.http.services.api.loadbalancer.server.port=8005"
+      - "traefik.http.services.api.loadbalancer.responseTimeout=300s"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -287,13 +295,13 @@ services:
     image: tickets-frontend:latest
     container_name: tickets_frontend
     ports:
-      - "3003:80"  
+      - "3003:80"
     restart: unless-stopped
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -311,13 +319,14 @@ services:
     container_name: tickets_flask_admin
     ports:
       - "5001:5000"
+    env_file:
+      - ../backend/.env
     environment:
       API_BASE_URL: http://api:8005
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
       FLASK_ENV: development
       FLASK_DEBUG: "1"
       PORT: 5000
-      CORS_ORIGINS: http://localhost:5001
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
@@ -327,7 +336,7 @@ services:
       api:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health').read()"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -336,7 +345,7 @@ services:
       - "traefik.http.routers.flask-admin.rule=PathPrefix(`/admin`)"
       - "traefik.http.services.flask-admin.loadbalancer.server.port=5000"
 
-  # PostgreSQL backup job (daily at 2 AM)
+  # PostgreSQL backup job
   postgres-backup:
     image: postgres:16
     container_name: tickets_postgres_backup
@@ -345,7 +354,7 @@ services:
       PGPORT: 5432
       PGUSER: postgres
       PGPASSWORD: postgres
-      PGDATABASE: tickets_db
+      PGDATABASE: tickets
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -364,20 +373,24 @@ services:
         touch /var/log/cron.log
         cron && tail -f /var/log/cron.log
     restart: unless-stopped
+    user: root
     depends_on:
       postgres:
         condition: service_started
       minio:
         condition: service_started
 
-  # Soft-delete purge job (daily at 3 AM)
+  # Soft-delete purge job
   purge-deleted:
     build:
       context: ../backend
       dockerfile: Dockerfile
     container_name: tickets_purge_deleted
+    user: root
+    healthcheck:
+      disable: true
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/tickets_db
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/tickets
       PYTHONUNBUFFERED: "1"
     volumes:
       - ../backend/scripts/db/purge_deleted_folders.py:/app/purge_deleted_folders.py:ro
@@ -395,14 +408,17 @@ services:
       postgres:
         condition: service_started
 
-  # Audit log archival job (monthly on 1st at 4 AM)
+  # Audit log archival job
   archive-audit-logs:
     build:
       context: ../backend
       dockerfile: Dockerfile
     container_name: tickets_archive_audit_logs
+    user: root
+    healthcheck:
+      disable: true
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/tickets_db
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/tickets
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
       OBJECT_STORAGE_ACCESS_KEY: minioadmin
       OBJECT_STORAGE_SECRET_KEY: minioadmin

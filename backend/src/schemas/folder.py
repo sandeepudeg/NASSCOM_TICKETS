@@ -48,6 +48,7 @@ class FolderStat(BaseModel):
     total_tickets: int
     open_tickets: int
     resolved_tickets: int
+    sla_breaches: int = 0
     efficiency: float
 
 

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { ticketsApi } from '../api/tickets'
 import { 
   Typography, 
   Card, 
@@ -86,6 +87,41 @@ export default function ImportWorkspace() {
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [importResult, setImportResult] = useState<any>(null)
+  const [templates, setTemplates] = useState<Record<string, Record<string, string>>>({})
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const data = await ticketsApi.getImportTemplates()
+        setTemplates(data)
+      } catch (err) {
+        console.error('Failed to fetch templates', err)
+      }
+    }
+    fetchTemplates()
+  }, [])
+
+  const handleApplyTemplate = (templateName: string) => {
+    const selectedTemplate = templates[templateName]
+    if (selectedTemplate) {
+      // The template matches target fields to source column names
+      // We need to invert it for the UI selection if needed, but our mapping state is {target: source}
+      // Wait, let's check ImportService.get_domain_templates()
+      /*
+      "Healthcare (HIPAA/DPDP)": {
+                "Patient Name": "title",
+                "Patient ID": "national_id",
+                ...
+      */
+      // Ah, the backend returns {source: target}. We need to convert it to {target: source}.
+      const newMapping: Record<string, string> = {}
+      Object.entries(selectedTemplate).forEach(([source, target]) => {
+        newMapping[target] = source
+      })
+      setMapping(prev => ({ ...prev, ...newMapping }))
+      message.success(`Applied ${templateName} template`)
+    }
+  }
 
   const handleUpload = async (info: any) => {
     const { status } = info.file
@@ -217,8 +253,23 @@ export default function ImportWorkspace() {
 
                 <Divider />
 
-                <Title level={5}>Mapping Wizard</Title>
-                <Text type="secondary">Map your spreadsheet columns to TicketIQ fields.</Text>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div>
+                        <Title level={5} style={{ margin: 0 }}>Mapping Wizard</Title>
+                        <Text type="secondary">Map your spreadsheet columns to TicketIQ fields.</Text>
+                    </div>
+                    {Object.keys(templates).length > 0 && (
+                        <Space>
+                            <Text strong style={{ fontSize: 12 }}>Apply Domain Template:</Text>
+                            <Select 
+                                placeholder="Select Template" 
+                                style={{ width: 220 }}
+                                onChange={handleApplyTemplate}
+                                options={Object.keys(templates).map(name => ({ value: name, label: name }))}
+                            />
+                        </Space>
+                    )}
+                </div>
                 
                 <div style={{ marginTop: 16 }}>
                     {REQUIRED_FIELDS.map(field => (
@@ -230,6 +281,7 @@ export default function ImportWorkspace() {
                             <Select 
                                 placeholder="Select source column" 
                                 style={{ flex: 1 }}
+                                value={mapping[field.key]}
                                 onChange={(val) => setMapping(prev => ({ ...prev, [field.key]: val }))}
                                 options={headers.map(h => ({ value: h, label: h }))}
                             />

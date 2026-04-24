@@ -2,7 +2,8 @@ import logging
 import os
 from datetime import datetime
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from functools import wraps
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for, session
 from flask_caching import Cache
 from flask_compress import Compress
 from flask_cors import CORS
@@ -489,6 +490,49 @@ def configure_logging(app):
 
 def register_routes(app, csrf):
     """Register application routes for dashboard, folders, create-ticket, classify-test, health"""
+
+    from .utils.monitoring_hub import MonitoringHub
+    monitoring_hub = MonitoringHub(app.config)
+
+    def master_control_required(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not session.get("master_control_authenticated"):
+                return redirect(url_for("master_control_login"))
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    @app.route("/admin/master-control")
+    @master_control_required
+    def master_control():
+        """Embedded Command Center UI"""
+        return render_template("master_control.html")
+
+    @app.route("/admin/master-control/login", methods=["GET", "POST"])
+    def master_control_login():
+        """Login page for Master Control"""
+        if request.method == "POST":
+            password = request.form.get("password")
+            if password == app.config.get("MASTER_CONTROL_PASSWORD"):
+                session["master_control_authenticated"] = True
+                session.permanent = True
+                return redirect(url_for("master_control"))
+            else:
+                flash("❌ Invalid Master Password", "danger")
+
+        return render_template("master_control_login.html")
+
+    @app.route("/api/master-control/status")
+    def api_master_control_status():
+        """Real-time status aggregator for all 15 services"""
+        try:
+            statuses = monitoring_hub.get_all_statuses()
+            metrics = monitoring_hub.get_system_metrics()
+            return jsonify({"services": statuses, "metrics": metrics})
+        except Exception as e:
+            app.logger.error(f"Status API error: {str(e)}")
+            return jsonify({"error": str(e)}), 500
 
     @app.before_request
     def log_request():
@@ -1147,6 +1191,11 @@ def register_context_processors(app):
                     "endpoint": "health",
                     "label": "System Health",
                     "icon": "heartbeat",
+                },
+                {
+                    "endpoint": "master_control",
+                    "label": "Master Control",
+                    "icon": "shield-alt",
                 },
             ]
         }

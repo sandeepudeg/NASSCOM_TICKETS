@@ -35,6 +35,8 @@ from src.schemas.ticket import (
 from src.services.converters import ticket_to_response
 from src.services.routing_service import RoutingService
 from src.services.ticket_assignment_service import TicketAssignmentService
+from src.services.predictive_service import predictive_service
+from src.services.audit_service import AuditService
 
 logger = structlog.get_logger("services.ticket")
 
@@ -50,6 +52,29 @@ CATEGORY_SHORT_CODES = {
 }
 
 
+def _calculate_intelligence_priority(
+    sentiment_score: float, 
+    impact_score: float, 
+    original_priority: str | None
+) -> str:
+    """
+    Logic for Phase 3: Sentiment-Aware Prioritization.
+    Promotes priority based on user frustration and business impact.
+    """
+    # 1. Base Score calculation (50% sentiment, 50% impact)
+    intelligence_score = (sentiment_score * 0.5) + (impact_score * 0.5)
+    
+    # 2. Logic: If either extreme (>0.85) or combined high (>0.7), flag as Urgent
+    if intelligence_score > 0.7 or sentiment_score > 0.85 or impact_score > 0.85:
+        return "urgent"
+    elif intelligence_score > 0.5:
+        return "high"
+    elif intelligence_score > 0.3:
+        return "medium"
+    
+    return "low"
+
+
 class TicketService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -59,6 +84,7 @@ class TicketService:
         self.override_repo = AgentOverrideRepository(session)
         self.assignment_service = TicketAssignmentService(session)
         self.routing_service = RoutingService(session)
+        self._calculate_intelligence_priority = _calculate_intelligence_priority
 
     async def create_ticket(
         self,
@@ -151,6 +177,27 @@ class TicketService:
             )
             ticket.causal_signal = classification.causal_signal
             ticket.parse_warning = classification.parse_warning
+            
+            # Intelligence Layer (Phase 3)
+            ticket.sentiment_score = classification.sentiment_score
+            ticket.impact_score = classification.impact_score
+            ticket.intelligence_priority = self._calculate_intelligence_priority(
+                sentiment_score=classification.sentiment_score,
+                impact_score=classification.impact_score,
+                original_priority=ticket.priority
+            )
+            
+            # Predictive Analytics (Phase 4)
+            ticket.complexity_score = classification.complexity_score
+            ticket.estimated_resolution_at = predictive_service.calculate_estimated_resolution(
+                category=ticket.category,
+                complexity=ticket.complexity_score,
+                created_at=ticket.created_at
+            )
+            ticket.sla_status = predictive_service.determine_sla_status(
+                created_at=ticket.created_at,
+                estimated_resolution_at=ticket.estimated_resolution_at
+            )
 
             # Persist Intelligence Metrics
             if classification.evaluation_matrix:
@@ -160,6 +207,24 @@ class TicketService:
                 ticket.semantic_similarity = (
                     classification.evaluation_matrix.semantic_similarity
                 )
+
+            # --- Generate & Persist Vector Embedding (for Intelligence Network) ---
+            try:
+                from src.ml.embedding_service import embedding_service
+                from src.repositories.models import TicketEmbedding
+                
+                full_text = f"{ticket.title}. {ticket.description}"
+                embedding = embedding_service.get_embedding(full_text)
+                
+                ticket_emb = TicketEmbedding(
+                    ticket_id=ticket.id,
+                    embedding=json.dumps(embedding.tolist()),
+                    model_version=embedding_service.model_name
+                )
+                self.session.add(ticket_emb)
+                logger.info("ticket.embedding_generated", ticket_id=ticket.id)
+            except Exception as e:
+                logger.warning("ticket.embedding_failed", error=str(e), ticket_id=ticket.id)
 
             # --- Generate Readable Ticket Number ---
             try:
@@ -392,6 +457,8 @@ class TicketService:
         category: str | None = None,
         routing_status: str | None = None,
         params: TicketPaginationParams | None = None,
+        sla_breach: bool | None = None,
+        intelligence_priority: str | None = None,
     ) -> TicketListResponse:
         p_size = params.page_size if params else 50
         p_cursor = params.cursor if params else None
@@ -407,9 +474,18 @@ class TicketService:
             cursor=p_cursor,
             sort_by=p_sort_by,
             sort_dir=p_sort_dir,
+            sla_breach=sla_breach,
+            intelligence_priority=intelligence_priority,
         )
 
-        total_count = await self.ticket_repo.count_all()
+        total_count = await self.ticket_repo.count_tickets(
+            owner_id=owner_id,
+            status=status,
+            category=category,
+            routing_status=routing_status,
+            sla_breach=sla_breach,
+            intelligence_priority=intelligence_priority,
+        )
         responses = [ticket_to_response(t) for t in tickets]
         return TicketListResponse(
             tickets=responses,
@@ -490,7 +566,7 @@ class TicketService:
         ticket.routing_status = RoutingStatus.REVIEWED.value
         ticket = await self.ticket_repo.update(ticket)
 
-        await self.audit_repo.create(
+        audit_log = await self.audit_repo.create(
             actor_user_id=agent_user_id,
             action_type="ticket_override",
             target_resource_id=ticket_id,
@@ -500,6 +576,11 @@ class TicketService:
                 "corrected_category": new_category.value,
             },
         )
+        
+        # Phase 8: Capture Forensic Snapshot
+        audit_service = AuditService(self.session)
+        await audit_service.capture_forensic_snapshot(audit_log.id, ticket_id)
+
         await self.session.commit()
 
         return ticket_to_response(ticket)
@@ -570,3 +651,40 @@ class TicketService:
             yield output.getvalue()
             output.seek(0)
             output.truncate(0)
+    async def dispatch_drafts(
+        self,
+        ticket_id: str,
+        drafts: dict,
+        user_id: str,
+        source_ip: str | None = None,
+    ) -> TicketResponse:
+        """
+        Logic for approving AI drafts and transitioning ticket to in_progress.
+        """
+        ticket = await self.ticket_repo.get_by_id(ticket_id)
+        if not ticket:
+            raise HTTPError.not_found("Ticket not found")
+
+        # 1. Update ticket status to 'in_progress'
+        ticket.status = "in_progress"
+        ticket = await self.ticket_repo.update(ticket)
+        
+        # 2. Record in Audit Log
+        audit_log = await self.audit_repo.create(
+            actor_user_id=user_id,
+            action_type="ticket_dispatch",
+            target_resource_id=ticket_id,
+            source_ip=source_ip or "127.0.0.1",
+            metadata={
+                "customer_draft": drafts.get("customer_draft", ""),
+                "engineer_note": drafts.get("engineer_note", ""),
+                "action": "AI_DRAFT_APPROVED"
+            }
+        )
+        
+        # 3. Capture Forensic Snapshot (Phase 8 Governance)
+        audit_service = AuditService(self.session)
+        await audit_service.capture_forensic_snapshot(audit_log.id, ticket_id)
+
+        await self.session.commit()
+        return ticket_to_response(ticket)

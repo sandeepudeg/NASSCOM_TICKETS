@@ -156,8 +156,11 @@ Description: {description}
 Return ONLY a JSON object with:
 - "category": one of Infrastructure, Application, Security, Database, Storage, Network, Access Management
 - "confidence": confidence in category (0.0-1.0)
+- "sentiment_score": Detect user frustration/anger (0.0=Neutral/Happy, 1.0=Highly Frustrated/Irate)
+- "impact_score": Detect business impact (0.0=Low/Personal, 1.0=Critical/Widespread/Multiple Users)
+- "complexity": Estimate resolution difficulty from 1 (Simple/Known) to 5 (Deep Debugging/System-wide)
 
-Example: {{"category": "Application", "confidence": 0.85}}
+Example: {"category": "Application", "confidence": 0.85, "sentiment_score": 0.4, "impact_score": 0.2, "complexity": 3}
 """
 
         try:
@@ -177,6 +180,15 @@ Example: {{"category": "Application", "confidence": 0.85}}
                 category = Category(result.get("category", "Application"))
                 confidence = float(result.get("confidence", 0.5))
                 confidence = max(0.0, min(1.0, confidence))
+
+                sentiment_score = float(result.get("sentiment_score", 0.0))
+                sentiment_score = max(0.0, min(1.0, sentiment_score))
+                
+                impact_score = float(result.get("impact_score", 0.0))
+                impact_score = max(0.0, min(1.0, impact_score))
+
+                complexity = int(result.get("complexity", 1))
+                complexity = max(1, min(5, complexity))
 
                 # Record metrics
                 record_classifier_prediction(category.value, confidence)
@@ -206,6 +218,9 @@ Example: {{"category": "Application", "confidence": 0.85}}
                 causal_signal=causal_signal,
                 parse_warning=parse_warning,
                 inference_outcome=inference_outcome,
+                sentiment_score=0.0,
+                impact_score=0.0,
+                complexity_score=1,
             )
         except Exception as e:
             import structlog
@@ -232,6 +247,9 @@ Example: {{"category": "Application", "confidence": 0.85}}
             parse_warning=parse_warning,
             inference_outcome=inference_outcome,
             evaluation_matrix=evaluation_matrix,
+            sentiment_score=sentiment_score,
+            impact_score=impact_score,
+            complexity_score=complexity,
         )
 
 

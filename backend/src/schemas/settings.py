@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     database_url: str = (
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/tickets_db"
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/tickets"
     )
     database_pool_size: int = 20
     database_max_overflow: int = 10

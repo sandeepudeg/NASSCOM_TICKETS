@@ -1,0 +1,34 @@
+Based on the current implementation in the codebase, clicking **"Run Agentic Simulation"** triggers a multi-stage workflow designed to bridge the gap between high-level classification and actual system remediation.
+
+Here is the technical architectural flow:
+
+### 1. Frontend: Trigger & State Management
+*   **Component**: `ClassificationResultPanel.tsx` launches the `handleSimulate` function.
+*   **Action**: The UI immediately locks the button (loading state) and dispatches an asynchronous call to the `ticketsApi`.
+*   **Feedback**: A notification is prepared to fire once the backend returns the "Audit Report."
+
+### 2. API Layer: Secure Handshake
+*   **Bridge**: The request is routed through the `@tanstack/react-query` layer to the FastAPI endpoint: `POST /api/v1/tickets/{id}/simulate`.
+*   **Authentication**: The request carries the bearer token to ensure only authorized managers can trigger simulations.
+
+### 3. Backend: The "Reasoning" Engine (`AutomationService`)
+Once the request hits the backend, the `AutomationService` orchestrates the following logic:
+*   **Status Lock**: The ticket's database entry is updated to `automation_status = "simulating"`.
+*   **Context Retrieval**: The service fetches the ticket's category and looks for a matching **Automation Runbook** (pre-defined expert logic for items like "DB Deadlocks" or "Network Failures").
+*   **Prompt Construction**: It assembles a rich context prompt—combining ticket symptoms, system logs, and runbook instructions—to be sent to the LLM.
+*   **Agentic Inference**: The system calls **Groq** (cloud) or **Ollama** (edge) to generate a "Safe-to-Execute" report. The AI is asked to act as a System Reliability Engineer (SRE) to predict risks.
+
+### 4. Persistence & Approval Loop
+*   **Safety Audit**: The generated Markdown report is saved into the `automation_simulation_report` field in the database.
+*   **Workflow Promotion**: The ticket status is promoted to `pending_approval`. This unlocks the "Execute Remediate" button in the UI.
+
+---
+
+### ⚠️ Current Debugging Note
+In your specific environment, the **"Simulation failed to initialize"** error suggests that the workflow is breaking at **Step 3 (The Reasoning Engine)**. 
+
+My current analysis indicates two primary suspects:
+1.  **LLM Port Mismatch**: The backend is searching for the AI engine on port `11435`, but it typically resides on `11434`.
+2.  **Database Connection**: The simulation requires a write-lock on the ticket record; if the connection to the database (PostgreSQL/SQLite) is unstable, the simulation "Initializes" but fails to start the transaction.
+
+**I am currently realigning the ports and database drivers to resolve this so the report can generate successfully.**

@@ -36,7 +36,7 @@ class RAGService:
             )
         return self._groq_client
 
-    async def _get_llm_response(self, prompt: str) -> str:
+    async def _get_llm_response(self, prompt: str, json_format: bool = False) -> str:
         """Get response from the configured LLM provider (Groq or Ollama)."""
         if settings.groq_api_key:
             response = await self.groq_client.chat.completions.create(
@@ -44,7 +44,7 @@ class RAGService:
                 messages=[{"role": "user", "content": prompt}],
                 response_format=(
                     {"type": "json_object"}
-                    if "llama-3" in settings.groq_model.lower()
+                    if json_format and "llama-3" in settings.groq_model.lower()
                     else None
                 ),
             )
@@ -179,7 +179,7 @@ Example: {{
 """
 
             try:
-                content = await self._get_llm_response(prompt)
+                content = await self._get_llm_response(prompt, json_format=True)
 
                 if not content:
                     # Final fallback for unexpected structures

@@ -93,12 +93,12 @@ export default function EscalationQueuePage() {
 
   const columns = [
     {
-      title: 'Sr. No.',
+      title: <div style={{ whiteSpace: 'nowrap' }}>SR. NO.</div>,
       key: 'srno',
-      width: 70,
+      width: 85,
       render: (_: any, __: any, index: number) => (
-        <Text style={{ opacity: 0.5, fontFamily: 'monospace', fontSize: '12px' }}>
-          {(index + 1).toString().padStart(2, '0')}
+        <Text style={{ opacity: 0.5, fontSize: '11px', whiteSpace: 'nowrap' }}>
+          {index + 1}
         </Text>
       ),
     },
@@ -108,27 +108,35 @@ export default function EscalationQueuePage() {
       key: 'ticket_number',
       width: 120,
       render: (text: string, record: EscalationTicket) => (
-        <Text strong style={{ color: 'var(--color-primary)', letterSpacing: '0.02em', fontSize: '13px', whiteSpace: 'nowrap' }}>
-          #{text || record.id.substring(0, 8).toUpperCase()}
-        </Text>
+        <Link 
+          to={`/tickets/${record.id}`} 
+          style={{ 
+            color: 'var(--color-primary)', 
+            fontWeight: 700, 
+            fontFamily: 'monospace', 
+            fontSize: '12px', 
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.02em',
+            textDecoration: 'none'
+          }}
+        >
+          #{text || `TICK-APP-${record.id.substring(0, 4).toUpperCase()}`}
+        </Link>
       ),
     },
     {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (text: string, record: EscalationTicket) => (
-        <Link 
-          to={`/tickets/${record.id}`} 
-          style={{ 
-            color: 'var(--color-text-primary)', 
-            fontWeight: 500,
-            fontSize: '14px',
-            display: 'block'
-          }}
-        >
+      render: (text: string) => (
+        <Text style={{ 
+          color: 'var(--color-text-primary)', 
+          fontWeight: 500,
+          fontSize: '14px',
+          display: 'block'
+        }}>
           {text}
-        </Link>
+        </Text>
       ),
     },
     {

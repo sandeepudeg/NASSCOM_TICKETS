@@ -122,6 +122,12 @@ class Config:
         self.GUNICORN_WORKERS = int(os.getenv("GUNICORN_WORKERS", "2"))
         self.GUNICORN_BIND = f"{self.HOST}:{self.PORT}"
 
+        # Master Control Security
+        self.MASTER_CONTROL_PASSWORD = os.getenv("MASTER_CONTROL_PASSWORD", "admin123")
+        self.MASTER_CONTROL_SESSION_TIMEOUT = int(
+            os.getenv("MASTER_CONTROL_SESSION_TIMEOUT", "3600")
+        )
+
 
 def is_hf_spaces():
     """

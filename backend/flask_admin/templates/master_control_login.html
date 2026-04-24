@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Master Control Login - Tickets Admin{% endblock %}
+
+{% block content %}
+<div class="container h-100 d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="row justify-content-center w-100">
+        <div class="col-md-6 col-lg-4">
+            <div class="card login-card shadow-lg border-0">
+                <div class="card-header bg-dark text-white text-center py-4 rounded-top">
+                    <i class="fas fa-shield-alt fa-3x mb-3 text-info"></i>
+                    <h3 class="fw-bold mb-0">Master Control</h3>
+                    <p class="text-info small mb-0 font-monospace">Restricted Access Service</p>
+                </div>
+                <div class="card-body p-5">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form action="{{ url_for('master_control_login') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-4">
+                            <label for="password" class="form-label text-muted small fw-bold">MASTER KEY</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-key text-muted"></i>
+                                </span>
+                                <input type="password" name="password" id="password" class="form-control border-start-0 ps-0" placeholder="Enter System Password" required autofocus>
+                            </div>
+                        </div>
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-info btn-lg text-white fw-bold shadow-sm">
+                                UNLOCK PORTAL <i class="fas fa-unlock-alt ms-2"></i>
+                            </button>
+                        </div>
+                        <div class="text-center">
+                            <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-muted small">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light text-center py-3 border-0 rounded-bottom">
+                    <small class="text-muted">Security Level: <strong>ORANGE</strong></small>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <div class="system-status d-flex justify-content-center align-items-center gap-3">
+                    <span class="badge rounded-pill bg-success-pulse p-2 px-3">
+                        <i class="fas fa-circle me-1 small"></i> ALL SYSTEMS NOMINAL
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-card {
+        border-radius: 15px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95);
+        transition: transform 0.3s ease;
+    }
+    
+    .login-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .bg-success-pulse {
+        background-color: #28a745;
+        box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
+        animation: pulse-green 2s infinite;
+    }
+    
+    @keyframes pulse-green {
+        0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+    
+    .btn-info {
+        background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+    }
+    
+    .form-control:focus {
+        border-color: #0dcaf0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+    }
+</style>
+{% endblock %}

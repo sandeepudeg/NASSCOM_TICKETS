@@ -36,7 +36,7 @@ export class ApiError extends Error {
 const createApiClient = (): AxiosInstance => {
   const client = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-    timeout: 30000,
+    timeout: 300000,
     headers: {
       'Content-Type': 'application/json',
     },

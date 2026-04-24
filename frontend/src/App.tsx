@@ -12,6 +12,8 @@ import ModelPerformancePage from './pages/ModelPerformancePage'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
 import AutomationPage from './pages/AutomationPage'
+import AutomationCompletedPage from './pages/AutomationCompletedPage'
+import MasterControlPage from './pages/MasterControlPage'
 
 function App() {
   return (
@@ -40,7 +42,9 @@ function App() {
           <Route path="escalations" element={<EscalationQueuePage />} />
           <Route path="pattern-alerts" element={<PatternAlertsPage />} />
           <Route path="automation-available" element={<AutomationPage />} />
+          <Route path="automation-completed" element={<AutomationCompletedPage />} />
           <Route path="model/metrics" element={<ModelPerformancePage />} />
+          <Route path="master-control" element={<MasterControlPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

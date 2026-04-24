@@ -37,12 +37,12 @@ export default function AutomationPage() {
 
   const columns = [
     {
-      title: 'Sr. No.',
+      title: <div style={{ whiteSpace: 'nowrap' }}>SR. NO.</div>,
       key: 'srno',
-      width: 70,
+      width: 85,
       render: (_: any, __: any, index: number) => (
-        <Text style={{ opacity: 0.5, fontFamily: 'monospace', fontSize: '12px' }}>
-          {(index + 1).toString().padStart(2, '0')}
+        <Text style={{ opacity: 0.5, fontSize: '11px', whiteSpace: 'nowrap' }}>
+          {index + 1}
         </Text>
       ),
     },
@@ -52,9 +52,19 @@ export default function AutomationPage() {
       key: 'ticket_number',
       width: 120,
       render: (text: string, record: AutomationCandidate) => (
-        <Text strong style={{ color: 'var(--color-primary)', letterSpacing: '0.02em', fontSize: '13px', whiteSpace: 'nowrap' }}>
+        <Link 
+          to={`/tickets/${record.id}`} 
+          style={{ 
+            color: 'var(--color-primary)', 
+            fontWeight: 700, 
+            fontFamily: 'monospace', 
+            fontSize: '12px', 
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.02em'
+          }}
+        >
           #{text || record.id.substring(0, 8).toUpperCase()}
-        </Text>
+        </Link>
       ),
     },
     {
@@ -63,8 +73,7 @@ export default function AutomationPage() {
       key: 'title',
       render: (text: string, record: AutomationCandidate) => (
         <Space direction="vertical" size={0}>
-          <Link 
-            to={`/tickets/${record.id}`} 
+          <Text 
             style={{ 
               color: 'var(--color-text-primary)', 
               fontWeight: 600,
@@ -73,7 +82,7 @@ export default function AutomationPage() {
             }}
           >
             {text}
-          </Link>
+          </Text>
           <Text type="secondary" style={{ fontSize: '11px' }}>{record.description.substring(0, 80)}...</Text>
         </Space>
       ),
@@ -108,25 +117,27 @@ export default function AutomationPage() {
         const isRepeated = record.is_repeated_issue
         
         return (
-          <Space direction="vertical" size={4} style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: '#8b5cf6', fontSize: '12px', fontWeight: 800 }}>{percentage}% MATCH</Text>
-              {isRepeated && (
-                <Tooltip title="Cluster detected: Multiple occurrences of this pattern found">
-                  <Tag color="purple" style={{ fontSize: '9px', margin: 0, borderRadius: '4px', fontWeight: 800 }}>REPEATED</Tag>
-                </Tooltip>
-              )}
-            </div>
-            <div style={{ 
-              width: '100%', height: '6px', background: 'var(--color-bg-secondary)', 
-              borderRadius: '3px', overflow: 'hidden', border: '1px solid var(--color-border-primary)'
-            }}>
+          <Link to={`/tickets/${record.id}`} style={{ color: 'inherit', display: 'block', textDecoration: 'none' }}>
+            <Space direction="vertical" size={4} style={{ width: '100%', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: '#8b5cf6', fontSize: '12px', fontWeight: 800 }}>{percentage}% MATCH</Text>
+                {isRepeated && (
+                  <Tooltip title="Cluster detected: Multiple occurrences of this pattern found">
+                    <Tag color="purple" style={{ fontSize: '9px', margin: 0, borderRadius: '4px', fontWeight: 800 }}>REPEATED</Tag>
+                  </Tooltip>
+                )}
+              </div>
               <div style={{ 
-                width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #d946ef)',
-                boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)'
-              }} />
-            </div>
-          </Space>
+                width: '100%', height: '6px', background: 'var(--color-bg-secondary)', 
+                borderRadius: '3px', overflow: 'hidden', border: '1px solid var(--color-border-primary)'
+              }}>
+                <div style={{ 
+                  width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #d946ef)',
+                  boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)'
+                }} />
+              </div>
+            </Space>
+          </Link>
         )
       },
     },

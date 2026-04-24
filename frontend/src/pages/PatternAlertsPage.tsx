@@ -54,6 +54,7 @@ export default function PatternAlertsPage() {
       setSelectedAlert(null)
       form.resetFields()
       queryClient.invalidateQueries({ queryKey: ['pattern-alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['alerts-count'] })
     },
     onError: (error: any) => {
       message.error(error.response?.data?.detail || 'Failed to update pattern alert')
@@ -69,7 +70,9 @@ export default function PatternAlertsPage() {
   const handleActionSubmit = (values: any) => {
     if (!selectedAlert) return
 
-    const payload: any = { status: actionType === 'acknowledge' ? 'acknowledged' : actionType }
+    const payload: any = { 
+      status: actionType === 'acknowledge' ? 'acknowledged' : (actionType === 'snooze' ? 'snoozed' : 'dismissed') 
+    }
     if (actionType === 'snooze' && values.snoozed_until) {
       payload.snoozed_until = values.snoozed_until.toISOString()
     }
@@ -81,6 +84,16 @@ export default function PatternAlertsPage() {
   }
 
   const columns = [
+    {
+      title: <div style={{ whiteSpace: 'nowrap' }}>SR. NO.</div>,
+      key: 'srno',
+      width: 85,
+      render: (_: any, __: any, index: number) => (
+        <Text style={{ opacity: 0.5, fontSize: '11px', whiteSpace: 'nowrap' }}>
+          {index + 1}
+        </Text>
+      ),
+    },
     {
       title: 'Significance',
       dataIndex: 'cluster_size',

@@ -90,18 +90,16 @@ async def init_db() -> None:
         try:
             _log.info(f"Database initialization attempt {attempt}/{max_retries}...")
             async with engine.begin() as conn:
-                # Drop all tables and recreate to ensure schema is perfectly aligned
-                # This also satisfies the user's request for a 'fresh' start
-                from sqlalchemy import text
-                await conn.execute(text("DROP TABLE IF EXISTS ticket_folder_assignments CASCADE;"))
-                await conn.execute(text("DROP TABLE IF EXISTS tickets CASCADE;"))
-                await conn.execute(text("DROP TABLE IF EXISTS audit_log CASCADE;"))
-                await conn.execute(text("DROP TABLE IF EXISTS ticket_embeddings CASCADE;"))
+                # [DATA PROTECTION]: Commented out destructive logic per user directive
+                # await conn.execute(text("DROP TABLE IF EXISTS ticket_folder_assignments CASCADE;"))
+                # await conn.execute(text("DROP TABLE IF EXISTS tickets CASCADE;"))
+                # await conn.execute(text("DROP TABLE IF EXISTS audit_log CASCADE;"))
+                # await conn.execute(text("DROP TABLE IF EXISTS ticket_embeddings CASCADE;"))
                 
                 await conn.run_sync(Base.metadata.create_all)
                 if is_sqlite:
                     await conn.execute(text("PRAGMA journal_mode=WAL"))
-            _log.info("Database initialization successful (Clean Slate).")
+            _log.info("Database initialization successful (Persistence Mode).")
             break
         except Exception as e:
             if attempt == max_retries:
@@ -112,10 +110,11 @@ async def init_db() -> None:
                 _log.warning(f"init_db attempt {attempt} failed, retrying in {retry_delay}s: {e}")
                 await asyncio.sleep(retry_delay)
 
-    # Seed departmental folders and test tickets
+    # Seed departmental folders only if needed
     try:
         await seed_department_folders()
-        await seed_test_tickets()
+        # [DATA PROTECTION]: Disabled test ticket seeding to prevent overwriting existing data
+        # await seed_test_tickets()
     except Exception as e:
         _log.warning(f"init_db: seeding skipped: {e}")
 
@@ -291,6 +290,18 @@ async def seed_test_tickets() -> None:
                     )
                     session.add(ticket)
                     all_tickets.append(ticket)
+
+                    # Generate Embedding for Intelligence Network
+                    from src.ml.embedding_service import embedding_service
+                    from src.repositories.models import TicketEmbedding
+                    
+                    full_text = f"{ticket.title}. {ticket.description}"
+                    emb = embedding_service.get_embedding(full_text)
+                    session.add(TicketEmbedding(
+                        ticket_id=ticket.id,
+                        embedding=json.dumps(emb.tolist()),
+                        model_version=embedding_service.model_name
+                    ))
 
             await session.flush()
 

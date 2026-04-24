@@ -131,6 +131,9 @@ class FolderRepository:
     async def get_all_stats(self, owner_id: str) -> list[dict]:
         """Aggregate statistics for all folders owned by a user."""
         from src.repositories.models import Ticket
+        from datetime import timedelta, datetime
+
+        sla_threshold = datetime.utcnow() - timedelta(days=7)
 
         # Base query to get folders and their counts
         query = (
@@ -144,6 +147,12 @@ class FolderRepository:
                 func.count(func.nullif(Ticket.status != "resolved", False)).label(
                     "open_tickets"
                 ),
+                func.count(
+                    func.nullif(
+                        (Ticket.status != "resolved") & (Ticket.created_at < sla_threshold),
+                        False
+                    )
+                ).label("sla_breaches"),
             )
             .outerjoin(
                 TicketFolderAssignment, Folder.id == TicketFolderAssignment.folder_id
@@ -167,6 +176,7 @@ class FolderRepository:
                     "total_tickets": total,
                     "resolved_tickets": resolved,
                     "open_tickets": row[4],
+                    "sla_breaches": row[5],
                     "efficiency": round(efficiency, 1),
                 }
             )

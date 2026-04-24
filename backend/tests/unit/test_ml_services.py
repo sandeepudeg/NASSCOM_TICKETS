@@ -92,6 +92,35 @@ class TestPIIScrubber:
         assert "[NATIONAL_ID]" in scrubbed
         assert summary["redaction_summary"]["national_id"] >= 1
 
+    def test_scrub_aadhaar(self):
+        text1 = "My Aadhaar is 2123 4567 8901"
+        text2 = "Aadhaar number: 312345678901"
+        scrubbed1, summary1 = PIIScrubber.scrub(text1)
+        scrubbed2, summary2 = PIIScrubber.scrub(text2)
+
+        assert "[AADHAAR]" in scrubbed1
+        assert "[AADHAAR]" in scrubbed2
+        assert summary1["redaction_summary"]["aadhaar"] == 1
+        assert summary2["redaction_summary"]["aadhaar"] == 1
+
+    def test_scrub_pan(self):
+        text = "PAN card number ABCDE1234F"
+        scrubbed, summary = PIIScrubber.scrub(text)
+
+        assert "[PAN]" in scrubbed
+        assert summary["redaction_summary"]["pan"] == 1
+
+    def test_scrub_indian_phone(self):
+        text1 = "Mobile: +91 9876543210"
+        text2 = "Call 080-12345678"
+        scrubbed1, summary1 = PIIScrubber.scrub(text1)
+        scrubbed2, summary2 = PIIScrubber.scrub(text2)
+
+        assert "[PHONE]" in scrubbed1
+        assert "[PHONE]" in scrubbed2
+        assert summary1["redaction_summary"]["phone"] == 1
+        assert summary2["redaction_summary"]["phone"] == 1
+
     def test_scrub_empty_text(self):
         text = ""
         scrubbed, summary = PIIScrubber.scrub(text)

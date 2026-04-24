@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from sqlalchemy import and_, delete, func, select
@@ -56,6 +56,9 @@ class TicketRepository:
         sort_by: str = "created_at",
         sort_dir: str = "desc",
         is_automation_candidate: bool | None = None,
+        automation_status: str | None = None,
+        sla_breach: bool | None = None,
+        intelligence_priority: str | None = None,
     ) -> tuple[list[Ticket], str | None]:
         # Eager load similar_tickets for dashboard intelligence reconstruction
         query = select(Ticket).options(selectinload(Ticket.similar_tickets))
@@ -72,6 +75,14 @@ class TicketRepository:
             query = query.where(
                 Ticket.is_automation_candidate == is_automation_candidate
             )
+        if automation_status:
+            query = query.where(Ticket.automation_status == automation_status)
+        if intelligence_priority:
+            query = query.where(Ticket.intelligence_priority == intelligence_priority)
+        if sla_breach is True:
+            # 7-day breach threshold for active tickets
+            threshold = datetime.utcnow() - timedelta(days=7)
+            query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
 
         if sort_by == "status":
             order_col = Ticket.status
@@ -138,6 +149,35 @@ class TicketRepository:
         result = await self.session.execute(query)
         return result.scalar() or 0
 
+    async def count_tickets(
+        self,
+        owner_id: str | None = None,
+        status: str | None = None,
+        category: str | None = None,
+        routing_status: str | None = None,
+        sla_breach: bool | None = None,
+        intelligence_priority: str | None = None,
+    ) -> int:
+        query = select(func.count(Ticket.id))
+        
+        if owner_id:
+            query = query.where(Ticket.owner_id == owner_id)
+        if status:
+            query = query.where(Ticket.status == status)
+        if category:
+            query = query.where(Ticket.category == category)
+        if routing_status:
+            query = query.where(Ticket.routing_status == routing_status)
+        if intelligence_priority:
+            query = query.where(Ticket.intelligence_priority == intelligence_priority)
+        if sla_breach is True:
+            # 7-day breach threshold for active tickets
+            threshold = datetime.utcnow() - timedelta(days=7)
+            query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
+            
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
     async def get_resolved_tickets_for_rag(self, limit: int = 300) -> list[dict]:
         """Fetch resolved tickets for RAG similarity search.
 
@@ -161,9 +201,16 @@ class TicketRepository:
 
         tickets_for_rag = []
         for ticket, stored_embedding in rows:
-            # Pull resolution from structured_payload (Kaggle datasets store it here)
+            # Pull resolution from automation_output (Internal History) or structured_payload (Kaggle)
             resolution_summary = ""
-            if ticket.structured_payload:
+            
+            # Highest Priority: Actual automation execution output
+            if ticket.automation_output:
+                # Strip the 'Execution successful' prefix if present for cleaner RAG
+                resolution_summary = ticket.automation_output.replace("Execution successful.\n", "")
+            
+            # Second Priority: Structured payload resolution (Kaggle artifacts)
+            if not resolution_summary and ticket.structured_payload:
                 try:
                     payload = _json.loads(ticket.structured_payload)
                     resolution_summary = payload.get("resolution", "")
@@ -245,6 +292,11 @@ class TicketAssignmentRepository:
         cursor: str | None = None,
         sort_by: str = "assigned_at",
         sort_dir: str = "desc",
+        status: str | None = None,
+        category: str | None = None,
+        routing_status: str | None = None,
+        sla_breach: bool | None = None,
+        intelligence_priority: str | None = None,
     ) -> tuple[list[Ticket], str | None]:
         query = (
             select(Ticket)
@@ -252,6 +304,19 @@ class TicketAssignmentRepository:
             .options(selectinload(Ticket.similar_tickets))
             .where(TicketFolderAssignment.folder_id == folder_id)
         )
+
+        if status:
+            query = query.where(Ticket.status == status)
+        if category:
+            query = query.where(Ticket.category == category)
+        if routing_status:
+            query = query.where(Ticket.routing_status == routing_status)
+        if intelligence_priority:
+            query = query.where(Ticket.intelligence_priority == intelligence_priority)
+        if sla_breach is True:
+            # 7-day breach threshold for active tickets
+            threshold = datetime.utcnow() - timedelta(days=7)
+            query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
 
         if sort_by == "assigned_at":
             order_col = TicketFolderAssignment.assigned_at
@@ -285,12 +350,36 @@ class TicketAssignmentRepository:
 
         return tickets, next_cursor
 
-    async def count_folder_tickets(self, folder_id: str) -> int:
-        query = select(func.count(TicketFolderAssignment.id)).where(
-            TicketFolderAssignment.folder_id == folder_id
+    async def count_folder_tickets(
+        self,
+        folder_id: str,
+        status: str | None = None,
+        category: str | None = None,
+        routing_status: str | None = None,
+        sla_breach: bool | None = None,
+        intelligence_priority: str | None = None,
+    ) -> int:
+        query = (
+            select(func.count(Ticket.id))
+            .join(TicketFolderAssignment, Ticket.id == TicketFolderAssignment.ticket_id)
+            .where(TicketFolderAssignment.folder_id == folder_id)
         )
+        
+        if status:
+            query = query.where(Ticket.status == status)
+        if category:
+            query = query.where(Ticket.category == category)
+        if routing_status:
+            query = query.where(Ticket.routing_status == routing_status)
+        if intelligence_priority:
+            query = query.where(Ticket.intelligence_priority == intelligence_priority)
+        if sla_breach is True:
+            # 7-day breach threshold for active tickets
+            threshold = datetime.utcnow() - timedelta(days=7)
+            query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
+            
         result = await self.session.execute(query)
-        return result.scalar()
+        return result.scalar() or 0
 
     async def delete_by_ticket(self, ticket_id: str) -> None:
         query = delete(TicketFolderAssignment).where(

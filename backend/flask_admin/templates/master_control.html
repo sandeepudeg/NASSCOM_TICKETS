@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Master Control Hub - TicketIQ{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/master_control.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="mc-dashboard">
+    <!-- Top HUD -->
+    <div class="mc-hud-top">
+        <div class="hud-title">
+            <i class="fas fa-terminal me-2"></i> MASTER_CONTROL_v2.0
+        </div>
+        <div class="hud-stats">
+            <div class="stat-item text-center">
+                <span class="stat-label">System Health</span>
+                <span class="stat-value text-success" id="globalHealth">99.98%</span>
+            </div>
+            <div class="stat-item text-center">
+                <span class="stat-label">Global Traffic</span>
+                <span class="stat-value text-info">1.2k req/s</span>
+            </div>
+            <div class="stat-item text-center">
+                <span class="stat-label">Active Nodes</span>
+                <span class="stat-value">15 / 15</span>
+            </div>
+        </div>
+        <div class="hud-actions">
+            <button class="btn btn-outline-info btn-sm font-monospace" onclick="refreshStatuses()">
+                <i class="fas fa-sync-alt me-1" id="refreshIcon"></i> RE-SCAN
+            </button>
+        </div>
+    </div>
+
+    <!-- Service Grid -->
+    <div class="mc-grid" id="serviceGrid">
+        <!-- Cards will be populated by JS -->
+    </div>
+</div>
+
+<!-- Detailed View Modal/Overlay (Optional for later) -->
+<div id="serviceDetailViewport" class="d-none" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:2000; background:var(--sre-bg);">
+    <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
+        <h5 id="detailTitle" class="text-bright mb-0">SERVICE_CONSOLE</h5>
+        <button class="btn btn-sm btn-danger" onclick="closeServiceDetail()">CLOSE_TUNNEL [ESC]</button>
+    </div>
+    <iframe id="detailFrame" src="" style="width:100%; height:calc(100vh - 60px); border:none;"></iframe>
+</div>
+
+<script>
+    const SERVICES = [
+        { id: "traefik", name: "TRAEFIK_GW", icon: "network-wired", port: "8081" },
+        { id: "grafana", name: "GRAFANA_VIS", icon: "chart-area", port: "3002" },
+        { id: "prometheus", name: "PROM_METRICS", icon: "wave-square", port: "9090" },
+        { id: "minio", name: "MINIO_OBJ", icon: "database", port: "9001" },
+        { id: "keycloak", name: "KEYCLOAK_IAM", icon: "user-shield", port: "8080" },
+        { id: "jaeger", name: "JAEGER_TRACE", icon: "project-diagram", port: "16686" },
+        { id: "mlflow", name: "MLFLOW_REG", icon: "vial", port: "5000" },
+        { id: "qdrant", name: "QDRANT_VEC", icon: "cube", port: "6333" },
+        { id: "api", name: "CORE_API", icon: "code", port: "8005" },
+        { id: "frontend", name: "USER_FRONTEND", icon: "desktop", port: "3003" },
+        { id: "postgres", name: "POSTGRES_DB", icon: "server", type: "native" },
+        { id: "ollama", name: "OLLAMA_LLM", icon: "robot", type: "native" },
+        { id: "loki", name: "LOKI_LOGS", icon: "stream", type: "native" },
+        { id: "promtail", name: "PROMTAIL_SHIP", icon: "truck-loading", type: "native" },
+        { id: "groq", name: "GROQ_CLOUD", icon: "cloud", url: "https://console.groq.com" }
+    ];
+
+    function init() {
+        renderGrid();
+        refreshStatuses();
+        setInterval(refreshStatuses, 15000);
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('serviceGrid');
+        grid.innerHTML = '';
+        
+        SERVICES.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'sre-card fade-in';
+            card.id = `card-${s.id}`;
+            
+            // Random performance bits for "Option 8" aesthetic
+            let bars = '';
+            for(let i=0; i<12; i++) {
+                const height = Math.floor(Math.random() * 80) + 20;
+                bars += `<div class="perf-bar active" style="height: ${height}%"></div>`;
+            }
+
+            card.innerHTML = `
+                <div class="sre-card-header">
+                    <span class="service-name"><i class="fas fa-${s.icon}"></i> ${s.name}</span>
+                    <span class="status-badge" id="badge-${s.id}">OFFLINE</span>
+                </div>
+                <div class="sre-perf-view">
+                    ${bars}
+                </div>
+                <div class="sre-meta-grid">
+                    <div class="meta-item">LATENCY: <span class="meta-value">${Math.floor(Math.random()*200)+20}ms</span></div>
+                    <div class="meta-item">LOAD: <span class="meta-value">${(Math.random()*10).toFixed(1)}%</span></div>
+                    <div class="meta-item">UPTIME: <span class="meta-value">99.9%</span></div>
+                    <div class="meta-item">THREADS: <span class="meta-value">${Math.floor(Math.random()*50)+5}</span></div>
+                </div>
+                <div class="sre-actions">
+                    <button class="btn-sre" onclick="launchService('${s.id}')">LAUNCH_GUI</button>
+                    <button class="btn-sre" style="border-color:var(--sre-border); color:var(--sre-border)">LOGS</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    async function refreshStatuses() {
+        const icon = document.getElementById('refreshIcon');
+        icon.classList.add('fa-spin');
+        
+        try {
+            const response = await fetch('/api/master-control/status');
+            const data = await response.json();
+            
+            if (data.services) {
+                Object.keys(data.services).forEach(id => {
+                    const badge = document.getElementById(`badge-${id}`);
+                    if (badge) {
+                        const s = data.services[id].status;
+                        badge.className = `status-badge status-${s}`;
+                        badge.innerText = s === 'healthy' ? 'READY' : (s === 'unhealthy' ? 'ERROR' : 'UNREACH');
+                        
+                        if(s === 'healthy') document.getElementById(`card-${id}`).classList.add('pulse-glow');
+                        else document.getElementById(`card-${id}`).classList.remove('pulse-glow');
+                    }
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+        }
+    }
+
+    function launchService(id) {
+        const s = SERVICES.find(x => x.id === id);
+        if(!s) return;
+        
+        let url = s.url || `http://localhost:${s.port}`;
+        if (s.type === 'native') {
+            // Native dash logic - for now we'll just show the grid
+            alert(`Opening native telemetry for ${s.name}`);
+            return;
+        }
+
+        const viewport = document.getElementById('serviceDetailViewport');
+        const frame = document.getElementById('detailFrame');
+        document.getElementById('detailTitle').innerText = `TUNNELING_TO::${s.name} [Port ${s.port || '80'}]`;
+        
+        viewport.classList.remove('d-none');
+        frame.src = url;
+    }
+
+    function closeServiceDetail() {
+        document.getElementById('serviceDetailViewport').classList.add('d-none');
+        document.getElementById('detailFrame').src = '';
+    }
+
+    // Escape to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeServiceDetail();
+    });
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<style>
+    /* Embedded Overrides for Base Layout */
+    .content-wrapper { padding: 0 !important; max-width: 100% !important; }
+    .main-navbar { z-index: 1001; }
+    
+    .text-accent { color: var(--mc-accent); }
+    .text-info-glow { color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+    .cursor-pulse { animation: blink 1s infinite; font-weight: bold; }
+    
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    
+    .tracking-widest { letter-spacing: 0.2em; }
+    .tracking-wider { letter-spacing: 0.1em; }
+</style>
+{% endblock %}

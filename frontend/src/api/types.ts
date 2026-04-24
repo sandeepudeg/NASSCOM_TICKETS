@@ -38,6 +38,7 @@ export interface FolderStat {
   total_tickets: number
   open_tickets: number
   resolved_tickets: number
+  sla_breaches: number
   efficiency: number
 }
 
@@ -67,6 +68,17 @@ export interface Ticket {
   evaluation_matrix: EvaluationMatrix | null
   is_automation_candidate?: boolean
   is_repeated_issue?: boolean
+  automation_status?: string
+  automation_output?: string | null
+  automation_simulation_report?: string | null
+  automation_runbook_id?: string | null
+  automation_verification_json?: string | null
+  sentiment_score?: number
+  impact_score?: number
+  intelligence_priority?: string
+  complexity_score?: number
+  estimated_resolution_at?: string
+  sla_status?: string
 }
 
 export interface SimilarTicket {
@@ -117,6 +129,21 @@ export interface ClassificationResponse {
   lifecycle_stage: string | null
   is_automation_candidate?: boolean
   is_repeated_issue?: boolean
+  automation_status?: string
+  automation_output?: string | null
+  automation_simulation_report?: string | null
+  automation_runbook_id?: string | null
+  automation_verification_json?: string | null
+  sentiment_score?: number
+  impact_score?: number
+  intelligence_priority?: string
+  complexity_score?: number
+  estimated_resolution_at?: string
+  sla_status?: string
+  status: string
+  roi_value_saved?: number
+  resolution_time_ms?: number
+  input_format?: 'text' | 'json_log' | 'otlp_trace' | 'prometheus_alert'
 }
 
 export interface CreateTicketRequest {
@@ -175,4 +202,76 @@ export interface ModelMetrics {
   llm_judge_resolution_relevance: number
   hallucination_rate: number
   last_updated: string
+}
+
+// Semantic Graph types
+export interface GraphNode {
+  id: string
+  label: string
+  category: string
+  status: string
+  is_target: boolean
+}
+
+export interface GraphEdge {
+  from: string
+  to: string
+  strength: number
+}
+
+export interface SemanticGraphResponse {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  cluster_name: string
+  total_correlated: number
+}
+
+// Copilot types
+export interface CopilotSummaryResponse {
+  summary: string
+}
+
+export interface CopilotDraftResponse {
+  draft: string
+}
+
+// Global types
+export interface TranslationResponse {
+  title: string
+  description: string
+  language: string
+}
+
+export interface GlobalInsight {
+  title: string
+  category: string
+  resolution_summary: string
+  matching_score: number
+  tenant_hint: string
+}
+
+// Governance types
+export interface AuditSnapshot {
+  id: string
+  audit_log_id: string
+  created_at: string
+  state: {
+    ticket_intelligence: {
+      sentiment_score: number
+      impact_score: number
+      complexity_score: number
+      intelligence_priority: string
+      confidence_score: number
+      category_at_time: string
+    }
+    automation_state: {
+      is_candidate: boolean
+      status: string
+    }
+    system_health: {
+      timestamp: string
+      node: string
+      compliance_mode: string
+    }
+  }
 }

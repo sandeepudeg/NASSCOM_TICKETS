@@ -22,6 +22,9 @@ class PIIScrubber:
                 "email": 0,
                 "ip_address": 0,
                 "credit_card": 0,
+                "aadhaar": 0,
+                "pan": 0,
+                "gstin": 0,
                 "national_id": 0,
                 "date_of_birth": 0,
                 "phone": 0,
@@ -48,7 +51,36 @@ class PIIScrubber:
             redaction_summary["credit_card"] = len(matches)
             scrubbed = re.sub(cc_pattern, "[CREDIT_CARD]", scrubbed)
 
-            # 4. SSN / national ID (xxx-xx-xxxx, before generic phone)
+            # 4. Indian Aadhaar Number ([2-9]xxx xxxx xxxx or [2-9]xxxxxxxxxxx)
+            # Support spaces, dashes, or no delimiters
+            aadhaar_pattern = r"\b[2-9]\d{3}[ -]?\d{4}[ -]?\d{4}\b"
+            matches = re.findall(aadhaar_pattern, scrubbed)
+            redaction_summary["aadhaar"] = len(matches)
+            scrubbed = re.sub(aadhaar_pattern, "[AADHAAR]", scrubbed)
+
+            # 5. Indian PAN Card (5 letters, 4 digits, 1 letter)
+            # Case-insensitive to catch user inputs like abcde1234f
+            pan_pattern = r"\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b"
+            matches = re.findall(pan_pattern, scrubbed, re.IGNORECASE)
+            redaction_summary["pan"] = len(matches)
+            scrubbed = re.sub(pan_pattern, "[PAN]", scrubbed, flags=re.IGNORECASE)
+
+            # 6. Indian GSTIN (2 digits, 5 letters, 4 digits, 1 letter, 1 digit/letter, 'Z', 1 digit/letter)
+            gstin_pattern = r"\b\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}Z[A-Z\d]{1}\b"
+            matches = re.findall(gstin_pattern, scrubbed, re.IGNORECASE)
+            redaction_summary["gstin"] = len(matches)
+            scrubbed = re.sub(gstin_pattern, "[GSTIN]", scrubbed, flags=re.IGNORECASE)
+
+            # 6. Indian PIN Code (6 digits, usually preceded by state/city or near end)
+            # We match it if it's 6 digits and not part of a larger number
+            pin_pattern = r"\b\d{6}\b"
+            # However, this might match many things. Let's limit it to address context or labels
+            # For now, we'll keep it simple but separate from phone
+            matches = re.findall(pin_pattern, scrubbed)
+            redaction_summary["national_id"] += len(matches) # Grouping PIN with national_id for now or just general REDACTED
+            scrubbed = re.sub(pin_pattern, "[PIN_CODE]", scrubbed)
+
+            # 6. SSN / global national ID (xxx-xx-xxxx)
             ssn_pattern = r"\b\d{3}-\d{2}-\d{4}\b"
             matches = re.findall(ssn_pattern, scrubbed)
             redaction_summary["national_id"] = len(matches)
@@ -64,8 +96,8 @@ class PIIScrubber:
                 redaction_summary["date_of_birth"] += len(matches)
                 scrubbed = re.sub(pattern, "[DOB]", scrubbed, flags=re.IGNORECASE)
 
-            # 6. Phone numbers (after IP/CC/SSN to avoid false positives)
-            phone_pattern = r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+            # 8. Phone numbers (Global support including Indian +91 and US +1)
+            phone_pattern = r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4}\b"
             matches = re.findall(phone_pattern, scrubbed)
             redaction_summary["phone"] = len(matches)
             scrubbed = re.sub(phone_pattern, "[PHONE]", scrubbed)

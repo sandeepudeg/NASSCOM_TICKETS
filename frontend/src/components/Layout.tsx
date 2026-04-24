@@ -232,7 +232,7 @@ export default function Layout() {
                   color: 'white',
                   fontWeight: 'bold'
                 }}>IQ</div>
-                <Text strong style={{ fontSize: '16px', letterSpacing: '-0.01em' }}>TicketIQ</Text>
+                <Text strong style={{ fontSize: '18px', letterSpacing: '-0.02em', color: 'var(--color-primary)' }}>INDIGO IQ</Text>
               </div>
             )}
 
@@ -293,45 +293,49 @@ export default function Layout() {
             )}
           </Space>
         </StyledHeader>
-        <HeroBanner>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Tag color="cyan" bordered={false} style={{ fontSize: '10px', fontWeight: 800, padding: '0 8px', borderRadius: '4px' }}>ENTERPRISE AI</Tag>
-            <Text style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-              Intelligence Report
+        {location.pathname !== '/master-control' && (
+          <HeroBanner>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Tag color="cyan" bordered={false} style={{ fontSize: '10px', fontWeight: 800, padding: '0 8px', borderRadius: '4px' }}>ENTERPRISE AI</Tag>
+              <Text style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+                Intelligence Report
+              </Text>
+            </div>
+            <Title level={2} style={{ margin: '4px 0 0', fontWeight: 800, fontSize: '28px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
+              AI Powered Intelligent Ticket Routing <span style={{ fontWeight: 400, opacity: 0.6 }}>powered by LLM</span>
+            </Title>
+            <Text type="secondary" style={{ fontSize: '14px', opacity: 0.7 }}>
+              Enterprise-Grade AI Classification & Automated Resolution Engine
             </Text>
-          </div>
-          <Title level={2} style={{ margin: '4px 0 0', fontWeight: 800, fontSize: '28px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
-            AI Powered Intelligent Ticket Routing <span style={{ fontWeight: 400, opacity: 0.6 }}>powered by LLM</span>
-          </Title>
-          <Text type="secondary" style={{ fontSize: '14px', opacity: 0.7 }}>
-            Enterprise-Grade AI Classification & Automated Resolution Engine
-          </Text>
-        </HeroBanner>
+          </HeroBanner>
+        )}
 
-        <StyledContent>
+        <StyledContent style={location.pathname === '/master-control' ? { padding: 0, maxWidth: '100%', margin: 0 } : {}}>
           <Outlet />
         </StyledContent>
 
-        <StyledFooter>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: 24, height: 24, background: 'var(--color-primary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '10px' }}>IQ</div>
-              <Text style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '-0.02em' }}>TicketIQ <span style={{ fontWeight: 400, opacity: 0.5 }}>Enterprise</span></Text>
-            </div>
-            <Space size="middle" style={{ opacity: 0.6 }}>
-              <Text style={{ fontSize: '11px' }}>© 2026 Intelligence Hub</Text>
-              <Tag bordered={false} style={{ fontSize: '9px', borderRadius: '4px', background: 'var(--color-bg-secondary)' }}>v2.8.4-STABLE</Tag>
-            </Space>
-          </div>
-          
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-            {footerActions && (
-              <div style={{ paddingLeft: '24px', borderLeft: '1px solid var(--color-border-primary)', display: 'flex', alignItems: 'center' }}>
-                {footerActions}
+        {location.pathname !== '/master-control' && (
+          <StyledFooter>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: 24, height: 24, background: 'var(--color-primary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '10px' }}>IQ</div>
+                <Text strong style={{ fontSize: '14px', letterSpacing: '-0.02em', color: 'var(--color-primary)' }}>INDIGO IQ</Text>
               </div>
-            )}
-          </div>
-        </StyledFooter>
+              <Space size="middle" style={{ opacity: 0.6 }}>
+                <Text style={{ fontSize: '11px' }}>© 2026 Indigo Intelligence Hub</Text>
+                <Tag bordered={false} style={{ fontSize: '9px', borderRadius: '4px', background: 'var(--color-bg-secondary)', color: 'var(--color-primary)' }}>v2.9.0-CALIBRATION</Tag>
+              </Space>
+            </div>
+            
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              {footerActions && (
+                <div style={{ paddingLeft: '24px', borderLeft: '1px solid var(--color-border-primary)', display: 'flex', alignItems: 'center' }}>
+                  {footerActions}
+                </div>
+              )}
+            </div>
+          </StyledFooter>
+        )}
       </AntLayout>
 
       {/* Mobile navigation drawer */}

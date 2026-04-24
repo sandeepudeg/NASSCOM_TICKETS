@@ -26,6 +26,11 @@ from src.schemas.ticket import (
 from src.services.import_service import ImportService
 from src.services.ticket_assignment_service import TicketAssignmentService
 from src.services.ticket_service import TicketService
+from src.services.automation_service import AutomationService
+from src.services.graph_service import GraphService
+from src.services.copilot_service import CopilotService
+from src.services.global_service import GlobalService
+from src.services.audit_service import AuditService
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -56,6 +61,8 @@ async def list_tickets(
     routing_status: str | None = Query(None),
     sort_by: str = Query("created_at", pattern="^(created_at|status|assigned_at)$"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    sla_breach: bool | None = Query(None),
+    intelligence_priority: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketService(db)
@@ -70,6 +77,8 @@ async def list_tickets(
         category=category,
         routing_status=routing_status,
         params=params,
+        sla_breach=sla_breach,
+        intelligence_priority=intelligence_priority,
     )
 
 
@@ -277,6 +286,7 @@ async def analyze_import_file(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@router.post("/import")
 async def import_tickets(
     file: UploadFile = File(...),
     mapping_json: str = Form(...),
@@ -325,6 +335,12 @@ async def get_import_mappings(
     ]
 
 
+@router.get("/import/templates")
+async def get_import_templates():
+    """Provides professional mapping templates for specific domains (Healthcare, Legal, etc)."""
+    return ImportService.get_domain_templates()
+
+
 @router.post("/import/mappings")
 async def save_import_mapping(
     name: str,
@@ -336,3 +352,152 @@ async def save_import_mapping(
     service = ImportService()
     config = await service.save_mapping_config(name, mapping, x_user_id, db)
     return {"id": config.id, "name": config.name}
+
+
+@router.post("/{ticket_id}/simulate", response_model=dict)
+async def simulate_remediation(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Agentic Simulation: Generate an AI Dry-Run report for the ticket's resolution.
+    """
+    service = AutomationService(db)
+    report = await service.simulate_remediation(ticket_id)
+    return {"ticket_id": ticket_id, "report": report}
+
+
+@router.post("/{ticket_id}/remediate", response_model=dict)
+async def execute_remediation(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Closed-Loop Execution: Trigger the automated resolution script for the ticket.
+    Requires prior simulation and agent approval (Implicit in this call).
+    """
+    service = AutomationService(db)
+    result = await service.execute_remediation(ticket_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error"))
+    return result
+
+
+@router.get("/automation/runbooks", response_model=list)
+async def get_runbooks(
+    db: AsyncSession = Depends(get_db),
+):
+    """List all available automation runbooks."""
+    from src.repositories.models import AutomationRunbook
+    from sqlalchemy import select
+    stmt = select(AutomationRunbook).where(AutomationRunbook.is_active == True)
+    result = await db.execute(stmt)
+    runbooks = result.scalars().all()
+    return [{"id": r.id, "name": r.name, "category": r.category_target} for r in runbooks]
+
+
+@router.get("/{ticket_id}/graph", tags=["Intelligence"])
+async def get_ticket_graph(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+):
+    """
+    Returns a semantic relationship graph for the ticket.
+    """
+    service = GraphService(db)
+    return await service.get_semantic_graph(ticket_id)
+
+
+@router.post("/{ticket_id}/summarize", tags=["Intelligence"])
+async def summarize_ticket(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generates a 3-bullet core summary of the ticket.
+    """
+    service = CopilotService(db)
+    return await service.generate_summary(ticket_id)
+
+
+@router.post("/{ticket_id}/draft", tags=["Intelligence"])
+async def draft_ticket_reply(
+    ticket_id: str,
+    audience: str = "customer",
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generates a contextual draft reply.
+    """
+    service = CopilotService(db)
+    return await service.generate_draft_reply(ticket_id, audience)
+
+
+@router.post("/{ticket_id}/translate", tags=["Global"])
+async def translate_ticket(
+    ticket_id: str,
+    target_lang: str = "English",
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Translates the ticket title and description.
+    """
+    from src.repositories.ticket_repository import TicketRepository
+    repo = TicketRepository(db)
+    ticket = await repo.get_by_id(ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    service = GlobalService(db)
+    title_trans = await service.translate_text(ticket.title, target_lang)
+    desc_trans = await service.translate_text(ticket.description, target_lang)
+    
+    return {
+        "title": title_trans["translated_text"],
+        "description": desc_trans["translated_text"],
+        "language": target_lang
+    }
+
+
+@router.get("/{ticket_id}/global-insights", tags=["Global"])
+async def get_global_insights(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Finds anonymized solutions for this problem from other organizations.
+    """
+    service = GlobalService(db)
+    return await service.get_cross_tenant_insights(ticket_id)
+
+
+@router.get("/{ticket_id}/snapshots", tags=["Governance"])
+async def get_ticket_snapshots(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retrieves forensic snapshots captured during manual overrides.
+    """
+    service = AuditService(db)
+    return await service.get_snapshots_for_ticket(ticket_id)
+@router.post("/{ticket_id}/dispatch", tags=["Intelligence"])
+async def dispatch_drafts(
+    ticket_id: str,
+    drafts: dict,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+    x_forwarded_for: str | None = Header(None),
+):
+    """
+    Approves and dispatches AI-generated drafts, updates ticket status to 'in_progress',
+    and records the action in the audit log.
+    """
+    service = TicketService(db)
+    return await service.dispatch_drafts(
+        ticket_id,
+        drafts,
+        x_user_id,
+        x_forwarded_for.split(",")[0] if x_forwarded_for else None,
+    )

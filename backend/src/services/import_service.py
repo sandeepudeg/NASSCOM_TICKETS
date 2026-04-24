@@ -176,3 +176,40 @@ class ImportService:
         stmt = select(MappingConfig).where(MappingConfig.owner_id == owner_id)
         result = await session.execute(stmt)
         return list(result.scalars().all())
+
+    @staticmethod
+    def get_domain_templates() -> dict[str, dict[str, str]]:
+        """
+        Provides industrial-standard mapping templates for specific domains.
+        Requirement: Cross-Domain ETL Mapper (Requirement Phase 1 Polish)
+        """
+        return {
+            "Healthcare (HIPAA/DPDP)": {
+                "Patient Name": "title",
+                "Patient ID": "national_id",
+                "Diagnosis Summary": "description",
+                "Department": "category",
+                "Admission Priority": "priority",
+            },
+            "Legal & Compliance": {
+                "Case Title": "title",
+                "Case Reference": "description",
+                "Client Identifier": "national_id",
+                "Practice Area": "category",
+                "Urgency": "priority",
+            },
+            "Financial Services": {
+                "Account Holder": "title",
+                "Transaction ID": "description",
+                "PAN Number": "national_id",
+                "Service Type": "category",
+                "Risk Level": "priority",
+            },
+            "IT Service Management (ITSM)": {
+                "Subject": "title",
+                "Description": "description",
+                "CI Name": "national_id",
+                "Service": "category",
+                "Impact": "priority",
+            },
+        }

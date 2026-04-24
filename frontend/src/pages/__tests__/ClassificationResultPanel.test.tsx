@@ -22,6 +22,7 @@ describe('ClassificationResultPanel Component', () => {
     description: 'Manual test ticket',
     owner_id: 'agent-1',
     category: 'Infrastructure',
+    status: 'open',
     confidence_score: 0.87,
     priority: 'P2',
     routing_status: 'routed',

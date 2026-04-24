@@ -148,6 +148,11 @@ async def get_folder_tickets(
     folder_id: str,
     page_size: int = Query(50, ge=1, le=200),
     cursor: str | None = Query(None),
+    status: str | None = Query(None),
+    category: str | None = Query(None),
+    routing_status: str | None = Query(None),
+    sla_breach: bool | None = Query(None),
+    intelligence_priority: str | None = Query(None),
     sort_by: str = Query("assigned_at", pattern="^(assigned_at|status|created_at)$"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     x_user_id: str = Header(default="system"),
@@ -160,8 +165,17 @@ async def get_folder_tickets(
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
-    tickets = await service.get_folder_tickets(folder_id, x_user_id, params)
-    return TicketListResponse(tickets=tickets, next_cursor=None, total=len(tickets))
+    tickets, total = await service.get_folder_tickets(
+        folder_id=folder_id, 
+        user_id=x_user_id, 
+        params=params,
+        status=status,
+        category=category,
+        routing_status=routing_status,
+        sla_breach=sla_breach,
+        intelligence_priority=intelligence_priority
+    )
+    return TicketListResponse(tickets=tickets, next_cursor=None, total=total)
 
 
 @router.post(

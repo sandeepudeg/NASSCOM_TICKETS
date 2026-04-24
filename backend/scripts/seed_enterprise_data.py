@@ -82,6 +82,7 @@ TEMPLATES = {
 
 async def seed_enterprise_data():
     print("Starting enterprise data seeding...")
+    ADMIN_IDS = ["admin", "system"] # Seed for both to ensure UI visibility
     async with async_session_maker() as session:
         # 1. Clear existing demo data
         print("Cleaning old data...")
@@ -91,14 +92,25 @@ async def seed_enterprise_data():
         await session.execute(delete(Ticket))
         await session.commit()
 
-        # 2. Get departmental folders
-        folders_res = await session.execute(select(Folder))
-        folders = {f.name.split(" ")[0]: f.id for f in folders_res.scalars().all()}
+        # 2. Reset departmental folders to ensure zero duplicates
+        print(f"Recreating departmental folders for {ADMIN_IDS}...")
+        await session.execute(delete(Folder))
+        await session.commit()
         
-        # Fallback if folders are missing
-        if not folders:
-            print("Folders missing! Please ensure init_db has run.")
-            return
+        folder_map = {} # owner:category -> id
+        for owner in ADMIN_IDS:
+            for cat in CATEGORIES:
+                folder_id = str(uuid.uuid4())
+                new_folder = Folder(
+                    id=folder_id,
+                    name=cat,
+                    owner_id=owner,
+                    version=1
+                )
+                session.add(new_folder)
+                folder_map[f"{owner}:{cat}"] = folder_id
+        
+        await session.flush()
 
         tickets_total = 300
         tickets_per_cat = tickets_total // len(CATEGORIES)
@@ -116,8 +128,8 @@ async def seed_enterprise_data():
                 status = random.choice(["open", "in_progress", "resolved", "closed"])
                 priority = random.choice(["Low", "Medium", "High", "Critical"])
                 
-                is_automation = random.random() < 0.2 # 20% automation candidates
-                has_report = random.random() < 0.25 # 25% have AI reports
+                is_automation = (i < 10) # Force first 10 in every category to be automation-ready
+                has_report = is_automation or (random.random() < 0.1)
                 
                 template = random.choice(TEMPLATES[category])
                 ticket_id_str = f"{category[:3]}-{1000 + i}"
@@ -134,20 +146,30 @@ async def seed_enterprise_data():
                     ])
                     root_cause = f"The issue was triggered by a race condition in {category} microservice during peak traffic load."
 
+                # New Industrial Metrics
+                s_score = round(random.uniform(0.1, 0.9), 2)
+                i_score = round(random.uniform(0.3, 0.95), 2)
+                
                 ticket = Ticket(
                     id=str(uuid.uuid4()),
                     ticket_number=f"TICK-{category[:3].upper()}-{1000 + i}",
                     title=title,
                     description=f"Automated alert detected for {title}. Investigation required for {category} department. Metric: latency > 500ms.",
-                    owner_id="admin",
+                    owner_id="admin", # Keep tickets owned by admin primarily
                     category=category,
                     status=status,
                     routing_status="classified" if status == "open" else "reviewed",
+                    source_channel="web",
                     priority=priority,
                     confidence_score=round(random.uniform(0.75, 0.99), 2),
                     is_automation_candidate=is_automation,
                     resolution_steps_json=res_steps,
                     resolution_root_cause=root_cause,
+                    sentiment_score=s_score,
+                    impact_score=i_score,
+                    intelligence_priority="urgent" if (s_score > 0.7 or i_score > 0.8) else "high" if (s_score > 0.5) else "medium",
+                    complexity_score=random.randint(1, 4),
+                    automation_status="none",
                     created_at=created_at,
                     updated_at=created_at + timedelta(minutes=random.randint(10, 1000))
                 )
@@ -156,20 +178,14 @@ async def seed_enterprise_data():
                 all_tickets.append(ticket)
         
         await session.flush() # Sync IDs
-        print("Tickets generated. Creating folder assignments...")
+        print("Tickets generated. Creating folder assignments for both admin and system...")
         
-        # 4. Create Folder Assignments
-        # Fetch folders again to ensure we have fresh objects
-        folders_stmt = select(Folder)
-        folder_list = (await session.execute(folders_stmt)).scalars().all()
-        folder_map = {f.name: f.id for f in folder_list}
-
+        # 4. Create Folder Assignments for BOTH to ensure visibility
         for t in all_tickets:
-            folder_name = f"{t.category} Department"
-            folder_id = folder_map.get(folder_name)
-            if folder_id:
-                assignment = TicketFolderAssignment(ticket_id=t.id, folder_id=folder_id)
-                session.add(assignment)
+            for owner in ADMIN_IDS:
+                folder_id = folder_map.get(f"{owner}:{t.category}")
+                if folder_id:
+                    session.add(TicketFolderAssignment(ticket_id=t.id, folder_id=folder_id))
 
         # 5. Create Pattern Clusters (Simulated Outages)
         print("Creating pattern alerts (Clusters)...")

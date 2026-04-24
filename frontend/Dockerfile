@@ -4,14 +4,22 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy the local design system dependency
+# Context is assumed to be project root as per docker-compose.yml
+COPY design-system /design-system
 
-# Install dependencies (including dev dependencies for build)
-RUN npm ci --legacy-peer-deps
+# Build design system if needed (or at least provide it for npm install)
+# We run npm install inside design-system to ensure it's available
+RUN cd /design-system && npm install && npm run build
 
-# Copy source code
-COPY . .
+# Copy frontend package files
+COPY frontend/package*.json ./
+
+# Install dependencies (linked to the /design-system)
+RUN npm install --legacy-peer-deps
+
+# Copy frontend source code
+COPY frontend/ ./
 
 # Build the React app
 RUN npm run build
@@ -22,8 +30,8 @@ FROM nginx:alpine
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx configuration if needed
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx configuration
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80
 EXPOSE 80

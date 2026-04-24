@@ -46,7 +46,15 @@ export const foldersApi = {
   // List tickets in a folder
   listTickets: async (
     folderId: string,
-    params?: { cursor?: string; limit?: number }
+    params?: { 
+      cursor?: string; 
+      limit?: number;
+      status?: string;
+      category?: string;
+      routing_status?: string;
+      sla_breach?: boolean;
+      intelligence_priority?: string;
+    }
   ): Promise<TicketListResponse> => {
     const response = await apiClient.get<TicketListResponse>(
       `/folders/${folderId}/tickets`,

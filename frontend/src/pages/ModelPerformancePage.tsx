@@ -44,10 +44,10 @@ export default function ModelPerformancePage() {
 
   const columns: ColumnsType<CategoryMetric> = [
     {
-      title: 'Sr. No.',
+      title: <div style={{ whiteSpace: 'nowrap' }}>Sr. No.</div>,
       key: 'serial',
-      width: 70,
-      render: (_, __, index) => <Text type="secondary" style={{ fontSize: '11px' }}>{index + 1}</Text>,
+      width: 85,
+      render: (_, __, index) => <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{index + 1}</Text>,
     },
     {
       title: 'Classification Category',

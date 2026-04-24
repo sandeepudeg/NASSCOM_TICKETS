@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       'process': path.resolve(__dirname, 'src/process-polyfill.js'),
+      '@': path.resolve(__dirname, 'src'),
+      '@ticketiq/design-system': path.resolve(__dirname, '../design-system/src/index.ts'),
     },
   },
   define: {

@@ -24,6 +24,8 @@ import {
   SettingOutlined,
   KeyOutlined,
   ThunderboltOutlined,
+  CheckCircleOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { Tag } from 'antd'
 import { foldersApi } from '../api/folders'
@@ -79,22 +81,23 @@ const SidebarContent = designSystemStyled.div`
 `
 
 const SidebarFooter = designSystemStyled.div`
-  height: 64px;
   display: flex;
-  align-items: center;
-  padding: 0 16px;
+  flex-direction: column;
+  padding: 12px 16px;
   border-top: 1px solid var(--color-border-primary);
+  gap: 4px;
   
   .settings-link {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 10px 16px;
     color: var(--color-text-secondary);
     border-radius: var(--radius-md);
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    font-size: 14px;
     
     &:hover {
       background: rgba(var(--color-primary-rgb), 0.05);
@@ -104,6 +107,16 @@ const SidebarFooter = designSystemStyled.div`
     &.active {
       background: rgba(var(--color-primary-rgb), 0.1);
       color: var(--color-primary);
+    }
+
+    &.master-control {
+      color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb), 0.02);
+      border: 1px solid rgba(var(--color-primary-rgb), 0.05);
+
+      &:hover {
+        background: rgba(var(--color-primary-rgb), 0.08);
+      }
     }
   }
 `
@@ -126,10 +139,16 @@ export default function FolderSidebar() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     }
     
-    checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Clear folder selection if we navigate away from the tickets list
+  useEffect(() => {
+    if (!location.pathname.startsWith('/tickets')) {
+      setSelectedFolderId(null)
+    }
+  }, [location.pathname, setSelectedFolderId])
 
   // Fetch folders and stats
   const { data: statsData, isLoading: isStatsLoading } = useQuery({
@@ -159,6 +178,18 @@ export default function FolderSidebar() {
   const { data: automationData } = useQuery({
     queryKey: ['automation-count'],
     queryFn: () => classificationApi.getAutomationCandidates({ limit: 0 }),
+  })
+
+  // Fetch automation archive count
+  const { data: archiveData } = useQuery({
+    queryKey: ['archive-count'],
+    queryFn: () => classificationApi.getAutomationArchive({ limit: 0 }),
+  })
+  
+  // Fetch SLA breached count
+  const { data: slaBreachData } = useQuery({
+    queryKey: ['sla-breach-count'],
+    queryFn: () => ticketsApi.list({ limit: 0, sla_breach: true }),
   })
 
 
@@ -229,6 +260,17 @@ export default function FolderSidebar() {
           onClick: () => navigate('/escalations'),
         },
         {
+          key: 'sla-breach',
+          label: (
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <span>SLA Breached</span>
+              {renderBadge(slaBreachData?.total || 0, '#fff', '#ef4444')}
+            </div>
+          ),
+          icon: <ClockCircleOutlined />,
+          onClick: () => navigate('/tickets?sla_breach=true'),
+        },
+        {
           key: 'new-ticket',
           label: 'New Ticket',
           icon: <PlusCircleOutlined />,
@@ -283,17 +325,28 @@ export default function FolderSidebar() {
           icon: <LineChartOutlined />,
           onClick: () => navigate('/pattern-alerts'),
         },
-        {
-          key: 'automation-available',
-          label: (
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <span>Automation Available</span>
-              {renderBadge(automationData?.total || 0, '#8b5cf6', 'rgba(139, 92, 246, 0.1)')}
-            </div>
-          ),
-          icon: <ThunderboltOutlined />,
-          onClick: () => navigate('/automation-available'),
-        },
+          {
+            key: 'automation-available',
+            label: (
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <span>Automation Available</span>
+                {renderBadge(automationData?.total || 0, '#8b5cf6', 'rgba(139, 92, 246, 0.1)')}
+              </div>
+            ),
+            icon: <ThunderboltOutlined />,
+            onClick: () => navigate('/automation-available'),
+          },
+          {
+            key: 'automation-completed',
+            label: (
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <span>Automation Completed</span>
+                {renderBadge(archiveData?.total || 0, '#10b981', 'rgba(16, 185, 129, 0.1)')}
+              </div>
+            ),
+            icon: <CheckCircleOutlined />,
+            onClick: () => navigate('/automation-completed'),
+          },
         {
           key: 'metrics',
           label: 'Model Metrics',
@@ -331,7 +384,23 @@ export default function FolderSidebar() {
           <Menu
             mode="inline"
             inlineCollapsed={false}
-            selectedKeys={[selectedFolderId || 'dashboard']}
+            selectedKeys={(() => {
+              // Priority 1: Routes that should hide the folder selection
+              if (location.pathname.includes('/pattern-alerts')) return ['alerts'];
+              if (location.pathname.includes('/automation-available')) return ['automation-available'];
+              if (location.pathname.includes('/automation-completed')) return ['automation-completed'];
+              if (location.pathname.includes('/model/metrics')) return ['metrics'];
+              if (location.pathname.includes('/escalations')) return ['escalations'];
+              if (location.pathname.includes('/dashboard')) return ['dashboard'];
+
+              // Priority 2: Folders (only if currently on the tickets page)
+              if (location.pathname.includes('/tickets')) {
+                if (location.search.includes('sla_breach=true')) return ['sla-breach'];
+                return [selectedFolderId || 'all-tickets'];
+              }
+
+              return ['dashboard'];
+            })()}
             items={menuItems}
             style={{ 
               border: 'none', 
@@ -342,6 +411,16 @@ export default function FolderSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        <div 
+          className={`settings-link master-control ${location.pathname === '/master-control' ? 'active' : ''}`}
+          onClick={() => {
+            navigate('/master-control')
+            if (isMobile) setMobileDrawerOpen(false)
+          }}
+        >
+          <SafetyCertificateOutlined />
+          <span>Master Control</span>
+        </div>
         <div 
           className={`settings-link ${location.pathname === '/settings' ? 'active' : ''}`}
           onClick={() => {

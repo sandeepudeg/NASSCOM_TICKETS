@@ -101,6 +101,39 @@ class Ticket(Base):
     resolution_root_cause = Column(Text, nullable=True)
     is_automation_candidate = Column(Boolean, default=False, nullable=False)
     is_repeated_issue = Column(Boolean, default=False, nullable=False)
+    
+    # Sentiment & Impact (Phase 3)
+    sentiment_score = Column(Float, default=0.0, nullable=False) # 0.0 to 1.0 (Higher = More Frustrated)
+    impact_score = Column(Float, default=0.0, nullable=False)    # 0.0 to 1.0 (Higher = Higher Business Impact)
+    intelligence_priority = Column(
+        SQLEnum("low", "medium", "high", "urgent", name="intelligence_priority_enum"),
+        default="medium",
+        nullable=True
+    )
+
+    # Predictive Analytics (Phase 4)
+    complexity_score = Column(Integer, default=1, nullable=False) # 1 to 5
+    estimated_resolution_at = Column(DateTime, nullable=True)
+    sla_status = Column(
+        SQLEnum("on_track", "at_risk", "breached", name="sla_status_enum"),
+        default="on_track",
+        nullable=True
+    )
+    
+    # Automation Execution State
+    automation_status = Column(
+        SQLEnum("none", "simulating", "pending_approval", "executing", "completed", "failed", name="automation_status_enum"),
+        default="none",
+        nullable=False
+    )
+    automation_output = Column(Text, nullable=True)
+    automation_simulation_report = Column(Text, nullable=True)
+    automation_runbook_id = Column(String, ForeignKey("automation_runbooks.id"), nullable=True)
+
+    # Verification & Industrial Metrics
+    automation_verification_json = Column(Text, nullable=True) # Pulse, Drift, Forensics
+    roi_value_saved = Column(Float, nullable=True)             # Estimated minutes saved
+    resolution_time_ms = Column(Integer, nullable=True)        # Total turnaround time
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
@@ -200,6 +233,7 @@ class AuditLog(Base):
             "model_promote",
             "webhook_delivery_failed",
             "retrain_skipped_concurrent",
+            "ticket_dispatch",
             name="audit_action_enum",
         ),
         nullable=False,
@@ -319,4 +353,35 @@ class MappingConfig(Base):
     __table_args__ = (
         Index("ix_mapping_config_owner", "owner_id"),
         Index("ix_mapping_config_name", "name"),
+    )
+
+
+class AutomationRunbook(Base):
+    __tablename__ = "automation_runbooks"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    category_target = Column(String(100), nullable=False) # e.g. "Network", "Database"
+    script_path = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    __table_args__ = (
+        Index("ix_runbook_category", "category_target"),
+    )
+
+
+class AuditSnapshot(Base):
+    __tablename__ = "audit_snapshots"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    audit_log_id = Column(String, ForeignKey("audit_log.id", ondelete="CASCADE"), nullable=False)
+    ticket_id = Column(String, nullable=False) # Direct reference for performance
+    state_json = Column(Text, nullable=False)  # Frozen snapshot of metrics
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("ix_snapshot_audit", "audit_log_id"),
+        Index("ix_snapshot_ticket", "ticket_id"),
     )

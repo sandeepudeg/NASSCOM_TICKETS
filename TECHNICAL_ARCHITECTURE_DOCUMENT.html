@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketIQ - Complete Technical Architecture Document</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f0f1a;
+            --bg2: #16162a;
+            --bg3: #1e1e35;
+            --border: #2e2e4a;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --card: #1a1a2e;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        
+        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--primary); text-align: center; }
+        h2 { font-size: 2rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--accent); }
+        h3 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.75rem; color: var(--text); }
+        h4 { font-size: 1.2rem; font-weight: 600; margin: 1rem 0 0.5rem; color: var(--success); }
+
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .architecture-diagram {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .layer {
+            display: flex;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .layer-box {
+            background: var(--bg3);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 200px;
+            font-weight: 600;
+        }
+
+        .layer-box.client { border-color: var(--primary); color: #a5b4fc; }
+        .layer-box.network { border-color: var(--warning); color: #fcd34d; }
+        .layer-box.app { border-color: var(--accent); color: #67e8f9; }
+        .layer-box.data { border-color: var(--success); color: #6ee7b7; }
+        .layer-box.obs { border-color: var(--muted); color: var(--muted); }
+
+        .arrow {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--muted);
+            margin: 0.5rem 0;
+        }
+
+        .layer-label {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .card h4 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid var(--border);
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: var(--bg3);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: var(--bg2);
+        }
+
+        .highlight {
+            background: rgba(79, 70, 229, 0.15);
+            color: #a5b4fc;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .flow-diagram {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--bg3);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .flow-step-number {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .metric-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--success);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .tech-category {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .tech-category h4 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        /* Enhanced diagram styles for better visual representation */
+        .visual-diagram {
+            background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .visual-diagram::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent), var(--success));
+            border-radius: 16px 16px 0 0;
+        }
+
+        .data-flow-container {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr 80px 1fr;
+            gap: 1rem;
+            align-items: center;
+            margin: 2rem 0;
+        }
+
+        .flow-box {
+            background: var(--bg3);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .flow-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        .flow-box.input { border-color: var(--success); }
+        .flow-box.process { border-color: var(--primary); }
+        .flow-box.output { border-color: var(--accent); }
+
+        .flow-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .flow-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .flow-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .flow-items li {
+            font-size: 0.85rem;
+            margin: 0.4rem 0;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .flow-items li:last-child {
+            border-bottom: none;
+        }
+
+        .flow-items li::before {
+            content: '▶';
+            color: var(--accent);
+            margin-right: 0.5rem;
+            font-size: 0.7rem;
+        }
+
+        .supporting-systems {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .system-box {
+            background: var(--bg3);
+            border: 2px solid var(--warning);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .system-box.storage { border-color: var(--success); }
+        .system-box.ai { border-color: var(--primary); }
+        .system-box.observability { border-color: var(--warning); }
+
+        .system-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .connection-line {
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .connection-line::after {
+            content: '↕';
+            position: absolute;
+            right: -10px;
+            top: -8px;
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+
+        .erd-container {
+            background: var(--bg2);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .entity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .entity-box {
+            background: var(--bg3);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .entity-header {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem;
+            margin: -1.5rem -1.5rem 1rem -1.5rem;
+            border-radius: 10px 10px 0 0;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .entity-fields {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .entity-fields li {
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .entity-fields li:last-child {
+            border-bottom: none;
+        }
+
+        .field-type {
+            background: var(--bg2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: auto;
+        }
+
+        .pk { color: var(--warning); font-weight: bold; }
+        .fk { color: var(--accent); }
+
+        .sequence-container {
+            background: var(--bg2);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .sequence-actors {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .actor {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .sequence-steps {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sequence-step {
+            background: var(--bg3);
+            border-left: 4px solid var(--accent);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 0 8px 8px 0;
+            position: relative;
+        }
+
+        .sequence-step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: -2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--accent);
+            color: white;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .api-section {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .api-section h4 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .endpoint {
+            background: var(--bg2);
+            border-left: 4px solid var(--success);
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-right: 0.75rem;
+        }
+
+        .method.get { background: var(--success); color: white; }
+        .method.post { background: var(--warning); color: white; }
+        .method.put { background: var(--primary); color: white; }
+        .method.delete { background: var(--danger); color: white; }
+
+        .deployment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .deployment-box {
+            background: var(--bg3);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .deployment-box h4 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .code-snippet {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .code-snippet::before {
+            content: 'CODE';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--primary);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .toc-enhanced {
+            background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+            border: 2px solid var(--primary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .toc-enhanced h3 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .toc-section {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .toc-section h4 {
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .toc-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .toc-links li {
+            margin: 0.3rem 0;
+        }
+
+        .toc-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
+        }
+
+        .toc-links a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎫 TicketIQ Complete Technical Architecture</h1>
+        <p style="text-align: center; font-size: 1.2rem; color: var(--muted); margin-bottom: 2rem;">
+            Comprehensive Technical Specification - Architecture, Design & Implementation
+        </p>
+
+        <!-- Enhanced Table of Contents -->
+        <div class="toc-enhanced">
+            <h3>📋 Complete Technical Documentation</h3>
+            <div class="toc-grid">
+                <div class="toc-section">
+                    <h4>🏗️ Architecture & Design</h4>
+                    <ul class="toc-links">
+                        <li><a href="#solution-architecture">Solution Architecture</a></li>
+                        <li><a href="#low-level-design">Low Level Design</a></li>
+                        <li><a href="#system-components">System Components</a></li>
+                    </ul>
+                </div>
+                <div class="toc-section">
+                    <h4>📊 Data & Models</h4>
+                    <ul class="toc-links">
+                        <li><a href="#data-sources">Data Sources</a></li>
+                        <li><a href="#data-model">Data Model & ERD</a></li>
+                        <li><a href="#data-flow">Data Flow Diagrams</a></li>
+                    </ul>
+                </div>
+                <div class="toc-section">
+                    <h4>🔄 Process Flows</h4>
+                    <ul class="toc-links">
+                        <li><a href="#sequence-diagrams">Sequence Diagrams</a></li>
+                        <li><a href="#state-diagrams">State Transitions</a></li>
+                        <li><a href="#api-specification">API Specification</a></li>
+                    </ul>
+                </div>
+                <div class="toc-section">
+                    <h4>🚀 Implementation</h4>
+                    <ul class="toc-links">
+                        <li><a href="#open-source">Open Source Stack</a></li>
+                        <li><a href="#deployment">Deployment Architecture</a></li>
+                        <li><a href="#quality-metrics">Quality & Performance</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Data Flow Diagram -->
+        <div class="section" id="data-flow">
+            <h2>🔄 Enhanced Data Flow Architecture</h2>
+            
+            <h3>Complete System Data Flow</h3>
+            <div class="visual-diagram">
+                <div class="data-flow-container">
+                    <!-- Input Sources -->
+                    <div class="flow-box input">
+                        <div class="flow-title">📥 Data Input</div>
+                        <ul class="flow-items">
+                            <li>Web Forms</li>
+                            <li>API Requests</li>
+                            <li>Log Ingestion</li>
+                            <li>Alert Systems</li>
+                            <li>Monitoring Data</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flow-arrow">→</div>
+                    
+                    <!-- Processing Layer -->
+                    <div class="flow-box process">
+                        <div class="flow-title">⚙️ Processing</div>
+                        <ul class="flow-items">
+                            <li>Data Validation</li>
+                            <li>PII Scrubbing</li>
+                            <li>Text Embedding</li>
+                            <li>AI Classification</li>
+                            <li>RAG Resolution</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flow-arrow">→</div>
+                    
+                    <!-- Output Results -->
+                    <div class="flow-box output">
+                        <div class="flow-title">📤 Data Output</div>
+                        <ul class="flow-items">
+                            <li>Classified Tickets</li>
+                            <li>Resolution Steps</li>
+                            <li>Escalation Alerts</li>
+                            <li>Notifications</li>
+                            <li>Analytics Reports</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <!-- Supporting Systems -->
+                <div class="supporting-systems">
+                    <div class="system-box storage">
+                        <div class="system-title">💾 Data Stores</div>
+                        <ul class="flow-items">
+                            <li>PostgreSQL + pgvector</li>
+                            <li>Qdrant Vector DB</li>
+                            <li>MinIO Object Storage</li>
+                            <li>Redis Cache</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="system-box ai">
+                        <div class="system-title">🤖 AI Models</div>
+                        <ul class="flow-items">
+                            <li>Ollama LLM Runtime</li>
+                            <li>Embedding Models</li>
+                            <li>RAG Pipeline</li>
+                            <li>MLflow Registry</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="system-box observability">
+                        <div class="system-title">📊 Observability</div>
+                        <ul class="flow-items">
+                            <li>Prometheus Metrics</li>
+                            <li>Jaeger Tracing</li>
+                            <li>Loki Logs</li>
+                            <li>Grafana Dashboards</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Data Model & ERD -->
+        <div class="section" id="data-model">
+            <h2>🗄️ Complete Data Model & Entity Relationships</h2>
+            
+            <h3>Entity Relationship Diagram</h3>
+            <div class="erd-container">
+                <div class="entity-grid">
+                    <div class="entity-box">
+                        <div class="entity-header">👥 USERS</div>
+                        <ul class="entity-fields">
+                            <li class="pk">id (UUID) <span class="field-type">PK</span></li>
+                            <li>username (VARCHAR)</li>
+                            <li>email (VARCHAR)</li>
+                            <li>role (ENUM)</li>
+                            <li>created_at (TIMESTAMP)</li>
+                            <li>is_active (BOOLEAN)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="entity-box">
+                        <div class="entity-header">📁 FOLDERS</div>
+                        <ul class="entity-fields">
+                            <li class="pk">id (UUID) <span class="field-type">PK</span></li>
+                            <li>name (VARCHAR)</li>
+                            <li>description (TEXT)</li>
+                            <li class="fk">created_by (UUID) <span class="field-type">FK</span></li>
+                            <li>ticket_count (INTEGER)</li>
+                            <li>created_at (TIMESTAMP)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="entity-box">
+                        <div class="entity-header">🎫 TICKETS</div>
+                        <ul class="entity-fields">
+                            <li class="pk">id (UUID) <span class="field-type">PK</span></li>
+                            <li>title (VARCHAR)</li>
+                            <li>content (TEXT)</li>
+                            <li>content_scrubbed (TEXT)</li>
+                            <li>category (VARCHAR)</li>
+                            <li>priority (ENUM)</li>
+                            <li>status (ENUM)</li>
+                            <li>confidence_score (DECIMAL)</li>
+                            <li>embedding (VECTOR)</li>
+                            <li class="fk">folder_id (UUID) <span class="field-type">FK</span></li>
+                            <li class="fk">created_by (UUID) <span class="field-type">FK</span></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="entity-box">
+                        <div class="entity-header">🤖 CLASSIFICATION_RESULTS</div>
+                        <ul class="entity-fields">
+                            <li class="pk">id (UUID) <span class="field-type">PK</span></li>
+                            <li class="fk">ticket_id (UUID) <span class="field-type">FK</span></li>
+                            <li>model_name (VARCHAR)</li>
+                            <li>predicted_category (VARCHAR)</li>
+                            <li>confidence_score (DECIMAL)</li>
+                            <li>reasoning (TEXT)</li>
+                            <li>created_at (TIMESTAMP)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="entity-box">
+                        <div class="entity-header">💡 RESOLUTION_SUGGESTIONS</div>
+                        <ul class="entity-fields">
+                            <li class="pk">id (UUID) <span class="field-type">PK</span></li>
+                            <li class="fk">ticket_id (UUID) <span class="field-type">FK</span></li>
+                            <li>resolution_steps (JSONB)</li>
+                            <li>similar_ticket_ids (UUID[])</li>
+                            <li>quality_score (DECIMAL)</li>
+                            <li>llm_model (VARCHAR)</li>
+                            <li>created_at (TIMESTAMP)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="entity-box">
+                        <div class="entity-header">⚠️ ESCALATIONS</div>
+                        <ul class="entity-fields">
+                            <li class="pk">id (UUID) <span class="field-type">PK</span></li>
+                            <li class="fk">ticket_id (UUID) <span class="field-type">FK</span></li>
+                            <li>reason (VARCHAR)</li>
+                            <li>escalated_by (VARCHAR)</li>
+                            <li class="fk">escalated_to (UUID) <span class="field-type">FK</span></li>
+                            <li>status (ENUM)</li>
+                            <li>created_at (TIMESTAMP)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Sequence Diagrams -->
+        <div class="section" id="sequence-diagrams">
+            <h2>🔄 Detailed Sequence Diagrams</h2>
+            
+            <h3>Ticket Classification Workflow</h3>
+            <div class="sequence-container">
+                <div class="sequence-actors">
+                    <div class="actor">👤 User</div>
+                    <div class="actor">🌐 API Gateway</div>
+                    <div class="actor">🎫 Ticket Service</div>
+                    <div class="actor">🤖 AI Service</div>
+                    <div class="actor">💾 Database</div>
+                </div>
+                
+                <ul class="sequence-steps">
+                    <li class="sequence-step" data-step="1">User submits ticket via web interface</li>
+                    <li class="sequence-step" data-step="2">API Gateway validates request and checks authentication</li>
+                    <li class="sequence-step" data-step="3">Ticket Service receives validated request</li>
+                    <li class="sequence-step" data-step="4">PII scrubbing applied to ticket content using Presidio</li>
+                    <li class="sequence-step" data-step="5">AI Service called for classification using Ollama LLM</li>
+                    <li class="sequence-step" data-step="6">Confidence score calculated and escalation logic applied</li>
+                    <li class="sequence-step" data-step="7">Ticket and classification results saved to database</li>
+                    <li class="sequence-step" data-step="8">Vector embedding generated and stored</li>
+                    <li class="sequence-step" data-step="9">Response returned to user with classification</li>
+                </ul>
+            </div>
+            
+            <h3>RAG Resolution Generation Workflow</h3>
+            <div class="sequence-container">
+                <div class="sequence-actors">
+                    <div class="actor">👨‍💼 Agent</div>
+                    <div class="actor">🔍 Resolution API</div>
+                    <div class="actor">🔢 Vector Search</div>
+                    <div class="actor">🧠 LLM Service</div>
+                    <div class="actor">📊 Quality Scorer</div>
+                </div>
+                
+                <ul class="sequence-steps">
+                    <li class="sequence-step" data-step="1">Agent requests resolution for classified ticket</li>
+                    <li class="sequence-step" data-step="2">Vector similarity search for related tickets (≥0.70 similarity)</li>
+                    <li class="sequence-step" data-step="3">Top 5 similar tickets retrieved with context</li>
+                    <li class="sequence-step" data-step="4">LLM generates resolution steps using RAG pipeline</li>
+                    <li class="sequence-step" data-step="5">Quality scorer evaluates resolution effectiveness</li>
+                    <li class="sequence-step" data-step="6">Resolution saved with quality metrics</li>
+                    <li class="sequence-step" data-step="7">Structured response returned to agent</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Enhanced API Specification -->
+        <div class="section" id="api-specification">
+            <h2>🔌 Complete API Specification</h2>
+            
+            <div class="api-grid">
+                <div class="api-section">
+                    <h4>🎫 Ticket Management</h4>
+                    <div class="endpoint">
+                        <span class="method post">POST</span> /api/v1/tickets<br>
+                        <small>Create new ticket with auto-classification</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/v1/tickets<br>
+                        <small>List tickets with filtering and pagination</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/v1/tickets/{id}/similar<br>
+                        <small>Get semantically similar tickets</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method put">PUT</span> /api/v1/tickets/{id}<br>
+                        <small>Update ticket status and assignment</small>
+                    </div>
+                </div>
+                
+                <div class="api-section">
+                    <h4>🤖 AI Classification</h4>
+                    <div class="endpoint">
+                        <span class="method post">POST</span> /api/v1/classify<br>
+                        <small>Classify text content using AI models</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span> /api/v1/tickets/{id}/reclassify<br>
+                        <small>Re-classify ticket with latest model</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/v1/models/performance<br>
+                        <small>Get model performance metrics</small>
+                    </div>
+                </div>
+                
+                <div class="api-section">
+                    <h4>💡 Resolution Generation</h4>
+                    <div class="endpoint">
+                        <span class="method post">POST</span> /api/v1/tickets/{id}/resolve<br>
+                        <small>Generate resolution using RAG pipeline</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/v1/resolutions/{id}<br>
+                        <small>Get resolution details and quality metrics</small>
+                    </div>
+                </div>
+                
+                <div class="api-section">
+                    <h4>⚠️ Escalation Management</h4>
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/v1/escalations<br>
+                        <small>List escalations by status and assignment</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span> /api/v1/escalations<br>
+                        <small>Create manual escalation</small>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method put">PUT</span> /api/v1/escalations/{id}/resolve<br>
+                        <small>Resolve escalation with override</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Deployment Architecture -->
+        <div class="section" id="deployment">
+            <h2>🚀 Production Deployment Architecture</h2>
+            
+            <div class="deployment-grid">
+                <div class="deployment-box">
+                    <h4>🐳 Docker Compose</h4>
+                    <div class="code-snippet">
+version: '3.8'
+services:
+  api:
+    build: ./backend
+    environment:
+      - DATABASE_URL=postgresql://...
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - postgres
+      - ollama
+  
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+                    </div>
+                </div>
+                
+                <div class="deployment-box">
+                    <h4>☸️ Kubernetes</h4>
+                    <div class="code-snippet">
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticketiq-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ticketiq-api
+  template:
+    spec:
+      containers:
+      - name: api
+        image: ticketiq/api:latest
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+                    </div>
+                </div>
+                
+                <div class="deployment-box">
+                    <h4>🔧 Infrastructure</h4>
+                    <ul class="flow-items">
+                        <li>Load Balancer (Traefik/Nginx)</li>
+                        <li>Auto-scaling (HPA)</li>
+                        <li>Persistent Volumes</li>
+                        <li>Service Mesh (Istio)</li>
+                        <li>Monitoring Stack</li>
+                        <li>Backup Strategy</li>
+                    </ul>
+                </div>
+                
+                <div class="deployment-box">
+                    <h4>📊 Monitoring</h4>
+                    <ul class="flow-items">
+                        <li>Prometheus Metrics</li>
+                        <li>Grafana Dashboards</li>
+                        <li>Jaeger Tracing</li>
+                        <li>Loki Log Aggregation</li>
+                        <li>Alert Manager</li>
+                        <li>Health Checks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="section">
+            <h2>🚀 Solution Approach & High-Level Design</h2>
+            
+            <h3>1. Solution Overview</h3>
+            <p>TicketIQ is an AI-powered IT operations platform that automatically classifies, routes, and resolves IT support tickets using open-source LLMs and RAG (Retrieval-Augmented Generation) pipelines. The system provides enterprise-grade functionality while maintaining complete data sovereignty and zero vendor lock-in.</p>
+
+            <h3>2. High-Level Architecture</h3>
+            <div class="architecture-diagram">
+                <div class="layer-label">CLIENT LAYER</div>
+                <div class="layer">
+                    <div class="layer-box client">
+                        <strong>React 18 + TypeScript</strong><br>
+                        <small>Ant Design / Material-UI</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓ HTTPS / TLS 1.2+</div>
+                
+                <div class="layer-label">NETWORK LAYER</div>
+                <div class="layer">
+                    <div class="layer-box network">
+                        <strong>Traefik / Nginx</strong><br>
+                        <small>API Gateway + Rate Limiting</small>
+                    </div>
+                    <div class="layer-box network">
+                        <strong>Keycloak / Authentik</strong><br>
+                        <small>OAuth2 / OIDC / RBAC</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓ REST / gRPC + mTLS</div>
+                
+                <div class="layer-label">APPLICATION LAYER</div>
+                <div class="layer">
+                    <div class="layer-box app">
+                        <strong>FastAPI Services</strong><br>
+                        <small>Folder Manager, Ticket Assignment</small>
+                    </div>
+                    <div class="layer-box app">
+                        <strong>AI Classifier</strong><br>
+                        <small>ML Pipeline + RAG</small>
+                    </div>
+                    <div class="layer-box app">
+                        <strong>Ollama Runtime</strong><br>
+                        <small>LLM Inference Engine</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="layer-label">DATA LAYER</div>
+                <div class="layer">
+                    <div class="layer-box data">
+                        <strong>PostgreSQL 14+</strong><br>
+                        <small>+ pgvector extension</small>
+                    </div>
+                    <div class="layer-box data">
+                        <strong>Qdrant / ChromaDB</strong><br>
+                        <small>Vector Store (alternative)</small>
+                    </div>
+                    <div class="layer-box data">
+                        <strong>MinIO</strong><br>
+                        <small>Object Storage (S3-compatible)</small>
+                    </div>
+                    <div class="layer-box data">
+                        <strong>MLflow</strong><br>
+                        <small>Model Registry & Tracking</small>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="layer-label">OBSERVABILITY LAYER</div>
+                <div class="layer">
+                    <div class="layer-box obs">
+                        <strong>Prometheus</strong><br>
+                        <small>Metrics Collection</small>
+                    </div>
+                    <div class="layer-box obs">
+                        <strong>Jaeger</strong><br>
+                        <small>Distributed Tracing (OTLP)</small>
+                    </div>
+                    <div class="layer-box obs">
+                        <strong>Loki + Grafana</strong><br>
+                        <small>Logs + Dashboards</small>
+                    </div>
+                </div>
+            </div>
+
+            <h3>3. Core AI Processing Flow</h3>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-number">1</div>
+                    <div>
+                        <strong>Ticket Ingestion</strong><br>
+                        <small>Plain text, JSON logs (ECS), OpenTelemetry traces, Prometheus alerts</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">2</div>
+                    <div>
+                        <strong>PII Scrubbing</strong><br>
+                        <small>Microsoft Presidio removes names, emails, IPs, Aadhaar numbers</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">3</div>
+                    <div>
+                        <strong>AI Classification</strong><br>
+                        <small>Mistral/Phi-3/Gemma via Ollama → 7 categories with confidence scoring</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">4</div>
+                    <div>
+                        <strong>RAG Resolution</strong><br>
+                        <small>Retrieve top-5 similar tickets (≥0.70 similarity) → Generate resolution steps</small>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-step-number">5</div>
+                    <div>
+                        <strong>Escalation Logic</strong><br>
+                        <small>Confidence < 0.65 → Human review queue with webhook notifications</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USP Section -->
+        <div class="section">
+            <h2>🎯 Unique Selling Proposition (USP)</h2>
+            
+            <h3>Market Comparison</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>TicketIQ</th>
+                        <th>ServiceNow</th>
+                        <th>Jira Service Mgmt</th>
+                        <th>Zendesk</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Deployment Model</strong></td>
+                        <td><span class="success">100% Self-Hosted</span></td>
+                        <td><span class="warning">SaaS/Cloud Only</span></td>
+                        <td><span class="warning">SaaS Primary</span></td>
+                        <td><span class="warning">SaaS Only</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI/LLM Integration</strong></td>
+                        <td><span class="success">Local LLMs (Ollama)</span></td>
+                        <td><span class="warning">OpenAI API ($$$)</span></td>
+                        <td><span class="warning">Limited AI</span></td>
+                        <td><span class="warning">Basic AI Features</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data Sovereignty</strong></td>
+                        <td><span class="success">Complete Control</span></td>
+                        <td><span class="warning">Cloud-Based</span></td>
+                        <td><span class="warning">Cloud-Based</span></td>
+                        <td><span class="warning">Cloud-Based</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Licensing Cost</strong></td>
+                        <td><span class="success">$0 (Open Source)</span></td>
+                        <td><span class="warning">$100+/user/month</span></td>
+                        <td><span class="warning">$20+/user/month</span></td>
+                        <td><span class="warning">$19+/user/month</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Customization</strong></td>
+                        <td><span class="success">Full Source Access</span></td>
+                        <td><span class="warning">Limited APIs</span></td>
+                        <td><span class="warning">Plugin System</span></td>
+                        <td><span class="warning">Limited APIs</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Compliance</strong></td>
+                        <td><span class="success">GDPR/DPDP Ready</span></td>
+                        <td><span class="highlight">Enterprise Compliant</span></td>
+                        <td><span class="highlight">SOC2/ISO27001</span></td>
+                        <td><span class="highlight">SOC2/GDPR</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Key Differentiators</h3>
+            <div class="grid">
+                <div class="card">
+                    <h4>🔓 Zero Vendor Lock-in</h4>
+                    <ul class="feature-list">
+                        <li>100% OSI-approved open source stack</li>
+                        <li>Self-hosted LLMs eliminate API dependencies</li>
+                        <li>Complete source code access and modification rights</li>
+                        <li>No per-user or per-token pricing models</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🛡️ Enterprise Security & Compliance</h4>
+                    <ul class="feature-list">
+                        <li>Data never leaves organizational boundaries</li>
+                        <li>Built-in PII scrubbing with Microsoft Presidio</li>
+                        <li>mTLS between all internal services</li>
+                        <li>Immutable audit logs with 12-month retention</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🤖 Advanced AI Without Cloud Dependencies</h4>
+                    <ul class="feature-list">
+                        <li>Local LLM execution via Ollama runtime</li>
+                        <li>RAG pipeline with semantic similarity search</li>
+                        <li>Automated quality scoring with LLM-as-Judge</li>
+                        <li>Continuous retraining with MLflow tracking</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>📊 Comprehensive Quality Assurance</h4>
+                    <ul class="feature-list">
+                        <li>Defined performance thresholds (≥0.80 F1 score)</li>
+                        <li>Real-time model performance monitoring</li>
+                        <li>Automated rollback for underperforming models</li>
+                        <li>Pattern detection for proactive issue resolution</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dependencies & Assumptions -->
+        <div class="section">
+            <h2>⚙️ Dependencies & Assumptions</h2>
+            
+            <h3>Technical Dependencies</h3>
+            <div class="tech-stack">
+                <div class="tech-category">
+                    <h4>Infrastructure Requirements</h4>
+                    <div class="tech-item">Docker + Docker Compose or Kubernetes</div>
+                    <div class="tech-item">Minimum 16GB RAM for LLM models</div>
+                    <div class="tech-item">GPU acceleration (NVIDIA CUDA/AMD ROCm)</div>
+                    <div class="tech-item">PostgreSQL 14+ with pgvector extension</div>
+                    <div class="tech-item">Persistent storage for model artifacts</div>
+                </div>
+                
+                <div class="tech-category">
+                    <h4>External Services</h4>
+                    <div class="tech-item">Keycloak/Authentik (self-hosted auth)</div>
+                    <div class="tech-item">MinIO (S3-compatible object storage)</div>
+                    <div class="tech-item">Prometheus/Grafana observability stack</div>
+                    <div class="tech-item">SMTP server for notifications</div>
+                    <div class="tech-item">Webhook endpoints for escalations</div>
+                </div>
+                
+                <div class="tech-category">
+                    <h4>Data Dependencies</h4>
+                    <div class="tech-item">IT Service Ticket Classification Dataset</div>
+                    <div class="tech-item">Multilingual Customer Support Tickets</div>
+                    <div class="tech-item">ServiceNow-like Incident Response Log</div>
+                    <div class="tech-item">Historical ticket data for training</div>
+                    <div class="tech-item">Kaggle API access for dataset downloads</div>
+                </div>
+                
+                <div class="tech-category">
+                    <h4>Network Requirements</h4>
+                    <div class="tech-item">Internal service mesh connectivity</div>
+                    <div class="tech-item">HTTPS/TLS 1.2+ for external access</div>
+                    <div class="tech-item">Load balancer for high availability</div>
+                    <div class="tech-item">Firewall rules for service isolation</div>
+                    <div class="tech-item">DNS resolution for service discovery</div>
+                </div>
+            </div>
+
+            <h3>Key Assumptions</h3>
+            <div class="grid">
+                <div class="card">
+                    <h4>🏢 Organizational Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Structured IT support processes in place</li>
+                        <li>DevOps team capable of container management</li>
+                        <li>Comfort with self-hosted open source solutions</li>
+                        <li>Preference for CAPEX over OPEX model</li>
+                        <li>Need for data sovereignty and compliance</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>📈 Scale & Performance Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Processing 1000+ tickets per day</li>
+                        <li>Response time requirements < 5 seconds</li>
+                        <li>High availability (99.9% uptime) needed</li>
+                        <li>Multi-language support requirements</li>
+                        <li>Integration with existing ITSM tools</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🎯 Data Quality Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Historical tickets have consistent categorization</li>
+                        <li>Kaggle datasets representative of use cases</li>
+                        <li>Primary language is English (with multilingual support)</li>
+                        <li>Human agents available for override feedback</li>
+                        <li>Regular model retraining feasible</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🔧 Technical Assumptions</h4>
+                    <ul class="feature-list">
+                        <li>Reliable internal network connectivity</li>
+                        <li>Sufficient compute resources for LLM inference</li>
+                        <li>Backup and disaster recovery procedures</li>
+                        <li>Security team approval for self-hosted AI</li>
+                        <li>Integration capabilities with existing systems</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Quality Metrics & Targets</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-value">≥0.80</span>
+                    <div class="metric-label">Macro F1 Score<br>(All 7 Categories)</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≥0.72</span>
+                    <div class="metric-label">Mean Semantic<br>Similarity Score</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≥3.5/5</span>
+                    <div class="metric-label">LLM-as-Judge<br>Routing Score</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≤4s</span>
+                    <div class="metric-label">P95 Inference<br>Latency SLO</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">≤0.25</span>
+                    <div class="metric-label">Equitable Recall<br>Spread</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">80%</span>
+                    <div class="metric-label">Backend Test<br>Coverage</div>
+                </div>
+            </div>
+
+            <h3>Risk Mitigation Strategies</h3>
+            <div class="grid">
+                <div class="card">
+                    <h4>🔧 Technical Risks</h4>
+                    <ul class="feature-list">
+                        <li><strong>Model Drift:</strong> Automated retraining pipeline with performance monitoring</li>
+                        <li><strong>Scalability:</strong> Horizontal scaling with Kubernetes and load balancing</li>
+                        <li><strong>Data Loss:</strong> Multi-tier backup strategy (DB + object storage)</li>
+                        <li><strong>Security:</strong> Automated scanning and regular security updates</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>🏢 Operational Risks</h4>
+                    <ul class="feature-list">
+                        <li><strong>Adoption Resistance:</strong> Gradual rollout with parallel legacy operation</li>
+                        <li><strong>Performance Issues:</strong> Comprehensive monitoring with SLA alerting</li>
+                        <li><strong>Skills Gap:</strong> Training programs and documentation</li>
+                        <li><strong>Integration Challenges:</strong> API-first design with standard protocols</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 3rem; padding: 2rem; border-top: 1px solid var(--border); color: var(--muted);">
+            <p><strong>TicketIQ Complete Technical Architecture Document</strong></p>
+            <p style="margin-top: 0.5rem;">Version 2.0 • Enhanced Visual Representation • Complete System Specification</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+                📧 Contact: architecture@ticketiq.com • 
+                📚 Documentation: docs.ticketiq.com • 
+                🔗 Repository: github.com/ticketiq/platform
+            </p>
+            <p style="margin-top: 1rem; font-size: 0.8rem;">
+                This enhanced document provides comprehensive technical architecture with improved visual diagrams, 
+                detailed data flow representations, complete API specifications, and production-ready deployment configurations 
+                for the TicketIQ AI-powered IT operations platform.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

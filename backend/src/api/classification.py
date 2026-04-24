@@ -191,16 +191,57 @@ async def get_automation_candidates(
     db: AsyncSession = Depends(get_db),
 ):
     ticket_repo = TicketRepository(db)
+    # Only show OPEN tickets as candidates
     tickets, next_cursor = await ticket_repo.list_tickets(
         is_automation_candidate=True,
+        status="open",
         page_size=page_size,
         sort_by="created_at",
         sort_dir="desc",
     )
+    
+    from sqlalchemy import select, func
+    from src.repositories.models import Ticket
+    
+    total_query = select(func.count(Ticket.id)).where(
+        Ticket.is_automation_candidate == True,
+        Ticket.status == "open"
+    )
+    total_result = await db.execute(total_query)
+    total = total_result.scalar() or 0
+
     return {
         "automation_candidates": [ticket_to_response(t) for t in tickets],
         "next_cursor": next_cursor,
-        "total": len(tickets),
+        "total": total,
+    }
+
+
+@router.get("/automation-archive", response_model=TicketListResponse)
+async def get_automation_archive(
+    page_size: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve all tickets that have successfully completed automation."""
+    ticket_repo = TicketRepository(db)
+    tickets, next_cursor = await ticket_repo.list_tickets(
+        automation_status="completed",
+        page_size=page_size,
+        sort_by="resolved_at",
+        sort_dir="desc",
+    )
+    
+    from sqlalchemy import select, func
+    from src.repositories.models import Ticket
+    
+    total_query = select(func.count(Ticket.id)).where(Ticket.automation_status == "completed")
+    total_result = await db.execute(total_query)
+    total = total_result.scalar() or 0
+
+    return {
+        "automation_archive": [ticket_to_response(t) for t in tickets],
+        "next_cursor": next_cursor,
+        "total": total,
     }
 
 

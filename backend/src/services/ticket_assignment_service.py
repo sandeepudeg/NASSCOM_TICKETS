@@ -178,7 +178,12 @@ class TicketAssignmentService:
         folder_id: str,
         user_id: str,
         params: TicketPaginationParams,
-    ) -> list[TicketResponse]:
+        status: str | None = None,
+        category: str | None = None,
+        routing_status: str | None = None,
+        sla_breach: bool | None = None,
+        intelligence_priority: str | None = None,
+    ) -> tuple[list[TicketResponse], int]:
         folder = await self.folder_repo.get_by_id(folder_id, user_id)
         if not folder:
             raise HTTPError.not_found("Folder not found")
@@ -189,6 +194,20 @@ class TicketAssignmentService:
             cursor=params.cursor,
             sort_by=params.sort_by,
             sort_dir=params.sort_dir,
+            status=status,
+            category=category,
+            routing_status=routing_status,
+            sla_breach=sla_breach,
+            intelligence_priority=intelligence_priority,
         )
 
-        return [ticket_to_response(t) for t in tickets]
+        total = await self.assignment_repo.count_folder_tickets(
+            folder_id=folder_id,
+            status=status,
+            category=category,
+            routing_status=routing_status,
+            sla_breach=sla_breach,
+            intelligence_priority=intelligence_priority,
+        )
+ 
+        return [ticket_to_response(t) for t in tickets], total

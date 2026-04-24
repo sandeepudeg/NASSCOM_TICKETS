@@ -1,8 +1,15 @@
 import { useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Table, Card, Tag, Space, Select, Button, Typography, Empty, Input } from 'antd'
-import { DownloadOutlined, SyncOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons'
+import { Table, Card, Tag, Space, Select, Button, Typography, Empty, Input, Tooltip } from 'antd'
+import { 
+  DownloadOutlined, 
+  SyncOutlined, 
+  SearchOutlined, 
+  FilterOutlined,
+  ThunderboltOutlined,
+  ClockCircleOutlined
+} from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { ticketsApi } from '../api/tickets'
 import { foldersApi } from '../api/folders'
@@ -28,6 +35,7 @@ const CATEGORIES = [
 
 const STATUSES = ['open', 'in_progress', 'resolved', 'closed']
 const ROUTING_STATUSES = ['pending_classification', 'routed', 'escalated', 'resolved']
+const INTEL_PRIORITIES = ['low', 'medium', 'high', 'urgent']
 
 export default function TicketListPage() {
   const [searchParams] = useSearchParams()
@@ -37,6 +45,8 @@ export default function TicketListPage() {
     status?: string
     category?: string
     routing_status?: string
+    intelligence_priority?: string
+    sla_breach?: boolean
     cursor?: string
     q?: string
   }>({})
@@ -67,7 +77,7 @@ export default function TicketListPage() {
       title: 'REF',
       dataIndex: 'ticket_number',
       key: 'ticket_number',
-      width: 130,
+      width: 110,
       render: (text: string, record: Ticket) => (
         <Link to={`/tickets/${record.id}`} style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
           #{text || record.id.substring(0, 6).toUpperCase()}
@@ -79,27 +89,73 @@ export default function TicketListPage() {
       dataIndex: 'title',
       key: 'title',
       render: (title: string, record: Ticket) => (
-        <Link to={`/tickets/${record.id}`} style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontSize: '14px' }}>
-          {title}
-        </Link>
+        <Space direction="vertical" size={0}>
+          <Link to={`/tickets/${record.id}`} style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontSize: '14px' }}>
+            {title}
+          </Link>
+          <Space size={8}>
+             {record.is_repeated_issue && <Tag color="warning" style={{ fontSize: '9px', borderRadius: '2px', margin: 0 }}>REPEATED</Tag>}
+             {record.is_automation_candidate && <Tag color="purple" style={{ fontSize: '9px', borderRadius: '2px', margin: 0 }}>AUTO-READY</Tag>}
+          </Space>
+        </Space>
       ),
     },
     {
-      title: 'Category',
-      dataIndex: 'category',
-      key: 'category',
-      width: 140,
-      render: (category: string) => (
-        <Tag style={{ 
-          margin: 0,
-          background: 'hsla(var(--slate-500), 0.05)',
-          border: '1px solid var(--color-border-primary)',
-          color: 'var(--color-text-secondary)',
-          borderRadius: '4px',
-          fontSize: '11px',
-          fontWeight: 600
-        }}>
-          {category?.toUpperCase() || 'UNCATEGORIZED'}
+      title: 'Intel Priority',
+      dataIndex: 'intelligence_priority',
+      key: 'intelligence_priority',
+      width: 130,
+      render: (priority: string) => {
+        const colorMap: Record<string, string> = {
+          low: '#94a3b8',
+          medium: '#3b82f6',
+          high: '#f59e0b',
+          urgent: '#ef4444',
+        }
+        return (
+          <Tag style={{ 
+            color: colorMap[priority] || '#94a3b8', 
+            borderColor: `${colorMap[priority]}40`,
+            background: `${colorMap[priority]}10`,
+            fontSize: '10px', 
+            fontWeight: 800,
+            borderRadius: '4px'
+          }}>
+            <ThunderboltOutlined style={{ marginRight: '4px' }} />
+            {(priority || 'medium').toUpperCase()}
+          </Tag>
+        )
+      },
+    },
+    {
+      title: 'SLA Status',
+      dataIndex: 'sla_status',
+      key: 'sla_status',
+      width: 120,
+      render: (status: string) => {
+        const colorMap: Record<string, string> = {
+          on_track: '#10b981',
+          at_risk: '#f59e0b',
+          breached: '#ef4444',
+        }
+        return (
+          <Space size={6}>
+            <ClockCircleOutlined style={{ color: colorMap[status] || '#94a3b8', fontSize: '12px' }} />
+            <Text strong style={{ fontSize: '10px', color: colorMap[status] || '#94a3b8', textTransform: 'uppercase' }}>
+              {(status || 'on_track').replace('_', ' ')}
+            </Text>
+          </Space>
+        )
+      },
+    },
+    {
+      title: 'Automation',
+      dataIndex: 'automation_status',
+      key: 'automation_status',
+      width: 130,
+      render: (status: string) => (
+        <Tag style={{ fontSize: '10px', borderRadius: '4px' }}>
+          {(status || 'none').toUpperCase()}
         </Tag>
       ),
     },
@@ -124,57 +180,12 @@ export default function TicketListPage() {
       },
     },
     {
-      title: 'Intelligence',
-      dataIndex: 'routing_status',
-      key: 'routing_status',
-      width: 160,
-      render: (routing_status: string) => {
-        const colorMap: Record<string, string> = {
-          pending_classification: '#3b82f6',
-          routed: '#10b981',
-          escalated: '#f59e0b',
-          resolved: '#94a3b8',
-        }
-        return (
-          <Tag style={{ 
-            color: colorMap[routing_status] || '#94a3b8',
-            borderColor: `${colorMap[routing_status]}40`,
-            background: `${colorMap[routing_status]}10`,
-            fontSize: '10px',
-            fontWeight: 700,
-            borderRadius: '4px'
-          }}>
-            {(routing_status || 'unknown').replace('_', ' ').toUpperCase()}
-          </Tag>
-        )
-      },
-    },
-    {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'priority',
-      width: 100,
-      render: (priority: string) => {
-        const colorMap: Record<string, string> = {
-          low: '#94a3b8',
-          medium: '#3b82f6',
-          high: '#f59e0b',
-          critical: '#ef4444',
-        }
-        return (
-          <Text strong style={{ color: colorMap[priority] || '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>
-            {priority || 'normal'}
-          </Text>
-        )
-      },
-    },
-    {
       title: 'Timestamp',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 150,
+      width: 120,
       render: (date: string) => (
-        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
+        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px' }}>
           {new Date(date).toLocaleDateString()}
         </Text>
       ),
@@ -200,6 +211,8 @@ export default function TicketListPage() {
     if (filters.status) params.append('status', filters.status)
     if (filters.category) params.append('category', filters.category)
     if (filters.routing_status) params.append('routing_status', filters.routing_status)
+    if (filters.sla_breach) params.append('sla_breach', 'true')
+    if (filters.intelligence_priority) params.append('intelligence_priority', filters.intelligence_priority)
     const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8005/api/v1/tickets/export-all' : '/api/v1/tickets/export-all'
     window.open(`${baseUrl}?${params.toString()}`, '_blank')
   }
@@ -209,16 +222,16 @@ export default function TicketListPage() {
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-            {folderId ? folderData?.name : 'Universal Queue'}
+            {folderId ? folderData?.name : 'Intelligence Hub Queue'}
           </Title>
           <Text type="secondary" style={{ fontSize: '13px' }}>
-            {folderId ? `Viewing items in ${folderData?.name}` : 'Comprehensive list of all system records'}
+            {folderId ? `Viewing items in ${folderData?.name}` : 'Real-time orchestration and intelligence view'}
           </Text>
         </div>
         <Space>
           <Input 
             prefix={<SearchOutlined style={{ opacity: 0.5 }} />}
-            placeholder="Quick find..."
+            placeholder="Quick search..."
             style={{ width: 240 }}
             className="glass-effect"
             onChange={(e) => handleFilterChange('q', e.target.value)}
@@ -231,41 +244,51 @@ export default function TicketListPage() {
       </div>
 
       <Card className="glass-effect" bodyStyle={{ padding: 0 }}>
-        <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border-primary)', display: 'flex', gap: '12px' }}>
-          <Space size="middle">
+        <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border-primary)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <Space size="middle" wrap>
             <FilterOutlined style={{ opacity: 0.5 }} />
             <Select
-              placeholder="All Statuses"
+              placeholder="Status"
               allowClear
-              style={{ width: 140 }}
+              style={{ width: 120 }}
               onChange={(value) => handleFilterChange('status', value)}
               variant="borderless"
             >
               {STATUSES.map((s) => (
-                <Select.Option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</Select.Option>
+                <Select.Option key={s} value={s}>{s.toUpperCase()}</Select.Option>
               ))}
             </Select>
             <Select
-              placeholder="All Categories"
+              placeholder="Category"
               allowClear
-              style={{ width: 160 }}
+              style={{ width: 140 }}
               onChange={(value) => handleFilterChange('category', value)}
               variant="borderless"
             >
               {CATEGORIES.map((c) => (
-                <Select.Option key={c} value={c}>{c}</Select.Option>
+                <Select.Option key={c} value={c}>{c.toUpperCase()}</Select.Option>
               ))}
             </Select>
             <Select
-              placeholder="Routing Status"
+              placeholder="Intel Priority"
               allowClear
-              style={{ width: 160 }}
-              onChange={(value) => handleFilterChange('routing_status', value)}
+              style={{ width: 140 }}
+              onChange={(value) => handleFilterChange('intelligence_priority', value)}
               variant="borderless"
             >
-              {ROUTING_STATUSES.map((rs) => (
-                <Select.Option key={rs} value={rs}>{rs.replace('_', ' ').toUpperCase()}</Select.Option>
+              {INTEL_PRIORITIES.map((p) => (
+                <Select.Option key={p} value={p}>{p.toUpperCase()}</Select.Option>
               ))}
+            </Select>
+            <Select
+              placeholder="SLA Status"
+              allowClear
+              style={{ width: 130 }}
+              onChange={(value) => handleFilterChange('sla_breach', value === 'breached')}
+              variant="borderless"
+            >
+              <Select.Option value="all">ALL SLA</Select.Option>
+              <Select.Option value="breached">BREACHED</Select.Option>
             </Select>
           </Space>
         </div>
@@ -278,13 +301,13 @@ export default function TicketListPage() {
           pagination={false}
           className="high-density-table"
           locale={{ 
-            emptyText: <Empty description="no data available for show kindly add tickets" style={{ padding: '40px 0' }} />
+            emptyText: <Empty description="No records matching current filters" style={{ padding: '40px 0' }} />
           }}
         />
 
         {data?.next_cursor && (
           <div style={{ textAlign: 'center', padding: '16px', borderTop: '1px solid var(--color-border-primary)' }}>
-            <Button onClick={handleLoadMore} type="text">Load more results</Button>
+            <Button onClick={handleLoadMore} type="text">Load more records</Button>
           </div>
         )}
       </Card>

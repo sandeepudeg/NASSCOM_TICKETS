@@ -1,0 +1,192 @@
+/* Master Control - Option 8: SRE Data-Rich Dashboard */
+
+:root {
+    --sre-bg: #002b36;         /* Solarized Base03 */
+    --sre-card-bg: #073642;    /* Solarized Base02 */
+    --sre-border: #586e75;      /* Solarized Base01 */
+    --sre-text: #839496;        /* Solarized Base00 */
+    --sre-text-bright: #eee8d5; /* Solarized Base2 */
+    --sre-accent: #268bd2;      /* Solarized Blue */
+    --sre-success: #859900;     /* Solarized Green */
+    --sre-warning: #b58900;     /* Solarized Yellow */
+    --sre-danger: #dc322f;      /* Solarized Red */
+    --sre-cyan: #2aa198;
+}
+
+body.master-control-body {
+    background-color: var(--sre-bg);
+    color: var(--sre-text);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 0;
+    padding: 0;
+}
+
+.mc-dashboard {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Master Header HUD */
+.mc-hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--sre-card-bg);
+    padding: 15px 25px;
+    border: 1px solid var(--sre-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.hud-title {
+    color: var(--sre-accent);
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.hud-stats {
+    display: flex;
+    gap: 30px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.stat-value {
+    font-size: 18px;
+    color: var(--sre-text-bright);
+}
+
+/* SRE Service Grid */
+.mc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.sre-card {
+    background: var(--sre-card-bg);
+    border: 1px solid var(--sre-border);
+    border-radius: 4px;
+    padding: 15px;
+    position: relative;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: default;
+}
+
+.sre-card:hover {
+    border-color: var(--sre-accent);
+    transform: translateY(-2px);
+}
+
+.sre-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(88, 110, 117, 0.3);
+    padding-bottom: 8px;
+}
+
+.service-name {
+    color: var(--sre-text-bright);
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.status-healthy { background: var(--sre-success); color: var(--sre-bg); }
+.status-unhealthy { background: var(--sre-danger); color: var(--sre-bg); }
+.status-warning { background: var(--sre-warning); color: var(--sre-bg); }
+
+/* Sparkline area */
+.sre-perf-view {
+    height: 40px;
+    margin: 10px 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.perf-bar {
+    flex: 1;
+    background: var(--sre-border);
+    opacity: 0.3;
+    min-height: 4px;
+}
+
+.perf-bar.active {
+    background: var(--sre-success);
+    opacity: 0.8;
+}
+
+.sre-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    font-size: 11px;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.meta-item {
+    color: var(--sre-text);
+}
+
+.meta-value {
+    color: var(--sre-cyan);
+}
+
+.sre-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-sre {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--sre-accent);
+    color: var(--sre-accent);
+    font-size: 11px;
+    padding: 5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.btn-sre:hover {
+    background: var(--sre-accent);
+    color: var(--sre-bg);
+}
+
+/* Animations */
+.pulse-glow {
+    animation: pulse-sre 2s infinite;
+}
+
+@keyframes pulse-sre {
+    0% { box-shadow: 0 0 0 0 rgba(133, 153, 0, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(133, 153, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(133, 153, 0, 0); }
+}

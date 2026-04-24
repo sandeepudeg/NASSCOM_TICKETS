@@ -111,12 +111,30 @@ class TicketResponse(TicketBase):
     lifecycle_stage: str | None = None
     is_automation_candidate: bool = False
     is_repeated_issue: bool = False
+    automation_status: str = "none"
+    automation_output: str | None = None
+    automation_simulation_report: str | None = None
+    automation_runbook_id: str | None = None
+    automation_verification_json: str | None = None
+    roi_value_saved: float | None = None
+    resolution_time_ms: int | None = None
+    
+    # Intelligence Layer (Phase 3)
+    sentiment_score: float = 0.0
+    impact_score: float = 0.0
+    intelligence_priority: str | None = "medium"
+    
+    # Predictive Layer (Phase 4)
+    complexity_score: int = 1
+    estimated_resolution_at: datetime | None = None
+    sla_status: str | None = "on_track"
 
 
 class TicketListResponse(BaseModel):
     tickets: list[TicketResponse] | None = None
     escalations: list[TicketResponse] | None = None
     automation_candidates: list[TicketResponse] | None = None
+    automation_archive: list[TicketResponse] | None = None
     next_cursor: str | None = None
     total: int
 
@@ -145,6 +163,9 @@ class ClassificationResult(BaseModel):
     evaluation_matrix: EvaluationMatrix | None = None
     is_automation_candidate: bool = False
     is_repeated_issue: bool = False
+    sentiment_score: float = 0.0
+    impact_score: float = 0.0
+    complexity_score: int = 1
 
 
 class BulkAssignRequest(BaseModel):
