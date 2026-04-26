@@ -141,6 +141,30 @@ async def serve_root():
     }
 
 
+@app.get("/api/debug/db")
+async def debug_db(db: AsyncSession = Depends(get_db)):
+    """Diagnostics: Check database state and table counts."""
+    from sqlalchemy import func, select
+    from src.repositories.models import Ticket, Folder, TicketFolderAssignment, TicketEmbedding
+    
+    try:
+        t_count = await db.execute(select(func.count(Ticket.id)))
+        f_count = await db.execute(select(func.count(Folder.id)))
+        a_count = await db.execute(select(func.count(TicketFolderAssignment.id)))
+        e_count = await db.execute(select(func.count(TicketEmbedding.id)))
+        
+        return {
+            "status": "connected",
+            "tickets": t_count.scalar(),
+            "folders": f_count.scalar(),
+            "assignments": a_count.scalar(),
+            "embeddings": e_count.scalar(),
+            "database_url_type": "postgres" if "postgres" in settings.database_url else "sqlite"
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @app.get("/{full_path:path}")
 async def serve_react_routes(full_path: str):
     # Skip if it looks like an API call
