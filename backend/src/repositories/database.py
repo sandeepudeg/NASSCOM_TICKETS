@@ -197,19 +197,21 @@ async def seed_from_json() -> None:
             from sqlalchemy import text
             _log.info("Wiping existing database tables and RECREATING schema to fix drift...")
             
-            # Using DROP TABLE CASCADE for Postgres to handle schema mismatches
-            if not is_sqlite:
-                await session.execute(text("DROP TABLE IF EXISTS ticket_folder_assignments, ticket_embeddings, similar_tickets, pattern_alerts, audit_snapshots, audit_log, agent_overrides, mapping_configs, automation_runbooks, tickets, folders CASCADE;"))
-                # Recreate all tables from current models
-                async with engine.begin() as conn:
+            # Use a fresh connection to perform destructive DDL
+            async with engine.begin() as conn:
+                if not is_sqlite:
+                    await conn.execute(text("DROP TABLE IF EXISTS ticket_folder_assignments, ticket_embeddings, similar_tickets, pattern_alerts, audit_snapshots, audit_log, agent_overrides, mapping_configs, automation_runbooks, tickets, folders CASCADE;"))
+                    # Recreate all tables from current models
                     await conn.run_sync(Base.metadata.create_all)
-            else:
-                await session.execute(text("DELETE FROM ticket_folder_assignments"))
-                await session.execute(text("DELETE FROM ticket_embeddings"))
-                await session.execute(text("DELETE FROM similar_tickets"))
-                await session.execute(text("DELETE FROM pattern_alerts"))
-                await session.execute(text("DELETE FROM tickets"))
-                await session.execute(text("DELETE FROM folders"))
+                else:
+                    await conn.execute(text("DELETE FROM ticket_folder_assignments"))
+                    await conn.execute(text("DELETE FROM ticket_embeddings"))
+                    await conn.execute(text("DELETE FROM similar_tickets"))
+                    await conn.execute(text("DELETE FROM pattern_alerts"))
+                    await conn.execute(text("DELETE FROM tickets"))
+                    await conn.execute(text("DELETE FROM folders"))
+            
+            _log.info("Schema recreation successful. Loading data...")
             
             # Load Folders
             _log.info(f"Loading {len(data['folders'])} folders...")
