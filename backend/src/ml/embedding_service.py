@@ -26,9 +26,10 @@ class EmbeddingService:
     def _load_model(self) -> None:
         model_name = os.getenv("EMBEDDING_MODEL", settings.embedding_model)
         
-        # 1. Check if model exists in the expected HF Spaces local cache directory
-        # This path is populated during the Docker build process.
-        local_cache_path = f"/app/model_cache/{model_name}"
+        # 1. Check if model exists in common local cache directories
+        # This path is populated during the Docker build process or via env vars.
+        hf_home = os.getenv("SENTENCE_TRANSFORMERS_HOME", "/app/model_cache")
+        local_cache_path = os.path.join(hf_home, model_name)
         
         # 2. Prefer the local path if it exists to satisfy TRANSFORMERS_OFFLINE requirement
         model_to_load = local_cache_path if os.path.exists(local_cache_path) else model_name

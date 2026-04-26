@@ -253,7 +253,7 @@ async def seed_test_tickets() -> None:
             await session.flush()
 
             all_tickets = []
-            tickets_total = 300
+            tickets_total = 105
             tickets_per_cat = tickets_total // len(CATEGORIES)
 
             for category in CATEGORIES:
