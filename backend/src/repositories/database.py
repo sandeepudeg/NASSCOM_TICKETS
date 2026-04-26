@@ -110,11 +110,21 @@ async def init_db() -> None:
                 _log.warning(f"init_db attempt {attempt} failed, retrying in {retry_delay}s: {e}")
                 await asyncio.sleep(retry_delay)
 
-    # Seed departmental folders only if needed
-    try:
         await seed_department_folders()
-        # [DATA PROTECTION]: Disabled test ticket seeding to prevent overwriting existing data
-        # await seed_test_tickets()
+        
+        # Auto-seed if database is empty
+        async with async_session_maker() as session:
+            from sqlalchemy import func, select
+            from src.repositories.models import Ticket
+            count_stmt = select(func.count()).select_from(Ticket)
+            result = await session.execute(count_stmt)
+            ticket_count = result.scalar() or 0
+            
+            if ticket_count == 0:
+                _log.info("Database is empty. Initializing enterprise-scale seed data...")
+                await seed_test_tickets()
+            else:
+                _log.info(f"Database contains {ticket_count} tickets. Skipping auto-seed.")
     except Exception as e:
         _log.warning(f"init_db: seeding skipped: {e}")
 
@@ -225,14 +235,9 @@ async def seed_test_tickets() -> None:
 
     async with async_session_maker() as session:
         try:
-            print("Resetting database for scale deployment...")
-            await session.execute(delete(TicketFolderAssignment))
-            await session.execute(delete(PatternAlert))
-            await session.execute(delete(SimilarTicket))
-            await session.execute(delete(Ticket))
-            await session.execute(delete(Folder))
-            await session.commit()
-
+            # [LOGIC CHANGE]: Removed destructive delete() calls to allow for safe incremental seeding
+            # The calling function now checks for empty DB before running this
+            
             # Create folders for BOTH users for maximum visibility
             folder_map = {}
             for owner in admin_ids:
