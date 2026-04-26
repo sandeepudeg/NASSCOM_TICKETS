@@ -110,6 +110,7 @@ def upgrade() -> None:
     op.create_table(
         "tickets",
         sa.Column("id", sa.String(), nullable=False),
+        sa.Column("ticket_number", sa.String(length=50), nullable=True),
         sa.Column("title", sa.String(length=500), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("owner_id", sa.String(), nullable=False),
@@ -149,10 +150,38 @@ def upgrade() -> None:
         ),
         sa.Column("confidence_score", sa.Float(), nullable=True),
         sa.Column("priority", sa.String(length=50), nullable=True),
+        sa.Column("source_channel", sa.String(length=50), nullable=False, server_default="web"),
         sa.Column("structured_payload", sa.Text(), nullable=True),
         sa.Column("causal_context_json", sa.Text(), nullable=True),
         sa.Column("causal_signal", sa.Text(), nullable=True),
         sa.Column("parse_warning", sa.Text(), nullable=True),
+        
+        # AI Intelligence columns
+        sa.Column("accuracy", sa.Float(), nullable=True),
+        sa.Column("f1_score", sa.Float(), nullable=True),
+        sa.Column("semantic_similarity", sa.Float(), nullable=True),
+        sa.Column("resolution_steps_json", sa.Text(), nullable=True),
+        sa.Column("resolution_root_cause", sa.Text(), nullable=True),
+        sa.Column("is_automation_candidate", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column("is_repeated_issue", sa.Boolean(), nullable=False, server_default="false"),
+        
+        # Phase 3/4 columns
+        sa.Column("sentiment_score", sa.Float(), nullable=False, server_default="0.0"),
+        sa.Column("impact_score", sa.Float(), nullable=False, server_default="0.0"),
+        sa.Column("intelligence_priority", sa.String(length=50), nullable=True, server_default="medium"),
+        sa.Column("complexity_score", sa.Integer(), nullable=False, server_default="1"),
+        sa.Column("estimated_resolution_at", sa.DateTime(), nullable=True),
+        sa.Column("sla_status", sa.String(length=50), nullable=True, server_default="on_track"),
+        
+        # Automation columns
+        sa.Column("automation_status", sa.String(length=50), nullable=False, server_default="none"),
+        sa.Column("automation_output", sa.Text(), nullable=True),
+        sa.Column("automation_simulation_report", sa.Text(), nullable=True),
+        sa.Column("automation_runbook_id", sa.String(), nullable=True),
+        sa.Column("automation_verification_json", sa.Text(), nullable=True),
+        sa.Column("roi_value_saved", sa.Float(), nullable=True),
+        sa.Column("resolution_time_ms", sa.Integer(), nullable=True),
+        
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("resolved_at", sa.DateTime(), nullable=True),
@@ -163,6 +192,7 @@ def upgrade() -> None:
     op.create_index("ix_tickets_routing_status", "tickets", ["routing_status"])
     op.create_index("ix_tickets_status", "tickets", ["status"])
     op.create_index("ix_tickets_created_at", "tickets", ["created_at"])
+    op.create_index("ix_tickets_ticket_number", "tickets", ["ticket_number"], unique=True)
 
     # Create ticket_folder_assignments table
     op.create_table(

@@ -193,13 +193,16 @@ async def seed_from_json() -> None:
         
     async with async_session_maker() as session:
         try:
-            # Wipe existing data to ensure exact match
+            # Wipe existing data to ensure exact match and fix schema drift
             from sqlalchemy import text
-            _log.info("Wiping existing database tables for fresh migration...")
+            _log.info("Wiping existing database tables and RECREATING schema to fix drift...")
             
-            # Using TRUNCATE CASCADE for Postgres to handle foreign keys properly
+            # Using DROP TABLE CASCADE for Postgres to handle schema mismatches
             if not is_sqlite:
-                await session.execute(text("TRUNCATE TABLE ticket_folder_assignments, ticket_embeddings, similar_tickets, pattern_alerts, tickets, folders CASCADE;"))
+                await session.execute(text("DROP TABLE IF EXISTS ticket_folder_assignments, ticket_embeddings, similar_tickets, pattern_alerts, audit_snapshots, audit_log, agent_overrides, mapping_configs, automation_runbooks, tickets, folders CASCADE;"))
+                # Recreate all tables from current models
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
             else:
                 await session.execute(text("DELETE FROM ticket_folder_assignments"))
                 await session.execute(text("DELETE FROM ticket_embeddings"))
