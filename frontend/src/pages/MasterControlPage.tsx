@@ -151,8 +151,8 @@ const MasterControlPage: React.FC = () => {
     if (!isAuthorized) return;
     setRefreshing(true);
     try {
-      // Fetching from the Flask Admin API we just built
-      const res = await fetch('http://localhost:5001/api/master-control/status');
+      // Use relative API path instead of hardcoded localhost
+      const res = await fetch('/api/v1/master-control/status');
       const data = await res.json();
       if (data.services) setStatuses(data.services);
     } catch (err) {
