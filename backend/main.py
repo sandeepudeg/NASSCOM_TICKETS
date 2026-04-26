@@ -14,7 +14,8 @@ from fastapi.staticfiles import StaticFiles
 
 from config.observability import setup_observability
 from src.api import auth, classification, compliance, escalations, folders, health, model_metrics, tickets, analytics
-from src.repositories.database import close_db, init_db
+from src.repositories.database import close_db, init_db, get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.errors import HTTPError, ProblemDetail
 from src.schemas.settings import settings
 
