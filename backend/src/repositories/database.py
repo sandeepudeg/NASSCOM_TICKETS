@@ -55,9 +55,6 @@ else:
     _connect_args.update({
         "command_timeout": 60,
         "timeout": 60,  # Increased from 30 to handle cold starts
-        "server_settings": {
-            "statement_timeout": "60000"  # 60s in ms
-        }
     })
     
     engine = create_async_engine(
@@ -110,6 +107,8 @@ async def init_db() -> None:
                 _log.warning(f"init_db attempt {attempt} failed, retrying in {retry_delay}s: {e}")
                 await asyncio.sleep(retry_delay)
 
+    # Seed departmental folders and auto-seed if needed
+    try:
         await seed_department_folders()
         
         # Auto-seed if database is empty
