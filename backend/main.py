@@ -142,7 +142,7 @@ async def serve_root():
     }
 
 
-@app.get("/api/debug/db")
+@app.get("/api/v1/debug/db")
 async def debug_db(db: AsyncSession = Depends(get_db)):
     """Diagnostics: Check database state and table counts."""
     from sqlalchemy import func, select
@@ -166,7 +166,7 @@ async def debug_db(db: AsyncSession = Depends(get_db)):
         return {"status": "error", "message": str(e)}
 
 
-@app.get("/api/debug/files")
+@app.get("/api/v1/debug/files")
 async def debug_files():
     """Diagnostics: Check which files are present in the app directory."""
     import os
@@ -183,7 +183,7 @@ async def debug_files():
         return {"error": str(e)}
 
 
-@app.get("/api/debug/reset")
+@app.get("/api/v1/debug/reset")
 async def debug_reset():
     """Force a database wipe and re-seed from tickets_seed.json."""
     from src.repositories.database import seed_from_json

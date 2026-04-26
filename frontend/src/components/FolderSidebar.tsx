@@ -422,6 +422,26 @@ export default function FolderSidebar() {
           <span>Master Control</span>
         </div>
         <div 
+          className="settings-link"
+          style={{ color: 'var(--color-primary)', border: '1px solid rgba(var(--color-primary-rgb), 0.2)', marginBottom: '8px' }}
+          onClick={async () => {
+            try {
+              const res = await (await import('../api/client')).apiClient.get('/debug/reset')
+              if (res.data?.status === 'success') {
+                alert('Success: Database reset and re-seeded from local state.')
+                window.location.reload()
+              } else {
+                alert('Error: ' + res.data?.message)
+              }
+            } catch (err: any) {
+              alert('Failed to reach sync endpoint: ' + err.message)
+            }
+          }}
+        >
+          <ThunderboltOutlined />
+          <span>Sync Local Data</span>
+        </div>
+        <div 
           className={`settings-link ${location.pathname === '/settings' ? 'active' : ''}`}
           onClick={() => {
             navigate('/settings')
