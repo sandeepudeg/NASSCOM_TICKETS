@@ -196,12 +196,17 @@ async def seed_from_json() -> None:
             # Wipe existing data to ensure exact match
             from sqlalchemy import text
             _log.info("Wiping existing database tables for fresh migration...")
-            await session.execute(text("DELETE FROM ticket_folder_assignments"))
-            await session.execute(text("DELETE FROM ticket_embeddings"))
-            await session.execute(text("DELETE FROM similar_tickets"))
-            await session.execute(text("DELETE FROM pattern_alerts"))
-            await session.execute(text("DELETE FROM tickets"))
-            await session.execute(text("DELETE FROM folders"))
+            
+            # Using TRUNCATE CASCADE for Postgres to handle foreign keys properly
+            if not is_sqlite:
+                await session.execute(text("TRUNCATE TABLE ticket_folder_assignments, ticket_embeddings, similar_tickets, pattern_alerts, tickets, folders CASCADE;"))
+            else:
+                await session.execute(text("DELETE FROM ticket_folder_assignments"))
+                await session.execute(text("DELETE FROM ticket_embeddings"))
+                await session.execute(text("DELETE FROM similar_tickets"))
+                await session.execute(text("DELETE FROM pattern_alerts"))
+                await session.execute(text("DELETE FROM tickets"))
+                await session.execute(text("DELETE FROM folders"))
             
             # Load Folders
             _log.info(f"Loading {len(data['folders'])} folders...")
