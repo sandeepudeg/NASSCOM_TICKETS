@@ -21,6 +21,10 @@ config = context.config
 
 # Set sqlalchemy.url from settings (loads from .env)
 database_url = settings.database_url
+# Strip query parameters for Neon compatibility (pgbouncer doesn't like them)
+if "?" in database_url:
+    database_url = database_url.split("?")[0]
+
 # Convert asyncpg/aiosqlite URLs to synchronous drivers for Alembic
 database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
 database_url = database_url.replace("sqlite+aiosqlite", "sqlite")
@@ -76,8 +80,7 @@ def run_migrations_online() -> None:
     connect_args = {}
     if "postgresql" in database_url:
         connect_args = {
-            "connect_timeout": 60,
-            "options": "-c statement_timeout=60000"
+            "connect_timeout": 60
         }
 
     connectable = engine_from_config(
