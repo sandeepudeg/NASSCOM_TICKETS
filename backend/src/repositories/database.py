@@ -110,10 +110,14 @@ async def init_db() -> None:
     # Seed departmental folders and auto-seed if needed
     try:
         import os
-        if os.path.exists("tickets_seed.json") or os.getenv("RESET_DB") == "true":
+        seed_file = "tickets_seed.json"
+        _log.info(f"Checking for seed file at {os.path.abspath(seed_file)}...")
+        
+        if os.path.exists(seed_file) or os.getenv("RESET_DB") == "true":
             _log.info("Detected tickets_seed.json or RESET_DB=true. Initiating data migration...")
             await seed_from_json()
         else:
+            _log.info("No seed file found. Proceeding with standard folder check.")
             await seed_department_folders()
             
             # Auto-seed if database is empty
