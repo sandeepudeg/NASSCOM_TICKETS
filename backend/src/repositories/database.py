@@ -109,21 +109,26 @@ async def init_db() -> None:
 
     # Seed departmental folders and auto-seed if needed
     try:
-        await seed_department_folders()
-        
-        # Auto-seed if database is empty
-        async with async_session_maker() as session:
-            from sqlalchemy import func, select
-            from src.repositories.models import Ticket
-            count_stmt = select(func.count()).select_from(Ticket)
-            result = await session.execute(count_stmt)
-            ticket_count = result.scalar() or 0
+        import os
+        if os.path.exists("tickets_seed.json") or os.getenv("RESET_DB") == "true":
+            _log.info("Detected tickets_seed.json or RESET_DB=true. Initiating data migration...")
+            await seed_from_json()
+        else:
+            await seed_department_folders()
             
-            if ticket_count == 0:
-                _log.info("Database is empty. Initializing enterprise-scale seed data...")
-                await seed_test_tickets()
-            else:
-                _log.info(f"Database contains {ticket_count} tickets. Skipping auto-seed.")
+            # Auto-seed if database is empty
+            async with async_session_maker() as session:
+                from sqlalchemy import func, select
+                from src.repositories.models import Ticket
+                count_stmt = select(func.count()).select_from(Ticket)
+                result = await session.execute(count_stmt)
+                ticket_count = result.scalar() or 0
+                
+                if ticket_count == 0:
+                    _log.info("Database is empty. Initializing enterprise-scale seed data...")
+                    await seed_test_tickets()
+                else:
+                    _log.info(f"Database contains {ticket_count} tickets. Skipping auto-seed.")
     except Exception as e:
         _log.warning(f"init_db: seeding skipped: {e}")
 
@@ -161,6 +166,71 @@ async def seed_department_folders() -> None:
 
             await session.commit()
         except Exception:
+            await session.rollback()
+            raise
+
+
+async def seed_from_json() -> None:
+    """Load exact data state from tickets_seed.json if it exists."""
+    import json
+    import os
+    import logging
+    from datetime import datetime
+    from src.repositories.models import Ticket, Folder, TicketFolderAssignment, TicketEmbedding, PatternAlert
+    
+    _log = logging.getLogger(__name__)
+    seed_path = "tickets_seed.json"
+    if not os.path.exists(seed_path):
+        _log.info("seed_from_json: No seed file found. Skipping migration.")
+        return
+        
+    with open(seed_path, "r") as f:
+        data = json.load(f)
+        
+    async with async_session_maker() as session:
+        try:
+            # Wipe existing data to ensure exact match
+            from sqlalchemy import text
+            _log.info("Wiping existing database tables for fresh migration...")
+            await session.execute(text("DELETE FROM ticket_folder_assignments"))
+            await session.execute(text("DELETE FROM ticket_embeddings"))
+            await session.execute(text("DELETE FROM similar_tickets"))
+            await session.execute(text("DELETE FROM pattern_alerts"))
+            await session.execute(text("DELETE FROM tickets"))
+            await session.execute(text("DELETE FROM folders"))
+            
+            # Load Folders
+            _log.info(f"Loading {len(data['folders'])} folders...")
+            for f_data in data["folders"]:
+                for k, v in f_data.items():
+                    if k in ["created_at", "updated_at", "deleted_at"] and v:
+                        f_data[k] = datetime.fromisoformat(v)
+                session.add(Folder(**f_data))
+            
+            await session.flush()
+            
+            # Load Tickets
+            _log.info(f"Loading {len(data['tickets'])} tickets...")
+            for t_data in data["tickets"]:
+                for k, v in t_data.items():
+                    if k in ["created_at", "updated_at", "resolved_at", "estimated_resolution_at"] and v:
+                        t_data[k] = datetime.fromisoformat(v)
+                session.add(Ticket(**t_data))
+                
+            await session.flush()
+            
+            # Load Assignments
+            _log.info(f"Loading {len(data['assignments'])} assignments...")
+            for a_data in data["assignments"]:
+                for k, v in a_data.items():
+                    if k == "assigned_at" and v:
+                        a_data[k] = datetime.fromisoformat(v)
+                session.add(TicketFolderAssignment(**a_data))
+                
+            await session.commit()
+            _log.info(f"Data migration successful: Loaded {len(data['tickets'])} tickets from local state.")
+        except Exception as e:
+            _log.error(f"Migration failed: {e}")
             await session.rollback()
             raise
 

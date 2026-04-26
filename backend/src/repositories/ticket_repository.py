@@ -51,17 +51,22 @@ class TicketRepository:
         status: str | None = None,
         category: str | None = None,
         routing_status: str | None = None,
-        page_size: int = 50,
-        cursor: str | None = None,
-        sort_by: str = "created_at",
-        sort_dir: str = "desc",
         is_automation_candidate: bool | None = None,
         automation_status: str | None = None,
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
+        page_size: int = 50,
+        cursor: str | None = None,
+        sort_by: str = "created_at",
+        sort_dir: str = "desc",
     ) -> tuple[list[Ticket], str | None]:
+        import structlog
+        logger = structlog.get_logger("repo.ticket")
+        
         # Eager load similar_tickets for dashboard intelligence reconstruction
         query = select(Ticket).options(selectinload(Ticket.similar_tickets))
+        
+        logger.info("ticket.list.start", owner_id=owner_id, status=status, category=category, page_size=page_size)
 
         if owner_id:
             query = query.where(Ticket.owner_id == owner_id)
@@ -107,6 +112,8 @@ class TicketRepository:
 
         result = await self.session.execute(query)
         tickets = list(result.scalars().all())
+
+        logger.info("ticket.list.done", count=len(tickets), query=str(query))
 
         next_cursor = None
         if len(tickets) > page_size:
