@@ -109,7 +109,7 @@ const SectionHeader = ({ icon, title, subtitle }: { icon: React.ReactNode, title
       </div>
       <div>
         <Title level={4} style={{ margin: 0, letterSpacing: '-0.01em' }}>{title}</Title>
-        <Text type="secondary" style={{ fontSize: 13, opacity: 0.8 }}>{subtitle}</Text>
+        <Text style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>{subtitle}</Text>
       </div>
     </Space>
   </div>
@@ -231,7 +231,7 @@ export default function SettingsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border-primary)' }}>
                 <div>
                   <Text strong style={{ display: 'block' }}>Hallucination Watchdog (LLM-as-Judge)</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Enable secondary verification for all high-confidence automated routings.</Text>
+                  <Text style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontWeight: 500 }}>Enable secondary verification for all high-confidence automated routings.</Text>
                 </div>
                 <Switch defaultChecked />
               </div>
@@ -267,7 +267,7 @@ export default function SettingsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border-primary)' }}>
                 <div>
                   <Text strong style={{ display: 'block' }}>Global PII Data Masking</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Automatically redact emails, phone numbers, and keys before AI processing.</Text>
+                  <Text style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontWeight: 500 }}>Automatically redact emails, phone numbers, and keys before AI processing.</Text>
                 </div>
                 <Switch defaultChecked />
               </div>
@@ -406,7 +406,7 @@ export default function SettingsPage() {
                 bodyStyle={{ padding: '24px', textAlign: 'center' }}
                 style={{ borderTop: '4px solid #10b981' }}
               >
-                <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.6, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>PII Entities Redacted</div>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>PII Entities Redacted</div>
                 <div style={{ fontSize: '36px', fontWeight: 900, color: 'var(--color-primary)', letterSpacing: '-0.03em' }}>2,451</div>
                 <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, marginTop: 4 }}>
                   <SafetyCertificateOutlined style={{ marginRight: 6 }} /> Auditable Redaction Enabled
@@ -463,7 +463,7 @@ export default function SettingsPage() {
                   </Tag>
                 </Space>
                 <div style={{ marginTop: 20 }}>
-                  <Text type="secondary" style={{ fontSize: '12px', fontStyle: 'italic' }}>
+                  <Text style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                     Compliance badges are verified against the current regional data residency and PII masking policies.
                   </Text>
                 </div>
@@ -580,7 +580,7 @@ export default function SettingsPage() {
         <Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
           System Settings
         </Title>
-        <Text type="secondary" style={{ fontSize: '14px' }}>Manage enterprise visibility, AI logic, and global operational parameters.</Text>
+        <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Manage enterprise visibility, AI logic, and global operational parameters.</Text>
       </div>
 
       <SettingsCard bodyStyle={{ padding: 0 }}>

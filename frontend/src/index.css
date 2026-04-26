@@ -143,6 +143,21 @@ body {
   background: hsla(var(--slate-950), 0.8) !important;
 }
 
+[data-theme='dark'] .ant-typography {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme='dark'] .ant-input, 
+[data-theme='dark'] .ant-select-selector {
+  background: hsla(var(--slate-900), 0.8) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-primary) !important;
+}
+
+[data-theme='dark'] .ant-select-selection-placeholder {
+  color: var(--color-text-muted) !important;
+}
+
 .ant-menu {
   background: transparent !important;
   color: var(--color-text-primary) !important;

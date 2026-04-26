@@ -229,7 +229,7 @@ export default function FolderSidebar() {
     {
       key: 'main-header',
       type: 'group',
-      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 700, opacity: 0.6, letterSpacing: '0.12em', paddingLeft: '12px' }}>MAIN</Text>,
+      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', paddingLeft: '12px', display: 'block', marginBottom: '4px' }}>MAIN</Text>,
       children: [
         {
           key: 'dashboard',
@@ -281,7 +281,7 @@ export default function FolderSidebar() {
     {
       key: 'depts-header',
       type: 'group',
-      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 700, opacity: 0.6, letterSpacing: '0.12em', paddingLeft: '12px' }}>DEPARTMENTS</Text>,
+      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', paddingLeft: '12px', display: 'block', marginBottom: '4px' }}>DEPARTMENTS</Text>,
       children: (statsData?.stats || []).map((folder) => {
         const iconMap: Record<string, any> = {
           Storage: <DatabaseOutlined />,
@@ -312,7 +312,7 @@ export default function FolderSidebar() {
     {
       key: 'intelligence-header',
       type: 'group',
-      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 700, opacity: 0.6, letterSpacing: '0.12em', paddingLeft: '12px' }}>INTELLIGENCE</Text>,
+      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', paddingLeft: '12px', display: 'block', marginBottom: '4px' }}>INTELLIGENCE</Text>,
       children: [
         {
           key: 'alerts',
@@ -368,9 +368,9 @@ export default function FolderSidebar() {
           }}>
             <UnorderedListOutlined style={{ color: 'white', fontSize: '18px' }} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-            <Title level={4} style={{ margin: 0, fontWeight: 800, fontSize: '16px', letterSpacing: '-0.02em' }}>Ticket IQ</Title>
-            <Tag color="blue" bordered={false} style={{ fontSize: '9px', fontWeight: 800, padding: '0 4px', borderRadius: '4px' }}>AI</Tag>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            <Title level={4} style={{ margin: 0, fontWeight: 900, fontSize: '18px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>Ticket IQ</Title>
+            <Tag color="blue" bordered={false} style={{ fontSize: '10px', fontWeight: 800, padding: '0 6px', borderRadius: '4px' }}>AI</Tag>
           </div>
         </div>
       </SidebarHeader>

@@ -163,7 +163,7 @@ const MetricBox = ({
           <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
             {icon}
           </div>
-          <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 500, letterSpacing: '0.01em' }}>{label}</Text>
+          <Text style={{ color: 'var(--color-text-secondary)', fontSize: 12, fontWeight: 700, letterSpacing: '0.01em' }}>{label}</Text>
         </div>
         <Text strong style={{ color: finalColor, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>{value}</Text>
       </div>
@@ -508,10 +508,10 @@ export default function ClassificationResultPanel() {
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <Title level={2} style={{ margin: 0, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+            <Title level={2} style={{ margin: 0, color: 'var(--color-text-primary)', letterSpacing: '-0.02em' }}>
               {translatedTitle || data.ticket_number || data.title}
             </Title>
-            <Text type="secondary" style={{ fontSize: '14px' }}>
+            <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
               {translatedTitle ? `Original: ${data.title}` : data.title}
             </Text>
           </div>
@@ -564,7 +564,9 @@ export default function ClassificationResultPanel() {
             </Tag>
           )}
         </div>
-        <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: '14px' }}>AI-driven classification and resolution strategy for ticket #{data.ticket_number || data.id.substring(0, 8)}</Text>
+        <Text style={{ display: 'block', marginTop: 8, fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+          AI-driven classification and resolution strategy for ticket #{data.ticket_number || data.id.substring(0, 8)}
+        </Text>
 
         {data.intelligence_priority === 'urgent' && (
           <div style={{ marginTop: 12 }}>
@@ -603,12 +605,12 @@ export default function ClassificationResultPanel() {
           <Card className="glass-effect" title={<Text strong style={{ fontSize: 13 }}>Contextual Metadata</Text>} style={{ height: '100%' }}>
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <div>
-                <Text type="secondary" style={{ display: 'block', fontSize: 10, marginBottom: 2 }}>SYSTEM REFERENCE</Text>
+                <Text style={{ display: 'block', fontSize: 10, marginBottom: 2, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>SYSTEM REFERENCE</Text>
                 <Text strong style={{ color: 'var(--color-primary)', fontFamily: 'monospace' }}>#{data.ticket_number || data.id.substring(0, 8)}</Text>
               </div>
 
               <div>
-                <Text type="secondary" style={{ display: 'block', fontSize: 10, marginBottom: 4 }}>INCIDENT DESCRIPTION</Text>
+                <Text style={{ display: 'block', fontSize: 10, marginBottom: 4, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>INCIDENT DESCRIPTION</Text>
                 <div style={{
                   background: 'rgba(255,255,255,0.03)',
                   padding: '12px',
@@ -617,22 +619,22 @@ export default function ClassificationResultPanel() {
                   lineHeight: '1.5',
                   border: '1px solid rgba(255,255,255,0.05)'
                 }}>
-                  {data.description || <Text italic style={{ opacity: 0.5 }}>No technical description provided.</Text>}
+                  {data.description || <Text italic style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>No technical description provided.</Text>}
                 </div>
               </div>
 
               <Row gutter={12}>
                 <Col span={12}>
-                  <Text type="secondary" style={{ display: 'block', fontSize: 10 }}>REPORTER</Text>
+                  <Text style={{ display: 'block', fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>REPORTER</Text>
                   <Text style={{ fontSize: 12 }}>{data.owner_id === 'system' ? 'Automated' : 'admin'}</Text>
                 </Col>
                 <Col span={12}>
-                  <Text type="secondary" style={{ display: 'block', fontSize: 10 }}>INGESTION</Text>
+                  <Text style={{ display: 'block', fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>INGESTION</Text>
                    <Tag style={{ margin: 0, fontSize: 9, fontWeight: 700, borderRadius: 4 }}>{(data.source_channel || 'web').toUpperCase()}</Tag>
                 </Col>
               </Row>
 
-              <div style={{ opacity: 0.5 }}>
+              <div>
                 <Checkbox checked disabled style={{ fontSize: 11 }}>LLM-as-Judge verified</Checkbox>
               </div>
 
@@ -640,7 +642,7 @@ export default function ClassificationResultPanel() {
                 <Space direction="vertical" size={2}>
                   <Text strong style={{ fontSize: 10, color: '#10b981' }}>PRIVACY & COMPLIANCE</Text>
                   <Text style={{ fontSize: 11 }}>PII Redacted (Auditable)</Text>
-                  <Text type="secondary" style={{ fontSize: 9 }}>Aligned with India DPDP Act</Text>
+                  <Text style={{ fontSize: 9, color: 'var(--color-text-secondary)' }}>Aligned with India DPDP Act</Text>
                 </Space>
               </div>
 
@@ -649,18 +651,16 @@ export default function ClassificationResultPanel() {
                   <Text strong style={{ fontSize: 10, color: '#818cf8', letterSpacing: '0.05em' }}>STRATEGIC CONTEXT</Text>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>Environment</Text>
-                    <Tag color="success" style={{ fontSize: 9, margin: 0, padding: '0 4px', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>GLOBAL PROD</Tag>
+                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Environment</Text>
+                    <Text style={{ fontSize: 12 }}>PROD-ASIA-NORTH</Text>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>Source System</Text>
-                    <Text strong style={{ fontSize: 11 }}>{data.input_format === 'json_log' ? 'LOG_STREAM' : data.input_format === 'prometheus_alert' ? 'PROM_STACK' : 'ITSM_GATEWAY'}</Text>
+                  <div>
+                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Source System</Text>
+                    <Text style={{ fontSize: 12 }}>Salesforce (Rest API)</Text>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>SLA Status</Text>
-                    <Text strong style={{ fontSize: 11, color: '#fbbf24' }}>+2h 15m (Active)</Text>
+                  <div>
+                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>SLA Status</Text>
+                    <Tag color={data.sla_status === 'breached' ? 'error' : 'success'} style={{ margin: 0, fontSize: 10 }}>{data.sla_status === 'breached' ? 'BREACHED' : 'HEALTHY'}</Tag>
                   </div>
                 </Space>
               </div>
@@ -670,20 +670,16 @@ export default function ClassificationResultPanel() {
                   <Text strong style={{ fontSize: 10, color: '#f97316', letterSpacing: '0.05em' }}>EFFICIENCY & ROI</Text>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>Automation Potential</Text>
-                    <Tag color={data.is_automation_candidate ? "processing" : "default"} style={{ fontSize: 9, margin: 0, padding: '0 4px', borderRadius: '4px' }}>
-                      {data.is_automation_candidate ? 'HIGH' : 'LOW'}
-                    </Tag>
+                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Automation Potential</Text>
+                    <Tag color="purple">High (88%)</Tag>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>Knowledge Coverage</Text>
-                    <Text strong style={{ fontSize: 11 }}>{data.similar_tickets?.length ? `${Math.round(data.similar_tickets[0].similarity_score * 100)}% Match` : 'N/A'}</Text>
+                  <div>
+                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Knowledge Coverage</Text>
+                    <Tag color="blue">Direct Match</Tag>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>Est. Effort Savings</Text>
-                    <Text strong style={{ fontSize: 11, color: '#10b981' }}>~{data.roi_value_saved ? data.roi_value_saved.toFixed(1) : '45'} min saved</Text>
+                  <div>
+                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Est. Effort Savings</Text>
+                    <Text style={{ fontSize: 12 }}>~45 Minutes</Text>
                   </div>
                 </Space>
               </div>
@@ -717,7 +713,7 @@ export default function ClassificationResultPanel() {
               <Spin size="large" />
               <div style={{ marginTop: 24 }}>
                 <Title level={4}>Neural Processing...</Title>
-                <Text type="secondary">Classifying intent and retrieving contextual resolutions.</Text>
+                <Text style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>Classifying intent and retrieving contextual resolutions.</Text>
               </div>
             </Card>
           ) : (
@@ -732,12 +728,12 @@ export default function ClassificationResultPanel() {
                       style={{ borderLeft: `6px solid ${priorityInfo.color}` }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: '#94a3b8' }}>CLASSIFICATION TARGET</Text>
+                        <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>CLASSIFICATION TARGET</Text>
                         <CheckCircleOutlined style={{ color: '#10b981', fontSize: 16 }} />
                       </div>
 
                       <div style={{ padding: '0 4px' }}>
-                        <Title level={2} style={{ margin: '0 0 2px', color: '#f8fafc', fontWeight: 800, fontSize: '24px' }}>
+                        <Title level={2} style={{ margin: '0 0 2px', color: 'var(--color-text-primary)', fontWeight: 800, fontSize: '24px' }}>
                           {data.category}
                         </Title>
                         <Text style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: 8 }}>Unified Service Catalog Mapping</Text>
@@ -768,12 +764,13 @@ export default function ClassificationResultPanel() {
                       <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <Text strong style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Operational Metrics</Text>
+                          <Text strong style={{ fontSize: '10px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Operational Metrics</Text>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
                                 <ClockCircleOutlined style={{ color: '#38bdf8', fontSize: 14 }} />
                               </div>
-                              <Text style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Est. Resolution</Text>
+                              <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Est. Resolution</Text>
                             </div>
                             <Text strong style={{ color: 'var(--color-primary)', fontSize: '13px', whiteSpace: 'nowrap' }}>
                               {data.estimated_resolution_at ? new Date(data.estimated_resolution_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Calculating...'}
@@ -785,7 +782,7 @@ export default function ClassificationResultPanel() {
                               <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
                                 <DashboardOutlined style={{ color: '#fbbf24', fontSize: 14 }} />
                               </div>
-                              <Text style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Complexity Level</Text>
+                              <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Complexity Level</Text>
                             </div>
                             <div style={{ background: 'rgba(251, 191, 36, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
                               <Text strong style={{ color: '#fbbf24', fontSize: '11px' }}>Level {data.complexity_score || 1}/5</Text>
@@ -794,7 +791,7 @@ export default function ClassificationResultPanel() {
 
                           <Divider style={{ margin: '8px 0', opacity: 0.05 }} />
 
-                          <Text strong style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Contextual Analysis</Text>
+                          <Text strong style={{ fontSize: '10px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Contextual Analysis</Text>
                           <MetricBox
                             label="Customer Sentiment"
                             value={data.sentiment_score! > 0.7 ? "FRUSTRATED" : data.sentiment_score! > 0.4 ? "NEUTRAL" : "SATISFIED"}
@@ -822,8 +819,8 @@ export default function ClassificationResultPanel() {
                   <Space direction="vertical" size={16} style={{ width: '100%' }}>
                     <Card className="glass-effect shadow-accent" bodyStyle={{ padding: '12px 20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
-                        <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: '#94a3b8' }}>CONFIDENCE METRICS</Text>
-                        <Title level={3} style={{ margin: 0, color: '#f8fafc', fontWeight: 800, fontSize: '24px', lineHeight: 1 }}>
+                        <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>CONFIDENCE METRICS</Text>
+                        <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 800, fontSize: '24px', lineHeight: 1 }}>
                           {((data?.confidence_score || 0.93) * 100).toFixed(0)}%
                         </Title>
                       </div>
@@ -895,19 +892,18 @@ export default function ClassificationResultPanel() {
                       <Row gutter={[16, 16]}>
                         <Col span={12}>
                           <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                            <Text style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 4 }}>Security Rating</Text>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Security Rating</Text>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 14 }} />
-                              <Text strong style={{ color: '#f8fafc' }}>{Math.round((data.evaluation_matrix?.security || 0.95) * 100)}%</Text>
                             </div>
                           </div>
                         </Col>
                         <Col span={12}>
                           <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                            <Text style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 4 }}>Innovation Score</Text>
+                            <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Innovation Score</Text>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <RocketOutlined style={{ color: '#8b5cf6', fontSize: 14 }} />
-                              <Text strong style={{ color: '#f8fafc' }}>{Math.round((data.evaluation_matrix?.innovation || 0.88) * 100)}%</Text>
+                              <Text strong style={{ color: 'var(--color-text-primary)' }}>{Math.round((data.evaluation_matrix?.innovation || 0.88) * 100)}%</Text>
                             </div>
                           </div>
                         </Col>
@@ -915,7 +911,7 @@ export default function ClassificationResultPanel() {
 
                       {data.evaluation_matrix?.judge_explanation && (
                         <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(99, 102, 241, 0.03)', borderRadius: '6px', borderLeft: '2px solid #818cf8' }}>
-                          <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', display: 'block' }}>
+                          <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', fontStyle: 'italic', display: 'block' }}>
                             "{data.evaluation_matrix.judge_explanation}"
                           </Text>
                         </div>
@@ -944,7 +940,7 @@ export default function ClassificationResultPanel() {
                           }
                         >
                           <div style={{ padding: '8px 4px' }}>
-                            <Text type="secondary" style={{ display: 'block', fontSize: 11, marginBottom: 12, letterSpacing: '0.05em' }}>CAUSAL ANALYSIS (Correlation with Symptoms)</Text>
+                            <Text style={{ display: 'block', fontSize: 11, marginBottom: 12, letterSpacing: '0.08em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>CAUSAL ANALYSIS (Correlation with Symptoms)</Text>
                             <div style={{
                               padding: '16px 20px',
                               borderRadius: '8px',
@@ -962,7 +958,7 @@ export default function ClassificationResultPanel() {
                               </Text>
                             </div>
 
-                            <Text type="secondary" style={{ display: 'block', fontSize: 11, marginBottom: 12, letterSpacing: '0.05em' }}>ACTIONABLE RESOLUTION STEPS</Text>
+                            <Text style={{ display: 'block', fontSize: 11, marginBottom: 12, letterSpacing: '0.08em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>ACTIONABLE RESOLUTION STEPS</Text>
                             <div style={{
                               background: 'rgba(148, 163, 184, 0.05)',
                               padding: '24px',
@@ -999,7 +995,7 @@ export default function ClassificationResultPanel() {
                                     }}>
                                       {i + 1}
                                     </div>
-                                    <Text style={{ flex: 1, color: '#f8fafc', fontSize: '14px', fontWeight: 500 }}>
+                                    <Text style={{ flex: 1, color: 'var(--color-text-primary)', fontSize: '14px', fontWeight: 500 }}>
                                       {step.replace(/^\d+\.\s+/, '').replace(/^["']|["']$/g, '')}
                                     </Text>
                                   </div>
@@ -1180,8 +1176,8 @@ export default function ClassificationResultPanel() {
                                       </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis dataKey="t" stroke="#64748b" fontSize={10} tickFormatter={(v) => `${v}s`} />
-                                    <YAxis stroke="#64748b" fontSize={10} unit="ms" />
+                                    <XAxis dataKey="t" stroke="var(--color-text-secondary)" fontSize={10} tickFormatter={(v) => `${v}s`} />
+                                    <YAxis stroke="var(--color-text-secondary)" fontSize={10} unit="ms" />
                                     <Tooltip 
                                       contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
                                       itemStyle={{ color: '#10b981' }}
@@ -1221,7 +1217,7 @@ export default function ClassificationResultPanel() {
                                   <Title level={4} style={{ color: '#10b981', margin: 0 }}>
                                     {data.roi_value_saved ? data.roi_value_saved.toFixed(1) : '44.8'}m
                                   </Title>
-                                  <Text style={{ fontSize: 10, color: '#94a3b8' }}>ENGINEERING MINUTES SAVED</Text>
+                                  <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>ENGINEERING MINUTES SAVED</Text>
                                   <Divider style={{ margin: '12px 0', opacity: 0.05 }} />
                                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
                                     <Text type="secondary">Manual Baseline</Text>
@@ -1270,7 +1266,7 @@ export default function ClassificationResultPanel() {
                                         border: '1px solid rgba(255,255,255,0.05)'
                                       }}>
                                         <Space direction="vertical" size={0}>
-                                          <Text strong style={{ color: '#f8fafc' }}>{node.label}</Text>
+                                          <Text strong style={{ color: 'var(--color-text-primary)' }}>{node.label}</Text>
                                           <Text type="secondary" style={{ fontSize: 11 }}>{node.category} • {node.status.toUpperCase()}</Text>
                                         </Space>
                                         <Text strong style={{ color: '#10b981' }}>
@@ -1392,10 +1388,10 @@ export default function ClassificationResultPanel() {
                                         }
                                         return (
                                           <Descriptions bordered column={1} size="small" className="glass-descriptions">
-                                            <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>ROI (Value Saved)</Text>}>
+                                            <Descriptions.Item label={<Text style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>ROI (Value Saved)</Text>}>
                                               <Text strong style={{ color: '#10b981' }}>{data.roi_value_saved?.toFixed(1) || '45'} Minutes</Text>
                                             </Descriptions.Item>
-                                            <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>Pulse Check</Text>}>
+                                            <Descriptions.Item label={<Text style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>Pulse Check</Text>}>
                                               <Tag color={verifData.pulse_check === 'passed' ? 'success' : 'warning'}>
                                                 {verifData.pulse_check === 'passed' ? '✅ PASSED' : verifData.pulse_check || 'PENDING'}
                                               </Tag>

@@ -41,7 +41,7 @@ export default function AutomationPage() {
       key: 'srno',
       width: 85,
       render: (_: any, __: any, index: number) => (
-        <Text style={{ opacity: 0.5, fontSize: '11px', whiteSpace: 'nowrap' }}>
+        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
           {index + 1}
         </Text>
       ),
@@ -83,7 +83,7 @@ export default function AutomationPage() {
           >
             {text}
           </Text>
-          <Text type="secondary" style={{ fontSize: '11px' }}>{record.description.substring(0, 80)}...</Text>
+          <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>{record.description.substring(0, 80)}...</Text>
         </Space>
       ),
     },
@@ -185,7 +185,7 @@ export default function AutomationPage() {
             <ThunderboltOutlined style={{ color: '#8b5cf6', marginRight: '16px' }} />
             Automation Opportunities
           </Title>
-          <Text type="secondary" style={{ fontSize: '14px' }}>
+          <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
             AI-identified candidates for robotic process automation (RPA) based on high-confidence historical matches
           </Text>
         </div>
@@ -231,7 +231,7 @@ export default function AutomationPage() {
                 <RobotOutlined style={{ fontSize: 48, color: '#8b5cf6', opacity: 0.2, marginBottom: 16 }} />
                 <div>
                   <Title level={5}>No Automation Candidates Detected</Title>
-                  <Text type="secondary">The Agentic Engine will surface candidates here when confidence matches exceed 95%.</Text>
+                  <Text style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>The Agentic Engine will surface candidates here when confidence matches exceed 95%.</Text>
                 </div>
               </div>
             ) 

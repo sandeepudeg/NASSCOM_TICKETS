@@ -79,7 +79,7 @@ export default function AutomationCompletedPage() {
       key: 'srno',
       width: 85,
       render: (_: any, __: any, index: number) => (
-        <Text style={{ opacity: 0.5, fontSize: '11px', whiteSpace: 'nowrap' }}>
+        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
           {index + 1}
         </Text>
       ),
@@ -111,7 +111,7 @@ export default function AutomationCompletedPage() {
       render: (text: string, record: any) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '14px' }}>{text}</Text>
-          <Text type="secondary" style={{ fontSize: '11px' }}>
+          <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
             Resolved on {new Date(record.resolved_at || record.updated_at).toLocaleString()}
           </Text>
         </Space>
@@ -171,7 +171,7 @@ export default function AutomationCompletedPage() {
             <CheckCircleOutlined style={{ color: '#10b981', marginRight: '16px' }} />
             Automation Archive
           </Title>
-          <Text type="secondary">
+          <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
             Verified repository of finished remediations, simulation plans, and industrial health checks.
           </Text>
         </div>
@@ -215,7 +215,7 @@ export default function AutomationCompletedPage() {
                 <FileTextOutlined style={{ color: 'var(--color-primary)' }} />
                 <Title level={5} style={{ margin: 0 }}>Step 1: Dry-Run Simulation Report</Title>
               </div>
-              <Paragraph type="secondary" style={{ fontSize: '12px' }}>
+              <Paragraph style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                 This is the pre-execution analysis and safety assessment that was approved by the engineer.
               </Paragraph>
               <ReportContainer>

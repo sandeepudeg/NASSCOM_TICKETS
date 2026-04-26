@@ -7,15 +7,19 @@
       "success": { "value": "{color.success}" },
       "warning": { "value": "{color.warning}" },
       "danger": { "value": "{color.danger}" },
-      "text": { "value": "{color.text.primary}" },
-      "textMuted": { "value": "{color.text.secondary}" },
+      "text": { "value": "{color.primitive.slate.100}" },
+      "textMuted": { "value": "{color.primitive.slate.400}" },
       "background": { "value": "{color.background.primary}" },
       "backgroundSecondary": { "value": "{color.background.secondary}" },
       "backgroundTertiary": { "value": "{color.background.tertiary}" },
       "border": { "value": "{color.border.primary}" },
       "surface": { "value": "{color.background.surface}" },
       "overlay": { "value": "rgba(15, 15, 26, 0.92)" },
-      "backdropBlur": { "value": "blur(12px)" }
+      "backdropBlur": { "value": "blur(12px)" },
+      "textSuccess": { "value": "{color.primitive.emerald.500}" },
+      "textWarning": { "value": "{color.primitive.amber.500}" },
+      "textDanger": { "value": "{color.primitive.red.500}" },
+      "bgTrail": { "value": "rgba(255, 255, 255, 0.05)" }
     }
   },
   "component": {

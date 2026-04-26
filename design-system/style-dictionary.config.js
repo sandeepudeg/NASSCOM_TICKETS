@@ -162,7 +162,7 @@ StyleDictionary.registerFormat({
 
 // Base configuration for all tokens (excluding themes)
 const baseConfig = {
-  source: ['tokens/global.json', 'tokens/semantic.json', 'tokens/components.json'],
+  source: ['tokens/global.json', 'tokens/semantic.json', 'tokens/components.json', 'tokens/themes/dark.json'],
   platforms: {
     css: {
       transformGroup: 'css',

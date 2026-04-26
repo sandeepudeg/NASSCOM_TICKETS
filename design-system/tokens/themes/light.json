@@ -15,7 +15,11 @@
       "border": { "value": "{color.primitive.slate.200}" },
       "surface": { "value": "{color.primitive.white}" },
       "overlay": { "value": "rgba(255, 255, 255, 0.92)" },
-      "backdropBlur": { "value": "blur(12px)" }
+      "backdropBlur": { "value": "blur(12px)" },
+      "textSuccess": { "value": "{color.primitive.emerald.600}" },
+      "textWarning": { "value": "{color.primitive.amber.600}" },
+      "textDanger": { "value": "{color.primitive.red.600}" },
+      "bgTrail": { "value": "rgba(0, 0, 0, 0.05)" }
     }
   },
   "component": {

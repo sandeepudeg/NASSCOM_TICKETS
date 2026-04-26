@@ -68,10 +68,14 @@ export default function TicketListPage() {
 
   const columns: ColumnsType<Ticket> = [
     {
-      title: 'Sr. No.',
-      key: 'serial',
-      width: 70,
-      render: (_, __, index) => <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{index + 1}</Text>,
+      title: <div style={{ whiteSpace: 'nowrap', color: 'var(--color-text-secondary)' }}>SR. NO.</div>,
+      key: 'srno',
+      width: 85,
+      render: (_: any, __: any, index: number) => (
+        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
+          {index + 1}
+        </Text>
+      ),
     },
     {
       title: 'REF',
@@ -107,16 +111,16 @@ export default function TicketListPage() {
       width: 130,
       render: (priority: string) => {
         const colorMap: Record<string, string> = {
-          low: '#94a3b8',
-          medium: '#3b82f6',
-          high: '#f59e0b',
-          urgent: '#ef4444',
+          low: 'var(--color-text-secondary)',
+          medium: 'var(--color-primary)',
+          high: 'var(--color-text-warning)',
+          urgent: 'var(--color-text-danger)',
         }
         return (
           <Tag style={{ 
-            color: colorMap[priority] || '#94a3b8', 
-            borderColor: `${colorMap[priority]}40`,
-            background: `${colorMap[priority]}10`,
+            color: colorMap[priority] || 'var(--color-text-secondary)', 
+            borderColor: 'var(--color-border-primary)',
+            background: 'var(--color-bg-trail)',
             fontSize: '10px', 
             fontWeight: 800,
             borderRadius: '4px'
@@ -134,9 +138,9 @@ export default function TicketListPage() {
       width: 120,
       render: (status: string) => {
         const colorMap: Record<string, string> = {
-          on_track: '#10b981',
-          at_risk: '#f59e0b',
-          breached: '#ef4444',
+          on_track: 'var(--color-text-success)',
+          at_risk: 'var(--color-text-warning)',
+          breached: 'var(--color-text-danger)',
         }
         return (
           <Space size={6}>
@@ -166,15 +170,21 @@ export default function TicketListPage() {
       width: 110,
       render: (status: string) => {
         const colors: Record<string, string> = {
-          open: '#10b981',
-          in_progress: '#3b82f6',
+          open: 'var(--color-text-success)',
+          in_progress: 'var(--color-primary)',
           resolved: 'var(--color-text-muted)',
           closed: 'var(--color-text-muted)',
         }
         return (
           <Space size={6}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[status] || '#94a3b8' }} />
-            <Text style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{status}</Text>
+            <Text style={{ 
+              fontSize: '11px', 
+              fontWeight: 700, 
+              textTransform: 'uppercase', 
+              whiteSpace: 'nowrap',
+              color: 'var(--color-text-primary)' 
+            }}>{status}</Text>
           </Space>
         )
       },
@@ -221,18 +231,18 @@ export default function TicketListPage() {
     <PageContainer>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
+          <Title level={3} style={{ margin: 0, fontWeight: 800, color: 'var(--color-text-primary)' }}>
             {folderId ? folderData?.name : 'Intelligence Hub Queue'}
           </Title>
-          <Text type="secondary" style={{ fontSize: '13px' }}>
+          <Text style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
             {folderId ? `Viewing items in ${folderData?.name}` : 'Real-time orchestration and intelligence view'}
           </Text>
         </div>
         <Space>
           <Input 
-            prefix={<SearchOutlined style={{ opacity: 0.5 }} />}
+            prefix={<SearchOutlined style={{ color: 'var(--color-primary)' }} />}
             placeholder="Quick search..."
-            style={{ width: 240 }}
+            style={{ width: 240, fontWeight: 500 }}
             className="glass-effect"
             onChange={(e) => handleFilterChange('q', e.target.value)}
           />
@@ -246,7 +256,7 @@ export default function TicketListPage() {
       <Card className="glass-effect" bodyStyle={{ padding: 0 }}>
         <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border-primary)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <Space size="middle" wrap>
-            <FilterOutlined style={{ opacity: 0.5 }} />
+            <FilterOutlined style={{ color: 'var(--color-primary)', marginRight: '8px' }} />
             <Select
               placeholder="Status"
               allowClear

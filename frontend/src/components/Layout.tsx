@@ -44,7 +44,7 @@ const HeroBanner = designSystemStyled.div`
     left: -10%;
     width: 40%;
     height: 200%;
-    background: radial-gradient(circle, rgba(var(--color-primary-rgb), 0.05) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--color-bg-trail) 0%, transparent 70%);
     pointer-events: none;
   }
 `
@@ -106,7 +106,7 @@ const StyledFooter = designSystemStyled.footer`
   bottom: 0;
   z-index: 1000;
   padding: 12px 40px;
-  background: rgba(var(--color-bg-surface-rgb, 255, 255, 255), 0.8);
+  background: var(--color-theme-overlay);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--color-border-primary);
@@ -116,7 +116,7 @@ const StyledFooter = designSystemStyled.footer`
   color: var(--color-text-secondary);
   font-size: 13px;
   height: 64px;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -4px 12px var(--color-bg-trail);
   
   /* Transition for light/dark mode changes */
   transition: background 0.3s ease, border-color 0.3s ease;
@@ -239,7 +239,7 @@ export default function Layout() {
             {!isMobile && (
               <Breadcrumb
                 items={breadcrumbItems}
-                style={{ marginLeft: '12px', fontSize: '13px', opacity: 0.8 }}
+                style={{ marginLeft: '12px', fontSize: '13px', fontWeight: 500, color: 'var(--color-text-secondary)' }}
               />
             )}
           </Space>
@@ -302,9 +302,9 @@ export default function Layout() {
               </Text>
             </div>
             <Title level={2} style={{ margin: '4px 0 0', fontWeight: 800, fontSize: '28px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
-              AI Powered Intelligent Ticket Routing <span style={{ fontWeight: 400, opacity: 0.6 }}>powered by LLM</span>
+              AI Powered Intelligent Ticket Routing <span style={{ fontWeight: 500, color: 'var(--color-text-secondary)' }}>powered by LLM</span>
             </Title>
-            <Text type="secondary" style={{ fontSize: '14px', opacity: 0.7 }}>
+            <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
               Enterprise-Grade AI Classification & Automated Resolution Engine
             </Text>
           </HeroBanner>
@@ -321,8 +321,8 @@ export default function Layout() {
                 <div style={{ width: 24, height: 24, background: 'var(--color-primary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '10px' }}>IQ</div>
                 <Text strong style={{ fontSize: '14px', letterSpacing: '-0.02em', color: 'var(--color-primary)' }}>INDIGO IQ</Text>
               </div>
-              <Space size="middle" style={{ opacity: 0.6 }}>
-                <Text style={{ fontSize: '11px' }}>© 2026 Indigo Intelligence Hub</Text>
+              <Space size="middle" style={{ opacity: 0.9 }}>
+                <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>© 2026 Indigo Intelligence Hub</Text>
                 <Tag bordered={false} style={{ fontSize: '9px', borderRadius: '4px', background: 'var(--color-bg-secondary)', color: 'var(--color-primary)' }}>v2.9.0-CALIBRATION</Tag>
               </Space>
             </div>

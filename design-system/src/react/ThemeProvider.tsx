@@ -140,6 +140,8 @@ function generateAntdTheme(themeMode: ThemeMode): AntdThemeConfig {
       
       // Text colors
       colorText: tokens.color.theme.text,
+      colorTextHeading: tokens.color.theme.text,
+      colorTextDescription: tokens.color.theme.textMuted,
       colorTextSecondary: tokens.color.theme.textMuted,
       colorTextTertiary: tokens.color.theme.textMuted,
       colorTextQuaternary: tokens.color.theme.textMuted,

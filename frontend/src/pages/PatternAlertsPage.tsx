@@ -89,7 +89,7 @@ export default function PatternAlertsPage() {
       key: 'srno',
       width: 85,
       render: (_: any, __: any, index: number) => (
-        <Text style={{ opacity: 0.5, fontSize: '11px', whiteSpace: 'nowrap' }}>
+        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
           {index + 1}
         </Text>
       ),
@@ -105,13 +105,13 @@ export default function PatternAlertsPage() {
             count={count} 
             overflowCount={99}
             style={{ 
-              backgroundColor: count > 10 ? '#ef4444' : '#f59e0b',
-              boxShadow: count > 10 ? '0 0 10px rgba(239, 68, 68, 0.4)' : 'none',
+              backgroundColor: count > 10 ? 'var(--color-text-danger)' : 'var(--color-text-warning)',
+              boxShadow: count > 10 ? '0 0 10px var(--color-bg-trail)' : 'none',
               fontSize: '10px',
               fontWeight: 700
             }} 
           />
-          <Text style={{ fontSize: '11px', opacity: 0.5 }}>TICKETS</Text>
+          <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 700 }}>TICKETS</Text>
         </div>
       ),
     },
@@ -124,7 +124,7 @@ export default function PatternAlertsPage() {
           <Text strong style={{ color: 'var(--color-text-primary)', fontSize: '14px', display: 'block', marginBottom: '4px' }}>
             {text}
           </Text>
-          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', opacity: 0.8 }}>
+          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
             Anomalous recurring issue trend detected by LLM
           </Text>
         </div>
@@ -157,7 +157,7 @@ export default function PatternAlertsPage() {
       render: () => {
         const score = 0.94
         const percentage = (score * 100).toFixed(1)
-        const color = '#10b981'
+        const color = 'var(--color-text-success)'
         return (
           <div style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -226,10 +226,10 @@ export default function PatternAlertsPage() {
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-            <BellOutlined style={{ color: '#ef4444', marginRight: '12px' }} />
+            <BellOutlined style={{ color: 'var(--color-text-danger)', marginRight: '12px' }} />
             Intelligence Alerts
           </Title>
-          <Text type="secondary" style={{ fontSize: '13px' }}>LLM-driven pattern recognition for recurring service anomalies</Text>
+          <Text style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>LLM-driven pattern recognition for recurring service anomalies</Text>
         </div>
         <Button 
           onClick={() => refetch()} 

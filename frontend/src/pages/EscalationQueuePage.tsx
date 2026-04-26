@@ -97,7 +97,7 @@ export default function EscalationQueuePage() {
       key: 'srno',
       width: 85,
       render: (_: any, __: any, index: number) => (
-        <Text style={{ opacity: 0.5, fontSize: '11px', whiteSpace: 'nowrap' }}>
+        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
           {index + 1}
         </Text>
       ),
@@ -166,7 +166,7 @@ export default function EscalationQueuePage() {
       width: 140,
       render: (score: number) => {
         const percentage = (score * 100).toFixed(1)
-        const color = score > 0.8 ? '#10b981' : score > 0.5 ? '#f59e0b' : '#ef4444'
+        const color = score > 0.8 ? 'var(--color-text-success)' : score > 0.5 ? 'var(--color-text-warning)' : 'var(--color-text-danger)'
         return (
           <div style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -219,10 +219,10 @@ export default function EscalationQueuePage() {
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-            <WarningOutlined style={{ color: '#f59e0b', marginRight: '12px' }} />
+            <WarningOutlined style={{ color: 'var(--color-text-warning)', marginRight: '12px' }} />
             Escalation Queue
           </Title>
-          <Text type="secondary" style={{ fontSize: '13px' }}>Manage high-priority tickets requiring manual intervention</Text>
+          <Text style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Manage high-priority tickets requiring manual intervention</Text>
         </div>
         <Space>
           <Button 

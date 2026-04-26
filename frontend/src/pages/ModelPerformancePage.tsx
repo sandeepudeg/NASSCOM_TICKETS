@@ -47,7 +47,7 @@ export default function ModelPerformancePage() {
       title: <div style={{ whiteSpace: 'nowrap' }}>Sr. No.</div>,
       key: 'serial',
       width: 85,
-      render: (_, __, index) => <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{index + 1}</Text>,
+      render: (_, __, index) => <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>{index + 1}</Text>,
     },
     {
       title: 'Classification Category',
@@ -118,7 +118,7 @@ export default function ModelPerformancePage() {
           <Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
             Model Analytics
           </Title>
-          <Text type="secondary" style={{ fontSize: '14px' }}>Technical performance metrics and LLM-judge validation results</Text>
+          <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Technical performance metrics and LLM-judge validation results</Text>
         </div>
         {data?.last_updated && (
           <Tag icon={<SyncOutlined spin={isLoading} />} style={{ borderRadius: '4px', padding: '4px 12px' }}>
@@ -131,54 +131,54 @@ export default function ModelPerformancePage() {
         <Col xs={24} md={6}>
           <Card className="glass-effect">
             <Statistic
-              title={<Text strong style={{ opacity: 0.6 }}>MACRO F1 SCORE</Text>}
+              title={<Text strong style={{ color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>MACRO F1 SCORE</Text>}
               value={(data?.macro_f1 || 0) * 100}
               precision={2}
               suffix="%"
               prefix={<TrophyOutlined style={{ color: 'var(--color-primary)', marginRight: '8px' }} />}
               valueStyle={{ color: 'var(--color-primary)', fontWeight: 800, fontSize: '28px' }}
             />
-            <div style={{ marginTop: '12px', fontSize: '11px', opacity: 0.5 }}>System-wide classification accuracy target: ≥ 80%</div>
+            <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>System-wide classification accuracy target: ≥ 80%</div>
           </Card>
         </Col>
 
         <Col xs={24} md={6}>
           <Card className="glass-effect">
             <Statistic
-              title={<Text strong style={{ opacity: 0.6 }}>SEMANTIC CERTAINTY</Text>}
+              title={<Text strong style={{ color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>SEMANTIC CERTAINTY</Text>}
               value={(data?.semantic_similarity || 0) * 100}
               precision={2}
               suffix="%"
               prefix={<BarChartOutlined style={{ color: '#10b981', marginRight: '8px' }} />}
               valueStyle={{ color: '#10b981', fontWeight: 800, fontSize: '28px' }}
             />
-            <div style={{ marginTop: '12px', fontSize: '11px', opacity: 0.5 }}>Vector embedding precision target: ≥ 70%</div>
+            <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Vector embedding precision target: ≥ 70%</div>
           </Card>
         </Col>
 
         <Col xs={24} md={6}>
           <Card className="glass-effect">
             <Statistic
-              title={<Text strong style={{ opacity: 0.6 }}>HALLUCINATION RATE</Text>}
+              title={<Text strong style={{ color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>HALLUCINATION RATE</Text>}
               value={(data?.hallucination_rate || 0.02) * 100}
               precision={1}
               suffix="%"
               prefix={<BulbOutlined style={{ color: '#ef4444', marginRight: '8px' }} />}
               valueStyle={{ color: '#ef4444', fontWeight: 800, fontSize: '28px' }}
             />
-            <div style={{ marginTop: '12px', fontSize: '11px', opacity: 0.5 }}>Target threshold: ≤ 5.0%</div>
+            <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Target threshold: ≤ 5.0%</div>
           </Card>
         </Col>
 
         <Col xs={24} md={6}>
           <Card className="glass-effect">
             <Statistic
-              title={<Text strong style={{ opacity: 0.6 }}>DOMAINS MAPPED</Text>}
+              title={<Text strong style={{ color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>DOMAINS MAPPED</Text>}
               value={categoryMetrics.length}
               prefix={<SyncOutlined style={{ color: '#8b5cf6', marginRight: '8px' }} />}
               valueStyle={{ color: '#8b5cf6', fontWeight: 800, fontSize: '28px' }}
             />
-            <div style={{ marginTop: '12px', fontSize: '11px', opacity: 0.5 }}>Active neural paths for classification</div>
+            <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Active neural paths for classification</div>
           </Card>
         </Col>
       </Row>
