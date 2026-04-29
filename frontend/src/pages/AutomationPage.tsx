@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -23,9 +24,12 @@ const PageContainer = designSystemStyled.div`
 
 export default function AutomationPage() {
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 25
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['automation-candidates'],
-    queryFn: () => classificationApi.getAutomationCandidates({ limit: 50 }),
+    queryFn: () => classificationApi.getAutomationCandidates({ limit: 500 }),
   })
 
   const handleExport = () => {
@@ -42,7 +46,7 @@ export default function AutomationPage() {
       width: 85,
       render: (_: any, __: any, index: number) => (
         <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
-          {index + 1}
+          {(currentPage - 1) * PAGE_SIZE + index + 1}
         </Text>
       ),
     },
@@ -223,7 +227,15 @@ export default function AutomationPage() {
           dataSource={data?.automation_candidates || []}
           columns={columns}
           rowKey="id"
-          pagination={{ pageSize: 15, position: ['bottomRight'] }}
+          pagination={{
+            current: currentPage,
+            pageSize: PAGE_SIZE,
+            total: data?.total || (data?.automation_candidates || []).length,
+            showSizeChanger: false,
+            onChange: (page) => setCurrentPage(page),
+            position: ['bottomCenter'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} candidates`
+          }}
           className="high-density-table"
           locale={{ 
             emptyText: (

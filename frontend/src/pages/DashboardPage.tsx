@@ -496,7 +496,7 @@ const DashboardPage = () => {
 
   const { data: ticketsData, refetch: refetchTickets } = useQuery({
     queryKey: ['tickets-summary'],
-    queryFn: () => ticketsApi.list({ limit: 10 }),
+    queryFn: () => ticketsApi.list({ page_size: 10 }),
     ...queryOptions,
   })
 

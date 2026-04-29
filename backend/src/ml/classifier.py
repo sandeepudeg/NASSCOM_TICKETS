@@ -160,7 +160,7 @@ Return ONLY a JSON object with:
 - "impact_score": Detect business impact (0.0=Low/Personal, 1.0=Critical/Widespread/Multiple Users)
 - "complexity": Estimate resolution difficulty from 1 (Simple/Known) to 5 (Deep Debugging/System-wide)
 
-Example: {"category": "Application", "confidence": 0.85, "sentiment_score": 0.4, "impact_score": 0.2, "complexity": 3}
+Example: {{"category": "Application", "confidence": 0.85, "sentiment_score": 0.4, "impact_score": 0.2, "complexity": 3}}
 """
 
         try:
@@ -194,15 +194,18 @@ Example: {"category": "Application", "confidence": 0.85, "sentiment_score": 0.4,
                 record_classifier_prediction(category.value, confidence)
 
                 # Shadow Evaluation (Judge) - optional: could be deferred but requested for creation flow
-                # We only evaluate if we have a successful classification
-                evaluation_matrix = await evaluation_service.evaluate_ticket_processing(
-                    title=title,
-                    description=description,
-                    category=category,
-                    resolution_steps=[],  # Will be filled if RAG runs, or just empty for now
-                    confidence_score=confidence,
-                    enable_judge=enable_judge,
-                )
+                # We only evaluate if explicitly enabled to save time during high-load periods
+                if enable_judge:
+                    evaluation_matrix = await evaluation_service.evaluate_ticket_processing(
+                        title=title,
+                        description=description,
+                        category=category,
+                        resolution_steps=[],  # Will be filled if RAG runs, or just empty for now
+                        confidence_score=confidence,
+                        enable_judge=enable_judge,
+                    )
+                else:
+                    evaluation_matrix = None
 
         except TimeoutError:
             category = Category.APPLICATION

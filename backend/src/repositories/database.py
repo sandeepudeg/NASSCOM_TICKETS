@@ -111,28 +111,24 @@ async def init_db() -> None:
     try:
         import os
         seed_file = "tickets_seed.json"
-        _log.info(f"Checking for seed file at {os.path.abspath(seed_file)}...")
         
-        if os.path.exists(seed_file) or os.getenv("RESET_DB") == "true":
-            _log.info("Detected tickets_seed.json or RESET_DB=true. Initiating data migration...")
-            await seed_from_json()
-        else:
-            _log.info("No seed file found. Proceeding with standard folder check.")
-            await seed_department_folders()
+        async with async_session_maker() as session:
+            from sqlalchemy import func, select
+            from src.repositories.models import Ticket
+            count_stmt = select(func.count()).select_from(Ticket)
+            result = await session.execute(count_stmt)
+            ticket_count = result.scalar() or 0
             
-            # Auto-seed if database is empty
-            async with async_session_maker() as session:
-                from sqlalchemy import func, select
-                from src.repositories.models import Ticket
-                count_stmt = select(func.count()).select_from(Ticket)
-                result = await session.execute(count_stmt)
-                ticket_count = result.scalar() or 0
-                
-                if ticket_count == 0:
+            if ticket_count == 0:
+                if os.path.exists(seed_file) or os.getenv("RESET_DB") == "true":
+                    _log.info("Database is empty and seed file found. Initiating data migration...")
+                    await seed_from_json()
+                else:
                     _log.info("Database is empty. Initializing enterprise-scale seed data...")
                     await seed_test_tickets()
-                else:
-                    _log.info(f"Database contains {ticket_count} tickets. Skipping auto-seed.")
+            else:
+                _log.info(f"Database contains {ticket_count} tickets. Skipping auto-seed.")
+                await seed_department_folders()
     except Exception as e:
         _log.warning(f"init_db: seeding skipped: {e}")
 
@@ -241,8 +237,34 @@ async def seed_from_json() -> None:
                         a_data[k] = datetime.fromisoformat(v)
                 session.add(TicketFolderAssignment(**a_data))
                 
+            # Load Embeddings
+            if "embeddings" in data:
+                _log.info(f"Loading {len(data['embeddings'])} embeddings...")
+                for e_data in data["embeddings"]:
+                    for k, v in e_data.items():
+                        if k == "created_at" and v:
+                            e_data[k] = datetime.fromisoformat(v)
+                    session.add(TicketEmbedding(**e_data))
+            
+            # Load Pattern Alerts
+            if "pattern_alerts" in data:
+                _log.info(f"Loading {len(data['pattern_alerts'])} pattern alerts...")
+                for p_data in data["pattern_alerts"]:
+                    for k, v in p_data.items():
+                        if k in ["created_at", "acknowledged_at", "snooze_until"] and v:
+                            p_data[k] = datetime.fromisoformat(v)
+                    session.add(PatternAlert(**p_data))
+            
+            # Load Overrides
+            if "overrides" in data:
+                _log.info(f"Loading {len(data['overrides'])} overrides...")
+                for o_data in data["overrides"]:
+                    if o_data.get("timestamp"):
+                        o_data["timestamp"] = datetime.fromisoformat(o_data["timestamp"])
+                    session.add(AgentOverride(**o_data))
+            
             await session.commit()
-            _log.info(f"Data migration successful: Loaded {len(data['tickets'])} tickets from local state.")
+            _log.info(f"Data migration successful: Loaded {len(data['tickets'])} tickets and intelligence layers.")
         except Exception as e:
             _log.error(f"Migration failed: {e}")
             await session.rollback()
@@ -408,7 +430,9 @@ async def seed_test_tickets() -> None:
             patterns = [
                 ("Infrastructure", "Core Switch Failure - Region-A", ["TICK-INF-1001", "TICK-INF-1002", "TICK-INF-1003"]),
                 ("Security", "Auth API Attack Pattern", ["TICK-SEC-1010", "TICK-SEC-1011", "TICK-SEC-1012"]),
-                ("Network", "Regional CDN Outage", ["TICK-NET-1005", "TICK-NET-1006", "TICK-NET-1007"])
+                ("Network", "Regional CDN Outage", ["TICK-NET-1005", "TICK-NET-1006", "TICK-NET-1007"]),
+                ("Application", "Payment Gateway 500 Errors", ["TICK-APP-1000", "TICK-APP-1001", "TICK-APP-1002"]),
+                ("Database", "Postgres Connection Pool Exhaustion", ["TICK-DAT-1005", "TICK-DAT-1006", "TICK-DAT-1007"])
             ]
             for cat, ptitle, numbers in patterns:
                 ids = [t.id for t in all_tickets if t.ticket_number in numbers]

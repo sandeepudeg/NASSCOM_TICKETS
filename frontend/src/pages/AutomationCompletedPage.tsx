@@ -62,10 +62,12 @@ const ReportContainer = designSystemStyled.div`
 export default function AutomationCompletedPage() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [drawerVisible, setDrawerVisible] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 25
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['automation-archive'],
-    queryFn: () => classificationApi.getAutomationArchive({ limit: 50 }),
+    queryFn: () => classificationApi.getAutomationArchive({ limit: 500 }),
   })
 
   const handleReviewAudit = (ticket: any) => {
@@ -80,7 +82,7 @@ export default function AutomationCompletedPage() {
       width: 85,
       render: (_: any, __: any, index: number) => (
         <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
-          {index + 1}
+          {(currentPage - 1) * PAGE_SIZE + index + 1}
         </Text>
       ),
     },
@@ -184,9 +186,18 @@ export default function AutomationCompletedPage() {
       <Card className="glass-effect" bodyStyle={{ padding: 0 }} style={{ borderTop: '4px solid #10b981' }}>
         <Table
           dataSource={data?.automation_archive || []}
+          loading={isLoading}
           columns={columns}
           rowKey="id"
-          pagination={{ pageSize: 12 }}
+          pagination={{
+            current: currentPage,
+            pageSize: PAGE_SIZE,
+            total: data?.total || (data?.automation_archive || []).length,
+            showSizeChanger: false,
+            onChange: (page) => setCurrentPage(page),
+            position: ['bottomCenter'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} completed`
+          }}
           locale={{ emptyText: <Empty description="No completed automations found." /> }}
         />
       </Card>

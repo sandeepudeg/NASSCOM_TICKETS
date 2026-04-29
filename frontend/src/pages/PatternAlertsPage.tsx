@@ -61,6 +61,39 @@ export default function PatternAlertsPage() {
     },
   })
 
+  const [isDetecting, setIsDetecting] = useState(false)
+  const [isSeeding, setIsSeeding] = useState(false)
+
+  const handleDetectPatterns = async () => {
+    setIsDetecting(true)
+    try {
+      await classificationApi.detectPatterns()
+      message.success('Pattern detection completed')
+      queryClient.invalidateQueries({ queryKey: ['pattern-alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['alerts-count'] })
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || 'Failed to detect patterns')
+    } finally {
+      setIsDetecting(false)
+    }
+  }
+
+  const handleSeedDemoData = async () => {
+    setIsSeeding(true)
+    try {
+      await classificationApi.resetDatabase()
+      message.success('Enterprise demo data seeded successfully')
+      queryClient.invalidateQueries({ queryKey: ['pattern-alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['alerts-count'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-count'] })
+      queryClient.invalidateQueries({ queryKey: ['folders-stats'] })
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || 'Failed to seed demo data')
+    } finally {
+      setIsSeeding(false)
+    }
+  }
+
   const handleAction = (alert: PatternAlert, action: 'acknowledge' | 'snooze' | 'dismiss') => {
     setSelectedAlert(alert)
     setActionType(action)
@@ -232,11 +265,12 @@ export default function PatternAlertsPage() {
           <Text style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>LLM-driven pattern recognition for recurring service anomalies</Text>
         </div>
         <Button 
-          onClick={() => refetch()} 
-          icon={<SyncOutlined />}
+          onClick={handleDetectPatterns} 
+          icon={<SyncOutlined spin={isDetecting} />}
+          loading={isDetecting}
           className="glass-effect"
         >
-          Check for Patterns
+          {isDetecting ? 'Analyzing...' : 'Check for Patterns'}
         </Button>
       </div>
 
@@ -251,7 +285,25 @@ export default function PatternAlertsPage() {
           locale={{ 
             emptyText: (
               <div style={{ padding: '48px 0', textAlign: 'center' }}>
-                <Empty description={<Text type="secondary">no data available for show kindly add tickets</Text>} />
+                <Empty 
+                  description={
+                    <div style={{ marginTop: '16px' }}>
+                      <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>
+                        No intelligence patterns detected in the current ticket pool.
+                      </Text>
+                      <Button 
+                        type="primary" 
+                        icon={<SyncOutlined />} 
+                        onClick={handleSeedDemoData}
+                        loading={isSeeding}
+                        className="glass-effect"
+                        style={{ background: 'var(--color-primary)', border: 'none' }}
+                      >
+                        Seed Enterprise Demo Data
+                      </Button>
+                    </div>
+                  } 
+                />
               </div>
             ) 
           }}

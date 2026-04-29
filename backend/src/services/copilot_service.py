@@ -59,6 +59,28 @@ Return ONLY the 3 bullet points, each on a new line starting with a dash (-).
             logger.error("copilot.draft_failed", error=str(e), ticket_id=ticket_id)
             return {"draft": "Failed to generate draft. Please try again."}
 
+    async def polish_text(self, text: str) -> dict:
+        """
+        Refines and polishes a ticket description to be more professional and readable.
+        """
+        if not text:
+            return {"polished_text": ""}
+
+        prompt = f"""You are a professional IT support coordinator. Polish the following ticket description to be more professional, concise, and technically clear. 
+Improve the formatting (use bullet points if applicable) and fix any grammatical errors. 
+
+Original Description:
+{text}
+
+Return ONLY the polished description text.
+"""
+        try:
+            polished = await rag_service._get_llm_response(prompt)
+            return {"polished_text": polished.strip()}
+        except Exception as e:
+            logger.error("copilot.polish_failed", error=str(e))
+            return {"polished_text": text}  # Fallback to original
+
     async def _get_ticket(self, ticket_id: str) -> Ticket:
         result = await self.session.execute(select(Ticket).where(Ticket.id == ticket_id))
         return result.scalar_one_or_none()

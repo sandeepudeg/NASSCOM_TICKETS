@@ -81,4 +81,16 @@ export const classificationApi = {
     const response = await apiClient.get('/classification/automation-archive', { params })
     return response.data
   },
+
+  // Detect patterns
+  detectPatterns: async (): Promise<{ alerts: PatternAlert[] }> => {
+    const response = await apiClient.post('/classification/pattern-alerts/detect')
+    return response.data
+  },
+
+  // Reset and seed database
+  resetDatabase: async (): Promise<{ status: string; message: string }> => {
+    const response = await apiClient.get('/debug/reset')
+    return response.data
+  },
 }

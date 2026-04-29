@@ -55,7 +55,7 @@ async def create_ticket(
 @router.get("", response_model=TicketListResponse)
 async def list_tickets(
     page_size: int = Query(25, ge=1, le=200),
-    cursor: str | None = Query(None),
+    page: int = Query(1, ge=1),
     status: str | None = Query(None),
     category: str | None = Query(None),
     routing_status: str | None = Query(None),
@@ -68,7 +68,7 @@ async def list_tickets(
     service = TicketService(db)
     params = TicketPaginationParams(
         page_size=page_size,
-        cursor=cursor,
+        page=page,
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
@@ -318,6 +318,10 @@ async def import_tickets(
 
         return result
     except Exception as e:
+        import traceback
+        import structlog
+        logger = structlog.get_logger("api.import")
+        logger.error("import.endpoint_failed", error=str(e), traceback=traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -501,3 +505,16 @@ async def dispatch_drafts(
         x_user_id,
         x_forwarded_for.split(",")[0] if x_forwarded_for else None,
     )
+
+
+@router.post("/polish-description", tags=["Intelligence"])
+async def polish_description(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Polishes the provided text to be more professional and readable.
+    """
+    text = payload.get("text", "")
+    service = CopilotService(db)
+    return await service.polish_text(text)

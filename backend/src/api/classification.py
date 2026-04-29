@@ -15,6 +15,7 @@ from src.schemas.ticket import (
     TicketBase,
     TicketListResponse,
     TicketResponse,
+    OverrideRequest,
 )
 from src.services.converters import ticket_to_response
 
@@ -113,8 +114,7 @@ async def classify_ticket(
 @router.post("/tickets/{ticket_id}/override", response_model=TicketResponse)
 async def override_category(
     ticket_id: str,
-    new_category: Category,
-    x_user_id: str = Header(default="system"),
+    override_data: OverrideRequest,
     x_forwarded_for: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
@@ -123,8 +123,8 @@ async def override_category(
     service = TicketService(db)
     return await service.override_category(
         ticket_id,
-        new_category,
-        x_user_id,
+        override_data.corrected_category,
+        override_data.agent_id,
         x_forwarded_for.split(",")[0] if x_forwarded_for else None,
     )
 
@@ -132,12 +132,14 @@ async def override_category(
 @router.get("/escalations", response_model=TicketListResponse)
 async def get_escalation_queue(
     page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
     ticket_repo = TicketRepository(db)
-    tickets, next_cursor = await ticket_repo.list_tickets(
+    tickets = await ticket_repo.list_tickets(
         routing_status="escalated",
         page_size=page_size,
+        page=page,
         sort_by="created_at",
         sort_dir="asc",
     )
@@ -149,9 +151,14 @@ async def get_escalation_queue(
     total_result = await db.execute(total_query)
     total = total_result.scalar() or 0
     
+    import math
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+    
     return {
         "escalations": [ticket_to_response(t) for t in tickets],
-        "next_cursor": next_cursor,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
         "total": total,
     }
 
@@ -183,19 +190,95 @@ async def get_pattern_alerts(
     ]
 
     return {"alerts": pattern_alerts}
+    
+
+@router.post("/pattern-alerts/detect", response_model=PatternAlertResponse)
+async def detect_new_patterns(
+    db: AsyncSession = Depends(get_db),
+):
+    """Manually trigger pattern detection logic on existing tickets."""
+    import structlog
+    logger = structlog.get_logger("api.classification")
+    
+    try:
+        ticket_repo = TicketRepository(db)
+        alert_repo = PatternAlertRepository(db)
+        
+        # 1. Fetch recent tickets with embeddings
+        tickets = await ticket_repo.get_tickets_with_embeddings(limit=500)
+        logger.info("detect.tickets_fetched", count=len(tickets))
+        
+        if not tickets:
+            return {"alerts": []}
+        
+        # 2. Run detection logic
+        from src.ml.pattern_detection import pattern_detection_service
+        new_alerts_data = await pattern_detection_service.detect_patterns(tickets)
+        logger.info("detect.patterns_analyzed", new_count=len(new_alerts_data))
+        
+        # 3. Save new alerts (avoiding duplicates)
+        existing_alerts = await alert_repo.list_active(page_size=100)
+        existing_titles = {a.representative_title for a in existing_alerts}
+        
+        for alert_data in new_alerts_data:
+            if alert_data["representative_title"] not in existing_titles:
+                await alert_repo.create(
+                    cluster_size=alert_data["cluster_size"],
+                    representative_title=alert_data["representative_title"],
+                    category=alert_data["category"],
+                    time_window_days=alert_data["time_window_days"],
+                    ticket_ids=alert_data["ticket_ids"]
+                )
+        
+        await db.commit()
+        
+        # 4. Return all active alerts
+        all_active = await alert_repo.list_active()
+        
+        pattern_alerts = []
+        for alert in all_active:
+            try:
+                ids = json.loads(alert.ticket_ids_json) if alert.ticket_ids_json else []
+                pattern_alerts.append(
+                    PatternAlert(
+                        id=alert.id,
+                        cluster_size=alert.cluster_size,
+                        representative_title=alert.representative_title,
+                        category=alert.category,
+                        time_window_days=alert.time_window_days,
+                        ticket_ids=ids,
+                        status=alert.status,
+                        snooze_until=alert.snooze_until,
+                        created_at=alert.created_at,
+                        acknowledged_at=alert.acknowledged_at,
+                    )
+                )
+            except Exception as e:
+                logger.error("detect.serialization_error", alert_id=alert.id, error=str(e))
+                continue
+
+        return {"alerts": pattern_alerts}
+    except Exception as e:
+        logger.error("detect.failed", error=str(e))
+        import traceback
+        logger.error("detect.traceback", tb=traceback.format_exc())
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Pattern detection failed: {str(e)}")
 
 
 @router.get("/automation-candidates", response_model=TicketListResponse)
 async def get_automation_candidates(
     page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
     ticket_repo = TicketRepository(db)
     # Only show OPEN tickets as candidates
-    tickets, next_cursor = await ticket_repo.list_tickets(
+    tickets = await ticket_repo.list_tickets(
         is_automation_candidate=True,
         status="open",
         page_size=page_size,
+        page=page,
         sort_by="created_at",
         sort_dir="desc",
     )
@@ -210,9 +293,14 @@ async def get_automation_candidates(
     total_result = await db.execute(total_query)
     total = total_result.scalar() or 0
 
+    import math
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+
     return {
         "automation_candidates": [ticket_to_response(t) for t in tickets],
-        "next_cursor": next_cursor,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
         "total": total,
     }
 
@@ -220,14 +308,16 @@ async def get_automation_candidates(
 @router.get("/automation-archive", response_model=TicketListResponse)
 async def get_automation_archive(
     page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieve all tickets that have successfully completed automation."""
     ticket_repo = TicketRepository(db)
-    tickets, next_cursor = await ticket_repo.list_tickets(
+    tickets = await ticket_repo.list_tickets(
         automation_status="completed",
         page_size=page_size,
-        sort_by="resolved_at",
+        page=page,
+        sort_by="created_at",
         sort_dir="desc",
     )
     
@@ -238,9 +328,14 @@ async def get_automation_archive(
     total_result = await db.execute(total_query)
     total = total_result.scalar() or 0
 
+    import math
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+
     return {
         "automation_archive": [ticket_to_response(t) for t in tickets],
-        "next_cursor": next_cursor,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
         "total": total,
     }
 

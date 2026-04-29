@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import { Form, Input, Select, Button, Card, message, Space, Alert, Checkbox, Typography, Row, Col } from 'antd'
-import { InfoCircleOutlined, RocketOutlined } from '@ant-design/icons'
+import { Form, Input, Select, Button, Card, message, Space, Typography, Row, Col, Checkbox } from 'antd'
+import { InfoCircleOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { ticketsApi } from '../api/tickets'
-import { useFormPersistence, useFormRestore } from '../auth/useFormPersistence'
 import { designSystemStyled } from '@ticketiq/design-system'
 import type { CreateTicketRequest } from '../api/types'
 
@@ -43,29 +42,31 @@ export default function TicketSubmissionForm() {
   const navigate = useNavigate()
   const [form] = Form.useForm()
   const [inputFormat, setInputFormat] = useState<string>('text')
-  const [showRestoredNotice, setShowRestoredNotice] = useState(false)
+  const [isPolishing, setIsPolishing] = useState(false)
 
-  const restoredData = useFormRestore<any>(FORM_ID)
-  const formValues = Form.useWatch([], form)
-  const { clear } = useFormPersistence(FORM_ID, formValues, true)
-
-  useEffect(() => {
-    if (restoredData) {
-      form.setFieldsValue(restoredData)
-      if (restoredData.input_format) {
-        setInputFormat(restoredData.input_format)
-      }
-      setShowRestoredNotice(true)
-      const timeoutId = setTimeout(() => setShowRestoredNotice(false), 5000)
-      return () => clearTimeout(timeoutId)
+  const handlePolish = async () => {
+    const text = form.getFieldValue('incident_description_unique')
+    if (!text) {
+      message.warning('Please enter some text to polish first')
+      return
     }
-  }, [restoredData, form])
+
+    setIsPolishing(true)
+    try {
+      const { polished_text } = await ticketsApi.polishDescription(text)
+      form.setFieldsValue({ incident_description_unique: polished_text })
+      message.success('Description polished and formatted!')
+    } catch (error) {
+      message.error('Failed to polish description')
+    } finally {
+      setIsPolishing(false)
+    }
+  }
 
   const createTicketMutation = useMutation({
     mutationFn: (data: CreateTicketRequest) => ticketsApi.create(data),
     onSuccess: (response) => {
       message.success('Ticket submitted successfully')
-      clear()
       navigate(`/tickets/${response.id}`)
     },
     onError: (error: any) => {
@@ -75,16 +76,16 @@ export default function TicketSubmissionForm() {
 
   const handleSubmit = (values: any) => {
     const payload: CreateTicketRequest = {
-      title: values.title,
-      description: values.description,
-      priority: values.priority,
-      source_channel: values.source_channel,
-      enable_judge: values.enable_judge,
+      title: values.incident_title_unique,
+      description: values.incident_description_unique,
+      priority: values.incident_priority_unique,
+      source_channel: values.incident_channel_unique,
+      enable_judge: values.enable_judge_unique,
     }
 
-    if (inputFormat !== 'text' && values.raw_payload) {
+    if (inputFormat !== 'text' && values.incident_payload_unique) {
       try {
-        payload.structured_payload = JSON.parse(values.raw_payload)
+        payload.structured_payload = JSON.parse(values.incident_payload_unique)
       } catch (error) {
         message.error('Invalid JSON in payload')
         return
@@ -97,48 +98,53 @@ export default function TicketSubmissionForm() {
   return (
     <PageContainer>
       <div style={{ marginBottom: '32px' }}>
-        <Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
-          Create New Ticket
-        </Title>
-        <Text type="secondary" style={{ fontSize: '14px' }}>Submit an incident or service request for intelligent classification</Text>
+        <Title level={4} style={{ margin: 0, fontWeight: 900, fontSize: '18px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>Ticket IQ</Title>
       </div>
-
-      {showRestoredNotice && (
-        <Alert
-          message="Draft Restored"
-          description="We've recovered your unsaved progress from an earlier session."
-          type="info"
-          showIcon
-          closable
-          onClose={() => setShowRestoredNotice(false)}
-          style={{ marginBottom: '24px', borderRadius: '8px' }}
-        />
-      )}
 
       <Card className="glass-effect">
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ priority: 'medium', input_format: 'text', source_channel: 'web', enable_judge: false }}
           requiredMark="optional"
+          autoComplete="off"
         >
           <Form.Item
             label={<Text strong>Incident Title</Text>}
-            name="title"
+            name="incident_title_unique"
             rules={[{ required: true, message: 'Please provide a descriptive title' }]}
           >
-            <Input placeholder="e.g., Unable to access VPN on mobile device" size="large" />
+            <Input 
+              size="large" 
+              autoComplete="off" 
+              spellCheck="false"
+            />
           </Form.Item>
 
           <Form.Item
-            label={<Text strong>Description</Text>}
-            name="description"
+            label={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <Text strong>Description</Text>
+                <Button 
+                  type="text" 
+                  size="small" 
+                  icon={<ThunderboltOutlined style={{ color: '#8b5cf6' }} />} 
+                  onClick={handlePolish}
+                  loading={isPolishing}
+                  style={{ color: '#8b5cf6', fontSize: '11px', fontWeight: 600 }}
+                >
+                  AI Polish & Format
+                </Button>
+              </div>
+            }
+            name="incident_description_unique"
             rules={[{ required: true, message: 'Please describe the issue in detail' }]}
           >
             <TextArea
               rows={5}
-              placeholder="What happened? What were you doing when the issue occurred?"
+              autoComplete="off"
+              spellCheck="false"
+              placeholder="Provide a detailed technical description of the incident..."
             />
           </Form.Item>
 
@@ -146,8 +152,8 @@ export default function TicketSubmissionForm() {
             <Col xs={24} md={12}>
               <Form.Item
                 label={<Text strong>Priority Level</Text>}
-                name="priority"
-                rules={[{ required: true }]}
+                name="incident_priority_unique"
+                rules={[{ required: true, message: 'Priority is required' }]}
               >
                 <Select size="large">
                   {PRIORITIES.map((p) => (
@@ -162,7 +168,11 @@ export default function TicketSubmissionForm() {
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item label={<Text strong>Submission Channel</Text>} name="source_channel">
+              <Form.Item 
+                label={<Text strong>Submission Channel</Text>} 
+                name="incident_channel_unique"
+                rules={[{ required: true, message: 'Channel is required' }]}
+              >
                 <Select size="large">
                   {CHANNELS.map((ch) => (
                     <Select.Option key={ch.value} value={ch.value}>{ch.label}</Select.Option>
@@ -172,7 +182,11 @@ export default function TicketSubmissionForm() {
             </Col>
           </Row>
 
-          <Form.Item label={<Text strong>Data ingestion format</Text>} name="input_format">
+          <Form.Item 
+            label={<Text strong>Data ingestion format</Text>} 
+            name="incident_format_unique"
+            initialValue="text"
+          >
             <Select onChange={setInputFormat} size="large">
               {INPUT_FORMATS.map((fmt) => (
                 <Select.Option key={fmt.value} value={fmt.value}>{fmt.label}</Select.Option>
@@ -183,7 +197,7 @@ export default function TicketSubmissionForm() {
           {inputFormat !== 'text' && (
             <Form.Item
               label={<Text strong>Structured Data (JSON)</Text>}
-              name="raw_payload"
+              name="incident_payload_unique"
               rules={[
                 { required: true, message: 'Structured data is required for this format' },
                 {
@@ -197,33 +211,24 @@ export default function TicketSubmissionForm() {
             >
               <TextArea
                 rows={8}
-                placeholder={`Paste your ${inputFormat} payload here...`}
                 style={{ fontFamily: 'monospace', fontSize: '13px' }}
               />
             </Form.Item>
           )}
 
-          <div style={{ 
-            background: 'hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.05)', 
-            padding: '16px', 
-            borderRadius: '12px',
-            border: '1px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1)',
-            marginBottom: '24px'
-          }}>
-            <Form.Item name="enable_judge" valuePropName="checked" style={{ marginBottom: 0 }}>
-              <Checkbox>
-                <Space direction="vertical" size={0}>
-                  <Text strong style={{ color: 'var(--color-primary)' }}>
-                    <RocketOutlined style={{ marginRight: '8px' }} />
-                    AI Intelligence Pass (Judge Mode)
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Enable rigorous LLM-based verification to ensure maximum classification accuracy.
-                  </Text>
-                </Space>
-              </Checkbox>
-            </Form.Item>
-          </div>
+          <Form.Item name="enable_judge_unique" valuePropName="checked">
+            <Checkbox>
+              <Space direction="vertical" size={0}>
+                <Text strong style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🚀 AI Intelligence Pass (Judge Mode)
+                </Text>
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  Enable rigorous LLM-based verification to ensure maximum classification accuracy.
+                </Text>
+              </Space>
+            </Checkbox>
+          </Form.Item>
+
 
           <Form.Item style={{ marginBottom: 0 }}>
             <Space size="middle">
@@ -241,11 +246,9 @@ export default function TicketSubmissionForm() {
           </Form.Item>
         </Form>
       </Card>
-      
-      <div style={{ marginTop: '32px', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.5 }}>
-        <InfoCircleOutlined />
-        <Text style={{ fontSize: '12px' }}>Your ticket will be processed using high-confidence vector similarity and LLM classification.</Text>
-      </div>
+      <Space size="middle" style={{ opacity: 0.9, marginTop: '24px' }}>
+        <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>© 2026 Indigo Intelligence Hub</Text>
+      </Space>
     </PageContainer>
   )
 }

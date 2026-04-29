@@ -159,7 +159,7 @@ export default function FolderSidebar() {
   // Fetch all tickets count (just for the count)
   const { data: ticketsData } = useQuery({
     queryKey: ['tickets-count'],
-    queryFn: () => ticketsApi.list({ limit: 1 }),
+    queryFn: () => ticketsApi.list({ page_size: 1 }),
   })
 
   // Fetch escalations count
@@ -189,10 +189,8 @@ export default function FolderSidebar() {
   // Fetch SLA breached count
   const { data: slaBreachData } = useQuery({
     queryKey: ['sla-breach-count'],
-    queryFn: () => ticketsApi.list({ limit: 0, sla_breach: true }),
+    queryFn: () => ticketsApi.list({ page_size: 1, sla_breach: true }),
   })
-
-
 
   const handleFolderClick = (folderId: string) => {
     setSelectedFolderId(folderId)
@@ -370,7 +368,6 @@ export default function FolderSidebar() {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <Title level={4} style={{ margin: 0, fontWeight: 900, fontSize: '18px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>Ticket IQ</Title>
-            <Tag color="blue" bordered={false} style={{ fontSize: '10px', fontWeight: 800, padding: '0 6px', borderRadius: '4px' }}>AI</Tag>
           </div>
         </div>
       </SidebarHeader>
@@ -421,26 +418,7 @@ export default function FolderSidebar() {
           <SafetyCertificateOutlined />
           <span>Master Control</span>
         </div>
-        <div 
-          className="settings-link"
-          style={{ color: 'var(--color-primary)', border: '1px solid rgba(var(--color-primary-rgb), 0.2)', marginBottom: '8px' }}
-          onClick={async () => {
-            try {
-              const res = await (await import('../api/client')).apiClient.get('/debug/reset')
-              if (res.data?.status === 'success') {
-                alert('Success: Database reset and re-seeded from local state.')
-                window.location.reload()
-              } else {
-                alert('Error: ' + res.data?.message)
-              }
-            } catch (err: any) {
-              alert('Failed to reach sync endpoint: ' + err.message)
-            }
-          }}
-        >
-          <ThunderboltOutlined />
-          <span>Sync Local Data</span>
-        </div>
+
         <div 
           className={`settings-link ${location.pathname === '/settings' ? 'active' : ''}`}
           onClick={() => {

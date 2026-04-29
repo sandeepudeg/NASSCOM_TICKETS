@@ -20,7 +20,8 @@ class RoutingService:
         Ensures a departmental folder exists for the given category.
         Standardizes naming as '[Category] Department'.
         """
-        folder_name = f"{category} Department"
+        # Standardized naming to match sidebar (Category only)
+        folder_name = str(category)
 
         # Check if folder already exists
         folder = await self.folder_repo.get_by_name(folder_name, owner_id)

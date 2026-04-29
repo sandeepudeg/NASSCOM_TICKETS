@@ -16,6 +16,7 @@ from src.schemas.ticket import (
     TicketResponse,
 )
 from src.services.converters import ticket_to_response
+from src.services.notification_service import NotificationService
 
 
 class TicketAssignmentService:
@@ -27,6 +28,7 @@ class TicketAssignmentService:
         self.ticket_repo = TicketRepository(session)
         self.assignment_repo = TicketAssignmentRepository(session)
         self.audit_repo = AuditLogRepository(session)
+        self.notification_service = NotificationService(session)
 
     async def assign_ticket(
         self,
@@ -59,6 +61,18 @@ class TicketAssignmentService:
             source_ip=source_ip or "127.0.0.1",
             metadata={"ticket_id": ticket_id},
         )
+
+        # Trigger Notification for Assignment
+        try:
+            await self.notification_service.create_notification(
+                user_id=user_id,
+                notif_type="ticket_classified",
+                title="Ticket Categorized & Routed",
+                message=f"Ticket #{ticket.ticket_number} has been classified as {ticket.category} and routed to the corresponding department.",
+                ticket_id=ticket_id
+            )
+        except Exception:
+            pass
 
         await self.session.commit()
         return {"ticket_id": ticket_id, "folder_id": folder_id, "status": "assigned"}
@@ -188,10 +202,10 @@ class TicketAssignmentService:
         if not folder:
             raise HTTPError.not_found("Folder not found")
 
-        tickets, _ = await self.assignment_repo.get_folder_tickets(
+        tickets = await self.assignment_repo.get_folder_tickets(
             folder_id=folder_id,
             page_size=params.page_size,
-            cursor=params.cursor,
+            page=params.page,
             sort_by=params.sort_by,
             sort_dir=params.sort_dir,
             status=status,
@@ -210,4 +224,7 @@ class TicketAssignmentService:
             intelligence_priority=intelligence_priority,
         )
  
-        return [ticket_to_response(t) for t in tickets], total
+        import math
+        total_pages = math.ceil(total / params.page_size) if total > 0 else 0
+ 
+        return [ticket_to_response(t) for t in tickets], total, total_pages

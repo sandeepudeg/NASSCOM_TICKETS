@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from config.observability import setup_observability
-from src.api import auth, classification, compliance, escalations, folders, health, model_metrics, tickets, analytics
+from src.api import auth, classification, compliance, escalations, folders, health, model_metrics, tickets, analytics, notifications
 from src.repositories.database import close_db, init_db, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.errors import HTTPError, ProblemDetail
@@ -117,6 +117,7 @@ app.include_router(auth.router, prefix=settings.api_v1_prefix + "/auth")
 app.include_router(model_metrics.router, prefix=settings.api_v1_prefix)
 app.include_router(compliance.router, prefix=settings.api_v1_prefix)
 app.include_router(analytics.router, prefix=settings.api_v1_prefix)
+app.include_router(notifications.router, prefix=settings.api_v1_prefix)
 
 # Serve React Frontend (Production)
 # This directory will be populated during the Docker build process

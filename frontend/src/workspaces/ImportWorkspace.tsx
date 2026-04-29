@@ -79,7 +79,10 @@ const REQUIRED_FIELDS = [
   { key: 'status', label: 'Status', required: false },
 ]
 
+import { useNavigate } from 'react-router-dom'
+
 export default function ImportWorkspace() {
+  const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(0)
   const [file, setFile] = useState<any>(null)
   const [headers, setHeaders] = useState<string[]>([])
@@ -304,7 +307,7 @@ export default function ImportWorkspace() {
                 title="Data Ingestion Complete"
                 subTitle={`Successfully processed ${importResult?.stats?.processed} tickets. Detected ${importResult?.stats?.pii_redactions} PII entities that were redacted for compliance.`}
                 extra={[
-                    <Button type="primary" key="dashboard" onClick={() => window.location.href = '/dashboard'}>
+                    <Button type="primary" key="dashboard" onClick={() => navigate('/dashboard')}>
                         View Dashboard
                     </Button>,
                     <Button key="again" onClick={() => {

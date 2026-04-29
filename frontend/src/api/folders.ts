@@ -47,8 +47,8 @@ export const foldersApi = {
   listTickets: async (
     folderId: string,
     params?: { 
-      cursor?: string; 
-      limit?: number;
+      page?: number; 
+      page_size?: number;
       status?: string;
       category?: string;
       routing_status?: string;

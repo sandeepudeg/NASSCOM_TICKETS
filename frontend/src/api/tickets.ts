@@ -69,12 +69,13 @@ export const ticketsApi = {
 
   // List all tickets with filtering
   list: async (params?: {
-    cursor?: string
-    limit?: number
+    page?: number
+    page_size?: number
     status?: string
     category?: string
     routing_status?: string
     sla_breach?: boolean
+    intelligence_priority?: string
   }): Promise<TicketListResponse> => {
     const response = await apiClient.get<TicketListResponse>('/tickets', { params })
     return response.data
@@ -99,6 +100,11 @@ export const ticketsApi = {
 
   dispatchDrafts: async (ticketId: string, drafts: { customer_draft: string; engineer_note: string }): Promise<ClassificationResponse> => {
     const response = await apiClient.post<ClassificationResponse>(`/tickets/${ticketId}/dispatch`, drafts)
+    return response.data
+  },
+
+  polishDescription: async (text: string): Promise<{ polished_text: string }> => {
+    const response = await apiClient.post<{ polished_text: string }>('/tickets/polish-description', { text })
     return response.data
   },
 }

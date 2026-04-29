@@ -252,9 +252,7 @@ export default function ClassificationResultPanel() {
     queryKey: ['ticket-classification', id],
     queryFn: () => ticketsApi.getClassification(id!),
     enabled: !!id,
-    refetchInterval: (query) => {
-      return query.state.data?.routing_status === 'pending_classification' ? 3000 : false
-    }
+    refetchInterval: false
   })
 
   const { data: graphData } = useQuery({
@@ -500,7 +498,7 @@ export default function ClassificationResultPanel() {
   if (error) return <Alert message="System Error" description="Unable to retrieve intelligence report." type="error" showIcon style={{ margin: 24 }} />
   if (!data) return null
 
-  const isClassifying = data.routing_status === 'pending_classification'
+  // Removed isClassifying check to avoid infinite spinner on backend failure
   const priorityInfo = mapPriority(data.priority)
 
   return (
@@ -654,11 +652,11 @@ export default function ClassificationResultPanel() {
                     <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Environment</Text>
                     <Text style={{ fontSize: 12 }}>PROD-ASIA-NORTH</Text>
                   </div>
-                  <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Source System</Text>
                     <Text style={{ fontSize: 12 }}>Salesforce (Rest API)</Text>
                   </div>
-                  <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>SLA Status</Text>
                     <Tag color={data.sla_status === 'breached' ? 'error' : 'success'} style={{ margin: 0, fontSize: 10 }}>{data.sla_status === 'breached' ? 'BREACHED' : 'HEALTHY'}</Tag>
                   </div>
@@ -673,11 +671,11 @@ export default function ClassificationResultPanel() {
                     <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Automation Potential</Text>
                     <Tag color="purple">High (88%)</Tag>
                   </div>
-                  <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Knowledge Coverage</Text>
                     <Tag color="blue">Direct Match</Tag>
                   </div>
-                  <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Est. Effort Savings</Text>
                     <Text style={{ fontSize: 12 }}>~45 Minutes</Text>
                   </div>
@@ -708,15 +706,6 @@ export default function ClassificationResultPanel() {
         </Col>
 
         <Col span={18}>
-          {isClassifying ? (
-            <Card className="glass-effect" style={{ textAlign: 'center', padding: '100px 0' }}>
-              <Spin size="large" />
-              <div style={{ marginTop: 24 }}>
-                <Title level={4}>Neural Processing...</Title>
-                <Text style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>Classifying intent and retrieving contextual resolutions.</Text>
-              </div>
-            </Card>
-          ) : (
             <Space direction="vertical" size={24} style={{ width: '100%' }}>
               <Row gutter={24}>
                 <Col span={12}>
@@ -1458,7 +1447,6 @@ export default function ClassificationResultPanel() {
                 ]}
               />
             </Space>
-          )}
         </Col>
       </Row>
       <Modal

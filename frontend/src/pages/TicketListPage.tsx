@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Table, Card, Tag, Space, Select, Button, Typography, Empty, Input, Tooltip } from 'antd'
@@ -41,15 +41,33 @@ export default function TicketListPage() {
   const [searchParams] = useSearchParams()
   const folderId = searchParams.get('folder')
 
+  // Seed initial filter state from URL params (e.g. ?sla_breach=true from sidebar)
   const [filters, setFilters] = useState<{
     status?: string
     category?: string
     routing_status?: string
     intelligence_priority?: string
     sla_breach?: boolean
-    cursor?: string
+    page?: number
     q?: string
-  }>({})
+  }>(() => ({
+    sla_breach: searchParams.get('sla_breach') === 'true' ? true : undefined,
+    status: searchParams.get('status') || undefined,
+    category: searchParams.get('category') || undefined,
+    routing_status: searchParams.get('routing_status') || undefined,
+    page: 1,
+  }))
+
+  // Re-sync filters when URL changes (sidebar navigation)
+  useEffect(() => {
+    setFilters({
+      sla_breach: searchParams.get('sla_breach') === 'true' ? true : undefined,
+      status: searchParams.get('status') || undefined,
+      category: searchParams.get('category') || undefined,
+      routing_status: searchParams.get('routing_status') || undefined,
+      page: 1,
+    })
+  }, [searchParams.toString()])
 
   // Fetch folder details if folderId is present
   const { data: folderData } = useQuery({
@@ -62,9 +80,11 @@ export default function TicketListPage() {
     queryKey: ['tickets', folderId, filters],
     queryFn: () => 
       folderId 
-        ? foldersApi.listTickets(folderId, { ...filters, limit: 25 })
-        : ticketsApi.list({ ...filters, limit: 25 }),
+        ? foldersApi.listTickets(folderId, { ...filters, page: filters.page || 1, page_size: 25 })
+        : ticketsApi.list({ ...filters, page: filters.page || 1, page_size: 25 }),
   })
+
+
 
   const columns: ColumnsType<Ticket> = [
     {
@@ -73,7 +93,7 @@ export default function TicketListPage() {
       width: 85,
       render: (_: any, __: any, index: number) => (
         <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
-          {index + 1}
+          {((filters.page || 1) - 1) * 25 + index + 1}
         </Text>
       ),
     },
@@ -206,14 +226,8 @@ export default function TicketListPage() {
     setFilters((prev) => ({
       ...prev,
       [key]: value,
-      cursor: undefined,
+      page: key === 'page' ? value : 1, // Reset to page 1 on filter changes
     }))
-  }
-
-  const handleLoadMore = () => {
-    if (data?.next_cursor) {
-      setFilters((prev) => ({ ...prev, cursor: data.next_cursor! }))
-    }
   }
 
   const handleExport = () => {
@@ -308,18 +322,20 @@ export default function TicketListPage() {
           dataSource={data?.tickets || []}
           loading={isLoading}
           rowKey="id"
-          pagination={false}
+          pagination={{
+            current: filters.page || 1,
+            pageSize: 25,
+            total: data?.total || 0,
+            showSizeChanger: false,
+            onChange: (page) => handleFilterChange('page', page),
+            position: ['bottomCenter'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} tickets`
+          }}
           className="high-density-table"
           locale={{ 
             emptyText: <Empty description="No records matching current filters" style={{ padding: '40px 0' }} />
           }}
         />
-
-        {data?.next_cursor && (
-          <div style={{ textAlign: 'center', padding: '16px', borderTop: '1px solid var(--color-border-primary)' }}>
-            <Button onClick={handleLoadMore} type="text">Load more records</Button>
-          </div>
-        )}
       </Card>
     </PageContainer>
   )

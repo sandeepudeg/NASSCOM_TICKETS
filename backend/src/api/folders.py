@@ -146,8 +146,8 @@ async def get_folder_ticket_count(
 @router.get("/{folder_id}/tickets", response_model=TicketListResponse)
 async def get_folder_tickets(
     folder_id: str,
-    page_size: int = Query(50, ge=1, le=200),
-    cursor: str | None = Query(None),
+    page_size: int = Query(25, ge=1, le=200),
+    page: int = Query(1, ge=1),
     status: str | None = Query(None),
     category: str | None = Query(None),
     routing_status: str | None = Query(None),
@@ -161,11 +161,11 @@ async def get_folder_tickets(
     service = TicketAssignmentService(db)
     params = TicketPaginationParams(
         page_size=page_size,
-        cursor=cursor,
+        page=page,
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
-    tickets, total = await service.get_folder_tickets(
+    tickets, total, total_pages = await service.get_folder_tickets(
         folder_id=folder_id, 
         user_id=x_user_id, 
         params=params,
@@ -175,7 +175,13 @@ async def get_folder_tickets(
         sla_breach=sla_breach,
         intelligence_priority=intelligence_priority
     )
-    return TicketListResponse(tickets=tickets, next_cursor=None, total=total)
+    return TicketListResponse(
+        tickets=tickets,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        total=total
+    )
 
 
 @router.post(

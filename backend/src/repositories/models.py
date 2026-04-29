@@ -385,3 +385,34 @@ class AuditSnapshot(Base):
         Index("ix_snapshot_audit", "audit_log_id"),
         Index("ix_snapshot_ticket", "ticket_id"),
     )
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, index=True, nullable=False)
+    type = Column(
+        SQLEnum(
+            "ticket_created",
+            "ticket_classified",
+            "sla_warning",
+            "sla_breach",
+            "pattern_detected",
+            "urgent_promotion",
+            name="notification_type_enum",
+        ),
+        nullable=False,
+    )
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    ticket_id = Column(
+        String, ForeignKey("tickets.id", ondelete="SET NULL"), nullable=True
+    )
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("ix_notifications_user_read", "user_id", "is_read"),
+        Index("ix_notifications_created", "created_at"),
+    )

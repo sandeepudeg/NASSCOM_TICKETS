@@ -135,13 +135,15 @@ class TicketListResponse(BaseModel):
     escalations: list[TicketResponse] | None = None
     automation_candidates: list[TicketResponse] | None = None
     automation_archive: list[TicketResponse] | None = None
-    next_cursor: str | None = None
+    page: int = 1
+    page_size: int = 50
+    total_pages: int = 0
     total: int
 
 
 class TicketPaginationParams(BaseModel):
     page_size: int = Field(default=50, ge=1, le=200)
-    cursor: str | None = None
+    page: int = Field(default=1, ge=1)
     sort_by: str = Field(
         default="assigned_at", pattern="^(assigned_at|status|created_at)$"
     )
@@ -175,3 +177,7 @@ class BulkAssignRequest(BaseModel):
 class BulkAssignResponse(BaseModel):
     successful: list[str] = Field(default_factory=list)
     failed: list[dict[str, Any]] = Field(default_factory=list)
+
+class OverrideRequest(BaseModel):
+    corrected_category: Category
+    agent_id: str

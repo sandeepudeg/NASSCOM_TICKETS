@@ -12,22 +12,27 @@ router = APIRouter(prefix="/escalations", tags=["escalations"])
 @router.get("", response_model=TicketListResponse)
 async def get_escalation_queue(
     page_size: int = Query(25, ge=1, le=200),
-    cursor: str | None = Query(None),
+    page: int = Query(1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
     """List all escalated tickets sorted oldest-first (minimises SLA breach risk)."""
     ticket_repo = TicketRepository(db)
-    tickets, next_cursor = await ticket_repo.list_tickets(
+    tickets = await ticket_repo.list_tickets(
         routing_status="escalated",
         page_size=page_size,
-        cursor=cursor,
+        page=page,
         sort_by="created_at",
         sort_dir="asc",
     )
+    total = len(tickets)
+    import math
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
     return {
         "escalations": [TicketResponse.model_validate(t) for t in tickets],
-        "next_cursor": next_cursor,
-        "total": len(tickets),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "total": total,
     }
 
 

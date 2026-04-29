@@ -159,7 +159,9 @@ export interface TicketListResponse {
   tickets?: Ticket[]
   escalations?: Ticket[]
   automation_candidates?: Ticket[]
-  next_cursor: string | null
+  page: number
+  page_size: number
+  total_pages: number
   total: number
 }
 

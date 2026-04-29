@@ -125,7 +125,14 @@ async def seed_enterprise_data():
                 days_ago = random.uniform(0, 7)
                 created_at = datetime.utcnow() - timedelta(days=days_ago)
                 
-                status = random.choice(["open", "in_progress", "resolved", "closed"])
+                if i < 3:
+                    # Guarantee 3 escalated tickets per category (3 * 7 = 21 total)
+                    status = "open"
+                    routing_status = "escalated"
+                else:
+                    status = random.choice(["open", "in_progress", "resolved", "closed"])
+                    routing_status = "classified" if status == "open" else "reviewed"
+                
                 priority = random.choice(["Low", "Medium", "High", "Critical"])
                 
                 is_automation = (i < 10) # Force first 10 in every category to be automation-ready
@@ -158,7 +165,7 @@ async def seed_enterprise_data():
                     owner_id="admin", # Keep tickets owned by admin primarily
                     category=category,
                     status=status,
-                    routing_status="classified" if status == "open" else "reviewed",
+                    routing_status=routing_status,
                     source_channel="web",
                     priority=priority,
                     confidence_score=round(random.uniform(0.75, 0.99), 2),
@@ -192,7 +199,9 @@ async def seed_enterprise_data():
         patterns = [
             ("Infrastructure", "Core Switch Cluster Failure - Region-A", ["TICK-INF-1001", "TICK-INF-1002", "TICK-INF-1003", "TICK-INF-1004", "TICK-INF-1005"]),
             ("Security", "Credential Stuffing Pattern on Auth APIs", ["TICK-SEC-1010", "TICK-SEC-1011", "TICK-SEC-1012", "TICK-SEC-1013"]),
-            ("Network", "Regional CDN Outage - CloudFront Intermittent", ["TICK-NET-1005", "TICK-NET-1006", "TICK-NET-1007", "TICK-NET-1008", "TICK-NET-1009"])
+            ("Network", "Regional CDN Outage - CloudFront Intermittent", ["TICK-NET-1005", "TICK-NET-1006", "TICK-NET-1007", "TICK-NET-1008", "TICK-NET-1009"]),
+            ("Application", "Payment Gateway 500 Errors - Checkout Flow", ["TICK-APP-1000", "TICK-APP-1001", "TICK-APP-1002", "TICK-APP-1003"]),
+            ("Database", "Postgres Connection Pool Exhaustion - DB-Cluster-01", ["TICK-DAT-1005", "TICK-DAT-1006", "TICK-DAT-1007", "TICK-DAT-1008"])
         ]
         
         for cat, title, numbers in patterns:

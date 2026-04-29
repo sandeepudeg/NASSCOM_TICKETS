@@ -41,12 +41,14 @@ const CATEGORIES = [
 export default function EscalationQueuePage() {
   const [selectedTicket, setSelectedTicket] = useState<EscalationTicket | null>(null)
   const [overrideModalVisible, setOverrideModalVisible] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 25
   const [form] = Form.useForm()
   const queryClient = useQueryClient()
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['escalations'],
-    queryFn: () => classificationApi.getEscalations({ limit: 25 }),
+    queryFn: () => classificationApi.getEscalations({ limit: 200 }),
   })
 
   const overrideMutation = useMutation({
@@ -98,7 +100,7 @@ export default function EscalationQueuePage() {
       width: 85,
       render: (_: any, __: any, index: number) => (
         <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
-          {index + 1}
+          {(currentPage - 1) * PAGE_SIZE + index + 1}
         </Text>
       ),
     },
@@ -248,7 +250,15 @@ export default function EscalationQueuePage() {
           dataSource={data?.escalations || []}
           columns={columns}
           rowKey="id"
-          pagination={{ pageSize: 10, position: ['bottomRight'] }}
+          pagination={{
+            current: currentPage,
+            pageSize: PAGE_SIZE,
+            total: data?.total || (data?.escalations || []).length,
+            showSizeChanger: false,
+            onChange: (page) => setCurrentPage(page),
+            position: ['bottomCenter'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} escalations`
+          }}
           className="high-density-table"
           locale={{ 
             emptyText: (

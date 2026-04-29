@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout as AntLayout, Menu, Typography, Space, Button, Drawer, Breadcrumb, Tag } from 'antd'
+import { Layout as AntLayout, Menu, Typography, Space, Button, Drawer, Breadcrumb, Tag, Badge, Popover, List } from 'antd'
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -12,6 +12,7 @@ import {
   MenuOutlined,
   FolderOutlined,
   SettingOutlined,
+  BellOutlined,
 } from '@ant-design/icons'
 import { designSystemStyled, useThemeMode } from '@ticketiq/design-system'
 import FolderSidebar from './FolderSidebar'
@@ -19,6 +20,8 @@ import { clearAuthToken } from '../auth/tokenStorage'
 import { useFolderStore } from '../stores/folderStore'
 import { useLayoutStore } from '../stores/layoutStore'
 import { useTokenRefresh } from '../auth/useTokenRefresh'
+import { useQuery } from '@tanstack/react-query'
+import { notificationsApi } from '../api/notifications'
 import type { MenuProps } from 'antd'
 
 const { Header, Content } = AntLayout
@@ -150,6 +153,25 @@ export default function Layout() {
     document.documentElement.setAttribute('data-theme', currentTheme)
   }, [currentTheme])
 
+  // Fetch notifications
+  const { data: notifications, refetch: refetchNotifications } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationsApi.list(),
+    refetchInterval: 30000, // Every 30 seconds
+  })
+
+  const unreadCount = notifications?.filter(n => !n.is_read).length || 0
+
+  const handleMarkAsRead = async (id: string) => {
+    await notificationsApi.markAsRead(id)
+    refetchNotifications()
+  }
+
+  const handleMarkAllRead = async () => {
+    await notificationsApi.markAllAsRead()
+    refetchNotifications()
+  }
+
   const handleLogout = () => {
     clearAuthToken()
     navigate('/login')
@@ -263,6 +285,60 @@ export default function Layout() {
                   icon={currentTheme === 'dark' ? '☀️' : '🌙'}
                   onClick={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
                 />
+                
+                <Popover
+                  placement="bottomRight"
+                  trigger="click"
+                  content={
+                    <div style={{ width: '320px', maxHeight: '400px', overflowY: 'auto' }}>
+                      <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border-primary)' }}>
+                        <Text strong>Notifications</Text>
+                        {unreadCount > 0 && (
+                          <Button type="link" size="small" onClick={handleMarkAllRead}>Mark all as read</Button>
+                        )}
+                      </div>
+                      <List
+                        itemLayout="horizontal"
+                        dataSource={notifications || []}
+                        locale={{ emptyText: 'No new notifications' }}
+                        renderItem={(item) => (
+                          <List.Item 
+                            style={{ 
+                              padding: '12px 16px', 
+                              cursor: 'pointer',
+                              background: item.is_read ? 'transparent' : 'rgba(var(--color-primary-rgb), 0.05)',
+                              transition: 'background 0.2s'
+                            }}
+                            onClick={() => {
+                              if (!item.is_read) handleMarkAsRead(item.id)
+                              if (item.ticket_id) navigate(`/tickets/${item.ticket_id}`)
+                            }}
+                          >
+                            <List.Item.Meta
+                              title={<Text style={{ fontSize: '13px', fontWeight: 600 }}>{item.title}</Text>}
+                              description={
+                                <div style={{ fontSize: '12px' }}>
+                                  <Text type="secondary">{item.message}</Text>
+                                  <div style={{ marginTop: '4px', fontSize: '10px', color: 'var(--color-text-muted)' }}>
+                                    {new Date(item.created_at).toLocaleString()}
+                                  </div>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    </div>
+                  }
+                >
+                  <Badge count={unreadCount} size="small" offset={[-4, 4]}>
+                    <Button
+                      type="text"
+                      icon={<BellOutlined style={{ fontSize: '18px', color: unreadCount > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)' }} />}
+                      style={{ color: 'var(--color-text-secondary)', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    />
+                  </Badge>
+                </Popover>
                 <Button
                   type="text"
                   icon={<SettingOutlined />}
@@ -293,22 +369,7 @@ export default function Layout() {
             )}
           </Space>
         </StyledHeader>
-        {location.pathname !== '/master-control' && (
-          <HeroBanner>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Tag color="cyan" bordered={false} style={{ fontSize: '10px', fontWeight: 800, padding: '0 8px', borderRadius: '4px' }}>ENTERPRISE AI</Tag>
-              <Text style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-                Intelligence Report
-              </Text>
-            </div>
-            <Title level={2} style={{ margin: '4px 0 0', fontWeight: 800, fontSize: '28px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
-              AI Powered Intelligent Ticket Routing <span style={{ fontWeight: 500, color: 'var(--color-text-secondary)' }}>powered by LLM</span>
-            </Title>
-            <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-              Enterprise-Grade AI Classification & Automated Resolution Engine
-            </Text>
-          </HeroBanner>
-        )}
+
 
         <StyledContent style={location.pathname === '/master-control' ? { padding: 0, maxWidth: '100%', margin: 0 } : {}}>
           <Outlet />
@@ -323,7 +384,6 @@ export default function Layout() {
               </div>
               <Space size="middle" style={{ opacity: 0.9 }}>
                 <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>© 2026 Indigo Intelligence Hub</Text>
-                <Tag bordered={false} style={{ fontSize: '9px', borderRadius: '4px', background: 'var(--color-bg-secondary)', color: 'var(--color-primary)' }}>v2.9.0-CALIBRATION</Tag>
               </Space>
             </div>
             

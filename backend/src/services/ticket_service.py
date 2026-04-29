@@ -37,6 +37,7 @@ from src.services.routing_service import RoutingService
 from src.services.ticket_assignment_service import TicketAssignmentService
 from src.services.predictive_service import predictive_service
 from src.services.audit_service import AuditService
+from src.services.notification_service import NotificationService
 
 logger = structlog.get_logger("services.ticket")
 
@@ -84,6 +85,7 @@ class TicketService:
         self.override_repo = AgentOverrideRepository(session)
         self.assignment_service = TicketAssignmentService(session)
         self.routing_service = RoutingService(session)
+        self.notification_service = NotificationService(session)
         self._calculate_intelligence_priority = _calculate_intelligence_priority
 
     async def create_ticket(
@@ -248,6 +250,29 @@ class TicketService:
             except Exception as e:
                 logger.error("ticket.update_failed", error=str(e), exc_info=True)
                 raise
+
+            # --- Trigger Notification (Phase 3 Integration) ---
+            try:
+                # 1. Base Ticket Created Notification
+                await self.notification_service.create_notification(
+                    user_id=owner_id,
+                    notif_type="ticket_created",
+                    title="Ticket Successfully Logged",
+                    message=f"Your ticket #{ticket.ticket_number} has been received and is being processed.",
+                    ticket_id=ticket.id
+                )
+
+                # 2. Urgent Promotion Notification
+                if ticket.intelligence_priority == "urgent":
+                    await self.notification_service.create_notification(
+                        user_id=owner_id,
+                        notif_type="urgent_promotion",
+                        title="🚀 AI Priority Promotion",
+                        message=f"Ticket #{ticket.ticket_number} has been promoted to URGENT due to high detected impact/sentiment.",
+                        ticket_id=ticket.id
+                    )
+            except Exception as e:
+                logger.warning("ticket.notification_failed", error=str(e), ticket_id=ticket.id)
 
             logger.info(
                 "ticket.classified",
@@ -461,17 +486,17 @@ class TicketService:
         intelligence_priority: str | None = None,
     ) -> TicketListResponse:
         p_size = params.page_size if params else 50
-        p_cursor = params.cursor if params else None
+        p_page = params.page if params else 1
         p_sort_by = params.sort_by if params else "created_at"
         p_sort_dir = params.sort_dir if params else "desc"
 
-        tickets, next_cursor = await self.ticket_repo.list_tickets(
+        tickets = await self.ticket_repo.list_tickets(
             owner_id=owner_id,
             status=status,
             category=category,
             routing_status=routing_status,
             page_size=p_size,
-            cursor=p_cursor,
+            page=p_page,
             sort_by=p_sort_by,
             sort_dir=p_sort_dir,
             sla_breach=sla_breach,
@@ -487,9 +512,15 @@ class TicketService:
             intelligence_priority=intelligence_priority,
         )
         responses = [ticket_to_response(t) for t in tickets]
+        
+        import math
+        total_pages = math.ceil(total_count / p_size) if total_count > 0 else 0
+        
         return TicketListResponse(
             tickets=responses,
-            next_cursor=next_cursor,
+            page=p_page,
+            page_size=p_size,
+            total_pages=total_pages,
             total=total_count,
         )
 

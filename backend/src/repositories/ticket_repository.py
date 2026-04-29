@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from sqlalchemy import and_, delete, func, select
+from sqlalchemy import and_, or_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -56,10 +56,10 @@ class TicketRepository:
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
         page_size: int = 50,
-        cursor: str | None = None,
+        page: int = 1,
         sort_by: str = "created_at",
         sort_dir: str = "desc",
-    ) -> tuple[list[Ticket], str | None]:
+    ) -> list[Ticket]:
         import structlog
         logger = structlog.get_logger("repo.ticket")
         
@@ -97,31 +97,19 @@ class TicketRepository:
             order_col = Ticket.created_at
 
         if sort_dir == "desc":
-            query = query.order_by(order_col.desc())
+            query = query.order_by(order_col.desc(), Ticket.id.desc())
         else:
-            query = query.order_by(order_col.asc())
+            query = query.order_by(order_col.asc(), Ticket.id.asc())
 
-        query = query.limit(page_size + 1)
-
-        if cursor:
-            cursor_time = datetime.fromisoformat(cursor)
-            if sort_dir == "desc":
-                query = query.where(order_col < cursor_time)
-            else:
-                query = query.where(order_col > cursor_time)
+        offset_val = (page - 1) * page_size
+        query = query.offset(offset_val).limit(page_size)
 
         result = await self.session.execute(query)
         tickets = list(result.scalars().all())
 
         logger.info("ticket.list.done", count=len(tickets), query=str(query))
 
-        next_cursor = None
-        if len(tickets) > page_size:
-            tickets = tickets[:page_size]
-            last_ticket = tickets[-1]
-            next_cursor = last_ticket.created_at.isoformat()
-
-        return tickets, next_cursor
+        return tickets
 
     async def update(
         self,
@@ -251,6 +239,28 @@ class TicketRepository:
 
         return tickets_for_rag
 
+    async def get_tickets_with_embeddings(self, limit: int = 300) -> list[dict]:
+        """Fetch recent tickets with their embeddings for pattern detection."""
+        query = (
+            select(Ticket, TicketEmbedding.embedding)
+            .join(TicketEmbedding, Ticket.id == TicketEmbedding.ticket_id)
+            .order_by(Ticket.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        tickets = []
+        for ticket, embedding in rows:
+            tickets.append({
+                "id": ticket.id,
+                "title": ticket.title,
+                "category": ticket.category,
+                "embedding": embedding,
+                "created_at": ticket.created_at
+            })
+        return tickets
+
 
 class TicketAssignmentRepository:
     def __init__(self, session: AsyncSession):
@@ -296,7 +306,7 @@ class TicketAssignmentRepository:
         self,
         folder_id: str,
         page_size: int = 50,
-        cursor: str | None = None,
+        page: int = 1,
         sort_by: str = "assigned_at",
         sort_dir: str = "desc",
         status: str | None = None,
@@ -304,7 +314,7 @@ class TicketAssignmentRepository:
         routing_status: str | None = None,
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
-    ) -> tuple[list[Ticket], str | None]:
+    ) -> list[Ticket]:
         query = (
             select(Ticket)
             .join(TicketFolderAssignment, Ticket.id == TicketFolderAssignment.ticket_id)
@@ -333,29 +343,17 @@ class TicketAssignmentRepository:
             order_col = Ticket.created_at
 
         if sort_dir == "desc":
-            query = query.order_by(order_col.desc())
+            query = query.order_by(order_col.desc(), Ticket.id.desc())
         else:
-            query = query.order_by(order_col.asc())
+            query = query.order_by(order_col.asc(), Ticket.id.asc())
 
-        query = query.limit(page_size + 1)
-
-        if cursor:
-            cursor_time = datetime.fromisoformat(cursor)
-            if sort_dir == "desc":
-                query = query.where(order_col < cursor_time)
-            else:
-                query = query.where(order_col > cursor_time)
+        offset_val = (page - 1) * page_size
+        query = query.offset(offset_val).limit(page_size)
 
         result = await self.session.execute(query)
         tickets = list(result.scalars().all())
 
-        next_cursor = None
-        if len(tickets) > page_size:
-            tickets = tickets[:page_size]
-            last_ticket = tickets[-1]
-            next_cursor = last_ticket.created_at.isoformat()
-
-        return tickets, next_cursor
+        return tickets
 
     async def count_folder_tickets(
         self,
