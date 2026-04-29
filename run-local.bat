@@ -58,6 +58,9 @@ echo 🧠 AI Memory:      http://localhost:6333/dashboard (Qdrant)
 echo 📦 Storage:       http://localhost:9001 (MinIO)
 echo 🔐 Identity:      http://localhost:8080 (Keycloak)
 echo ----------------------------------------
+echo 📊 Intelligence State:
+docker exec tickets_postgres psql -U postgres -d tickets -t -c "SELECT count(*) || ' Tickets across ' || (SELECT count(*) FROM folders WHERE deleted_at IS NULL) || ' Departments' FROM tickets;"
+echo ----------------------------------------
 echo 💡 TIP: If changes don't appear, use Ctrl+Shift+R for a Hard Refresh.
 echo ----------------------------------------
 echo 📚 Manuals:        Check the /docs folder for guides!

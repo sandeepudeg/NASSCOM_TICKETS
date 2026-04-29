@@ -389,6 +389,7 @@ export default function FolderSidebar() {
               if (location.pathname.includes('/model/metrics')) return ['metrics'];
               if (location.pathname.includes('/escalations')) return ['escalations'];
               if (location.pathname.includes('/dashboard')) return ['dashboard'];
+              if (location.pathname === '/tickets/new') return ['new-ticket'];
 
               // Priority 2: Folders (only if currently on the tickets page)
               if (location.pathname.includes('/tickets')) {

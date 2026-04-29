@@ -87,12 +87,7 @@ async def init_db() -> None:
         try:
             _log.info(f"Database initialization attempt {attempt}/{max_retries}...")
             async with engine.begin() as conn:
-                # [DATA PROTECTION]: Commented out destructive logic per user directive
-                # await conn.execute(text("DROP TABLE IF EXISTS ticket_folder_assignments CASCADE;"))
-                # await conn.execute(text("DROP TABLE IF EXISTS tickets CASCADE;"))
-                # await conn.execute(text("DROP TABLE IF EXISTS audit_log CASCADE;"))
-                # await conn.execute(text("DROP TABLE IF EXISTS ticket_embeddings CASCADE;"))
-                
+                from src.repositories.models import Ticket, Folder, TicketFolderAssignment, TicketEmbedding, Notification, PatternAlert, SimilarTicket
                 await conn.run_sync(Base.metadata.create_all)
                 if is_sqlite:
                     await conn.execute(text("PRAGMA journal_mode=WAL"))
