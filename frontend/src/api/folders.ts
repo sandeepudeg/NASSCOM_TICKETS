@@ -55,6 +55,7 @@ export const foldersApi = {
       sla_breach?: boolean;
       intelligence_priority?: string;
       owner_id?: string;
+      q?: string;
     }
   ): Promise<TicketListResponse> => {
     const response = await apiClient.get<TicketListResponse>(

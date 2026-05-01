@@ -131,7 +131,7 @@ async def override_category(
 
 @router.get("/escalations", response_model=TicketListResponse)
 async def get_escalation_queue(
-    page_size: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=200),
     page: int = Query(1, ge=1),
     owner_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
@@ -140,7 +140,7 @@ async def get_escalation_queue(
     tickets = await ticket_repo.list_tickets(
         routing_status="escalated",
         owner_id=owner_id,
-        page_size=page_size,
+        page_size=limit,
         page=page,
         sort_by="created_at",
         sort_dir="asc",
@@ -156,12 +156,12 @@ async def get_escalation_queue(
     total = total_result.scalar() or 0
     
     import math
-    total_pages = math.ceil(total / page_size) if total > 0 else 0
+    total_pages = math.ceil(total / limit) if total > 0 else 0
     
     return {
         "escalations": [ticket_to_response(t) for t in tickets],
         "page": page,
-        "page_size": page_size,
+        "page_size": limit,
         "total_pages": total_pages,
         "total": total,
     }
@@ -169,18 +169,18 @@ async def get_escalation_queue(
 
 @router.get("/pattern-alerts", response_model=PatternAlertResponse)
 async def get_pattern_alerts(
-    page_size: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=200),
     owner_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     alert_repo = PatternAlertRepository(db)
-    alerts = await alert_repo.list_active(page_size)
+    alerts = await alert_repo.list_active(limit)
 
     # Filter for specific user if requested
     if owner_id:
         ticket_repo = TicketRepository(db)
         # Get all ticket IDs owned by this user
-        user_tickets, _ = await ticket_repo.list_tickets(owner_id=owner_id, page_size=1000)
+        user_tickets = await ticket_repo.list_tickets(owner_id=owner_id, page_size=1000)
         user_ticket_ids = {t.id for t in user_tickets}
         
         filtered_alerts = []
@@ -208,7 +208,14 @@ async def get_pattern_alerts(
         for alert in alerts
     ]
 
-    return {"alerts": pattern_alerts}
+    # Get total count for badges
+    total = await alert_repo.count_active()
+    
+    # If owner_id is filtered, we might want the filtered count instead for the badge?
+    if owner_id:
+        total = len(alerts)
+
+    return {"alerts": pattern_alerts, "total": total}
     
 
 @router.post("/pattern-alerts/detect", response_model=PatternAlertResponse)
@@ -236,7 +243,7 @@ async def detect_new_patterns(
         logger.info("detect.patterns_analyzed", new_count=len(new_alerts_data))
         
         # 3. Save new alerts (avoiding duplicates)
-        existing_alerts = await alert_repo.list_active(page_size=100)
+        existing_alerts = await alert_repo.list_active(limit=100)
         existing_titles = {a.representative_title for a in existing_alerts}
         
         for alert_data in new_alerts_data:
@@ -287,7 +294,7 @@ async def detect_new_patterns(
 
 @router.get("/automation-candidates", response_model=TicketListResponse)
 async def get_automation_candidates(
-    page_size: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     page: int = Query(1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
@@ -296,7 +303,7 @@ async def get_automation_candidates(
     tickets = await ticket_repo.list_tickets(
         is_automation_candidate=True,
         status="open",
-        page_size=page_size,
+        page_size=limit,
         page=page,
         sort_by="created_at",
         sort_dir="desc",
@@ -313,12 +320,12 @@ async def get_automation_candidates(
     total = total_result.scalar() or 0
 
     import math
-    total_pages = math.ceil(total / page_size) if total > 0 else 0
+    total_pages = math.ceil(total / limit) if total > 0 else 0
 
     return {
         "automation_candidates": [ticket_to_response(t) for t in tickets],
         "page": page,
-        "page_size": page_size,
+        "page_size": limit,
         "total_pages": total_pages,
         "total": total,
     }
@@ -326,7 +333,7 @@ async def get_automation_candidates(
 
 @router.get("/automation-archive", response_model=TicketListResponse)
 async def get_automation_archive(
-    page_size: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     page: int = Query(1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
@@ -334,7 +341,7 @@ async def get_automation_archive(
     ticket_repo = TicketRepository(db)
     tickets = await ticket_repo.list_tickets(
         automation_status="completed",
-        page_size=page_size,
+        page_size=limit,
         page=page,
         sort_by="created_at",
         sort_dir="desc",
@@ -348,12 +355,12 @@ async def get_automation_archive(
     total = total_result.scalar() or 0
 
     import math
-    total_pages = math.ceil(total / page_size) if total > 0 else 0
+    total_pages = math.ceil(total / limit) if total > 0 else 0
 
     return {
         "automation_archive": [ticket_to_response(t) for t in tickets],
         "page": page,
-        "page_size": page_size,
+        "page_size": limit,
         "total_pages": total_pages,
         "total": total,
     }

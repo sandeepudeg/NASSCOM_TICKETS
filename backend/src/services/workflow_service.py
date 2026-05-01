@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.repositories.models import Ticket, AuditLog
 from src.schemas.ticket import TicketStatus
 import structlog
@@ -12,33 +13,54 @@ class WorkflowService:
         self.session = session
 
     async def provide_resolution(self, ticket_id: str, resolution_details: str, actor_id: str) -> Ticket:
-        """Transitions ticket to awaiting_feedback with detailed steps."""
-        stmt = select(Ticket).where(Ticket.id == ticket_id)
+        """Transitions ticket to awaiting_feedback with a focus on high-availability resolution."""
+        stmt = select(Ticket).options(selectinload(Ticket.similar_tickets)).where(Ticket.id == ticket_id)
         result = await self.session.execute(stmt)
         ticket = result.scalar_one_or_none()
         
         if not ticket:
+            logger.warning("workflow.ticket_not_found", ticket_id=ticket_id)
             return None
             
-        ticket.status = "awaiting_feedback"
-        ticket.resolution_details = resolution_details
-        ticket.status_changed_at = datetime.utcnow()
-        ticket.hold_type = None # Clear any holds when resolution is provided
-        
-        # Log the action
-        audit = AuditLog(
-            actor_user_id=actor_id,
-            action_type="ticket_resolve",
-            target_resource_id=ticket_id,
-            metadata_json='{"action": "resolution_provided"}'
-        )
-        self.session.add(audit)
+        # 1. Primary Operation: Update Ticket State (Guaranteed Path)
+        try:
+            ticket.status = "awaiting_feedback"
+            ticket.resolution_details = resolution_details
+            ticket.status_changed_at = datetime.now(timezone.utc)
+            ticket.resolved_at = datetime.now(timezone.utc)
+            ticket.hold_type = None 
+            
+            # We flush here to ensure the ticket is updated even if audit fails later
+            await self.session.flush()
+        except Exception as e:
+            logger.error("workflow.primary_update_failed", ticket_id=ticket_id, error=str(e))
+            raise e
+
+        # 2. Secondary Operation: Audit Logging (Best Effort Path)
+        try:
+            # Use a safe fallback for actor_id if it's invalid
+            safe_actor_id = actor_id if actor_id and len(actor_id) > 0 else "admin_system"
+            
+            audit = AuditLog(
+                actor_user_id=safe_actor_id,
+                action_type="ticket_resolve",
+                target_resource_id=ticket_id,
+                timestamp=datetime.now(timezone.utc),
+                metadata_json=f'{{"status": "resolved", "source": "modal_flow"}}'
+            )
+            self.session.add(audit)
+            await self.session.flush()
+        except Exception as e:
+            logger.warning("workflow.audit_log_failed_continuing", ticket_id=ticket_id, error=str(e))
+            # We do NOT raise here; the ticket resolution is more important than the log
+
         await self.session.commit()
+        logger.info("workflow.resolution_successfully_committed", ticket_id=ticket_id)
         return ticket
 
     async def mark_satisfied(self, ticket_id: str, actor_id: str) -> Ticket:
         """Transitions ticket to pending_closure based on user feedback."""
-        stmt = select(Ticket).where(Ticket.id == ticket_id)
+        stmt = select(Ticket).options(selectinload(Ticket.similar_tickets)).where(Ticket.id == ticket_id)
         result = await self.session.execute(stmt)
         ticket = result.scalar_one_or_none()
         
@@ -60,7 +82,7 @@ class WorkflowService:
 
     async def reopen_ticket(self, ticket_id: str, actor_id: str, reason: str) -> Ticket:
         """Returns ticket to in_progress if user is not satisfied."""
-        stmt = select(Ticket).where(Ticket.id == ticket_id)
+        stmt = select(Ticket).options(selectinload(Ticket.similar_tickets)).where(Ticket.id == ticket_id)
         result = await self.session.execute(stmt)
         ticket = result.scalar_one_or_none()
         
@@ -83,7 +105,7 @@ class WorkflowService:
 
     async def set_hold(self, ticket_id: str, hold_type: str, actor_id: str) -> Ticket:
         """Sets a hold (evidence_needed or in_person_visit) to pause the timer."""
-        stmt = select(Ticket).where(Ticket.id == ticket_id)
+        stmt = select(Ticket).options(selectinload(Ticket.similar_tickets)).where(Ticket.id == ticket_id)
         result = await self.session.execute(stmt)
         ticket = result.scalar_one_or_none()
         
@@ -112,7 +134,7 @@ class WorkflowService:
 
     async def close_ticket(self, ticket_id: str, actor_id: str) -> Ticket:
         """Final transition to closed state by Administrator."""
-        stmt = select(Ticket).where(Ticket.id == ticket_id)
+        stmt = select(Ticket).options(selectinload(Ticket.similar_tickets)).where(Ticket.id == ticket_id)
         result = await self.session.execute(stmt)
         ticket = result.scalar_one_or_none()
         
@@ -168,7 +190,7 @@ class WorkflowService:
 
     async def submit_feedback(self, ticket_id: str, rating: int, comment: str, actor_id: str) -> Ticket:
         """Records user rating and comments in the audit log and moves ticket to pending_closure."""
-        stmt = select(Ticket).where(Ticket.id == ticket_id)
+        stmt = select(Ticket).options(selectinload(Ticket.similar_tickets)).where(Ticket.id == ticket_id)
         result = await self.session.execute(stmt)
         ticket = result.scalar_one_or_none()
         

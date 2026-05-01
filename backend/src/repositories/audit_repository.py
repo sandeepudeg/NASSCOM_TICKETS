@@ -99,15 +99,21 @@ class PatternAlertRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def list_active(self, page_size: int = 50) -> list[PatternAlert]:
+    async def list_active(self, limit: int = 50) -> list[PatternAlert]:
         query = (
             select(PatternAlert)
             .where(PatternAlert.status == "active")
             .order_by(PatternAlert.cluster_size.desc())
-            .limit(page_size)
+            .limit(limit)
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def count_active(self) -> int:
+        from sqlalchemy import func
+        query = select(func.count(PatternAlert.id)).where(PatternAlert.status == "active")
+        result = await self.session.execute(query)
+        return result.scalar() or 0
 
     async def update_status(
         self,

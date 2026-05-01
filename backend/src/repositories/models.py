@@ -153,8 +153,8 @@ class Ticket(Base):
     updated_at = Column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
-    status_changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    resolved_at = Column(DateTime, nullable=True)
+    status_changed_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
 
     folder_assignments = relationship(
         "TicketFolderAssignment", back_populates="ticket", cascade="all, delete-orphan"
@@ -261,7 +261,8 @@ class AuditLog(Base):
         nullable=False,
     )
     target_resource_id = Column(String, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
     source_ip = Column(String, nullable=True)
     metadata_json = Column(Text, nullable=True)
 

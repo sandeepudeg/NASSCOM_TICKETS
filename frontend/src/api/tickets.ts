@@ -82,6 +82,7 @@ export const ticketsApi = {
     sla_breach?: boolean
     intelligence_priority?: string
     owner_id?: string
+    q?: string
   }): Promise<TicketListResponse> => {
     const response = await apiClient.get<TicketListResponse>('/tickets', { params })
     return response.data
@@ -104,7 +105,7 @@ export const ticketsApi = {
     return data
   },
 
-  dispatchDrafts: async (ticketId: string, drafts: { customer_draft: string; engineer_note: string }): Promise<ClassificationResponse> => {
+  dispatchDrafts: async (ticketId: string, drafts: { customer_draft: string; engineer_note: string; status?: string }): Promise<ClassificationResponse> => {
     const response = await apiClient.post<ClassificationResponse>(`/tickets/${ticketId}/dispatch`, drafts)
     return response.data
   },

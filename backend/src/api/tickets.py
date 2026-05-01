@@ -1,4 +1,7 @@
 import json
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 from fastapi import (
     APIRouter,
@@ -68,6 +71,7 @@ async def list_tickets(
     sla_breach: bool | None = Query(None),
     intelligence_priority: str | None = Query(None),
     owner_id: str | None = Query(None),
+    q: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketService(db)
@@ -85,6 +89,7 @@ async def list_tickets(
         sla_breach=sla_breach,
         intelligence_priority=intelligence_priority,
         owner_id=owner_id,
+        q=q,
     )
 
 
@@ -536,7 +541,7 @@ async def polish_description(
     return await service.polish_text(text)
 
 
-@router.post("/{ticket_id}/resolve", tags=["Workflow"], response_model=TicketResponse)
+@router.api_route("/{ticket_id}/resolve", methods=["POST", "PATCH"], tags=["Workflow"], response_model=TicketResponse)
 async def resolve_ticket(
     ticket_id: str,
     payload: dict,
@@ -544,12 +549,26 @@ async def resolve_ticket(
     x_user_id: str = Header(default="system"),
 ):
     """Provides detailed resolution steps and moves ticket to awaiting_feedback."""
-    steps = payload.get("resolution_details", "")
-    service = WorkflowService(db)
-    ticket = await service.provide_resolution(ticket_id, steps, x_user_id)
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    return ticket
+    logger.info("workflow.resolve_request_received", ticket_id=ticket_id, user_id=x_user_id, payload_keys=list(payload.keys()))
+    try:
+        steps = payload.get("resolution_details", "")
+        if not steps:
+            logger.warning("workflow.resolve_missing_steps", ticket_id=ticket_id)
+            raise HTTPException(status_code=400, detail="Resolution details are required")
+
+        service = WorkflowService(db)
+        ticket = await service.provide_resolution(ticket_id, steps, x_user_id)
+        if not ticket:
+            logger.error("workflow.resolve_ticket_not_found", ticket_id=ticket_id)
+            raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
+        
+        logger.info("workflow.resolve_completed_successfully", ticket_id=ticket_id)
+        return ticket
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("workflow.resolve_unhandled_exception", ticket_id=ticket_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Internal resolution logic failure: {str(e)}")
 
 
 @router.post("/{ticket_id}/satisfy", tags=["Workflow"], response_model=TicketResponse)

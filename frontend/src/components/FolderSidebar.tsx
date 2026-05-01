@@ -172,7 +172,7 @@ export default function FolderSidebar() {
   const { data: escalationsData } = useQuery({
     queryKey: ['escalations-count', getUserRole(), getUserId()],
     queryFn: () => classificationApi.getEscalations({ 
-      limit: 0,
+      limit: 1,
       owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
     }),
   })
@@ -182,7 +182,7 @@ export default function FolderSidebar() {
     queryKey: ['alerts-count', getUserRole(), getUserId()],
     queryFn: () => classificationApi.getPatternAlerts({ 
       status: 'active', 
-      limit: 0,
+      limit: 1,
       owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
     }),
   })
@@ -190,13 +190,13 @@ export default function FolderSidebar() {
   // Fetch automation candidates count
   const { data: automationData } = useQuery({
     queryKey: ['automation-count'],
-    queryFn: () => classificationApi.getAutomationCandidates({ limit: 0 }),
+    queryFn: () => classificationApi.getAutomationCandidates({ limit: 1 }),
   })
 
   // Fetch automation archive count
   const { data: archiveData } = useQuery({
     queryKey: ['archive-count'],
-    queryFn: () => classificationApi.getAutomationArchive({ limit: 0 }),
+    queryFn: () => classificationApi.getAutomationArchive({ limit: 1 }),
   })
   
   // Fetch SLA breached count
@@ -341,7 +341,7 @@ export default function FolderSidebar() {
             label: (
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                 <span>Pattern Alerts</span>
-                {renderBadge(alertsData?.alerts.length || 0, '#f59e0b', 'rgba(245, 158, 11, 0.1)')}
+                {renderBadge(alertsData?.total || 0, '#f59e0b', 'rgba(245, 158, 11, 0.1)')}
               </div>
             ),
             icon: <LineChartOutlined />,

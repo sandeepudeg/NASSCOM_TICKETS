@@ -64,6 +64,7 @@ class PatternAlert(BaseModel):
 
 class PatternAlertResponse(BaseModel):
     alerts: list[PatternAlert]
+    total: int = 0
 
 
 class AgentOverrideRecord(BaseModel):

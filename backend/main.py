@@ -31,9 +31,10 @@ def get_allowed_origins():
 
     # Default origins for local development
     default_origins = [
-        "http://localhost:3000",  # React frontend (default)
-        "http://localhost:3003",  # React frontend (Vite default)
-        "http://localhost:3004",  # React frontend (Vite fallback)
+        "http://localhost:3000",
+        "http://localhost:3003",
+        "http://127.0.0.1:3003",
+        "http://localhost:3004",
         "http://localhost:5000",  # Flask admin local (default)
         "http://localhost:5001",  # Flask admin local (alternative)
     ]
@@ -72,11 +73,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_allowed_origins(),
+    allow_origins=["http://localhost:3003", "http://localhost:3000", "http://127.0.0.1:3003", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 setup_observability(app)
 
@@ -119,26 +121,14 @@ app.include_router(compliance.router, prefix=settings.api_v1_prefix)
 app.include_router(analytics.router, prefix=settings.api_v1_prefix)
 app.include_router(notifications.router, prefix=settings.api_v1_prefix)
 
-# Serve React Frontend (Production)
-# This directory will be populated during the Docker build process
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_dir):
-    app.mount(
-        "/assets",
-        StaticFiles(directory=os.path.join(static_dir, "assets")),
-        name="assets",
-    )
 
 
 @app.get("/")
 async def serve_root():
-    index_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
     return {
         "name": settings.app_name,
         "version": settings.app_version,
-        "message": "Intelligence API is active. UI not found in /static.",
+        "message": "Intelligence API is active.",
         "docs": "/docs",
     }
 

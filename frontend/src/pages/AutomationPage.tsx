@@ -29,7 +29,7 @@ export default function AutomationPage() {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['automation-candidates'],
-    queryFn: () => classificationApi.getAutomationCandidates({ limit: 500 }),
+    queryFn: () => classificationApi.getAutomationCandidates({ limit: 100 }),
   })
 
   const handleExport = () => {

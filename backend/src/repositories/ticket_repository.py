@@ -40,7 +40,7 @@ class TicketRepository:
         query = (
             select(Ticket)
             .options(selectinload(Ticket.similar_tickets))
-            .where(Ticket.id == ticket_id)
+            .where(or_(Ticket.id == ticket_id, Ticket.ticket_number == ticket_id))
         )
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
@@ -59,6 +59,7 @@ class TicketRepository:
         page: int = 1,
         sort_by: str = "created_at",
         sort_dir: str = "desc",
+        q: str | None = None,
     ) -> list[Ticket]:
         import structlog
         logger = structlog.get_logger("repo.ticket")
@@ -66,9 +67,9 @@ class TicketRepository:
         # Eager load similar_tickets for dashboard intelligence reconstruction
         query = select(Ticket).options(selectinload(Ticket.similar_tickets))
         
-        logger.info("ticket.list.start", owner_id=owner_id, status=status, category=category, page_size=page_size)
+        logger.info("ticket.list.start", owner_id=owner_id, status=status, category=category, page_size=page_size, q=q)
 
-        if owner_id:
+        if owner_id and owner_id not in ["undefined", "null", "None"]:
             query = query.where(Ticket.owner_id == owner_id)
         if status:
             query = query.where(Ticket.status == status)
@@ -88,6 +89,16 @@ class TicketRepository:
             # 7-day breach threshold for active tickets
             threshold = datetime.utcnow() - timedelta(days=7)
             query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
+
+        if q:
+            search_pattern = f"%{q}%"
+            query = query.where(
+                or_(
+                    Ticket.ticket_number.ilike(search_pattern),
+                    Ticket.title.ilike(search_pattern),
+                    Ticket.description.ilike(search_pattern),
+                )
+            )
 
         if sort_by == "status":
             order_col = Ticket.status
@@ -152,10 +163,11 @@ class TicketRepository:
         routing_status: str | None = None,
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
+        q: str | None = None,
     ) -> int:
         query = select(func.count(Ticket.id))
         
-        if owner_id:
+        if owner_id and owner_id not in ["undefined", "null", "None"]:
             query = query.where(Ticket.owner_id == owner_id)
         if status:
             query = query.where(Ticket.status == status)
@@ -169,6 +181,16 @@ class TicketRepository:
             # 7-day breach threshold for active tickets
             threshold = datetime.utcnow() - timedelta(days=7)
             query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
+        
+        if q:
+            search_pattern = f"%{q}%"
+            query = query.where(
+                or_(
+                    Ticket.ticket_number.ilike(search_pattern),
+                    Ticket.title.ilike(search_pattern),
+                    Ticket.description.ilike(search_pattern),
+                )
+            )
             
         result = await self.session.execute(query)
         return result.scalar() or 0
@@ -315,6 +337,7 @@ class TicketAssignmentRepository:
         routing_status: str | None = None,
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
+        q: str | None = None,
     ) -> list[Ticket]:
         query = (
             select(Ticket)
@@ -323,7 +346,7 @@ class TicketAssignmentRepository:
             .where(TicketFolderAssignment.folder_id == folder_id)
         )
 
-        if owner_id:
+        if owner_id and owner_id not in ["undefined", "null", "None"]:
             query = query.where(Ticket.owner_id == owner_id)
 
         if status:
@@ -338,6 +361,16 @@ class TicketAssignmentRepository:
             # 7-day breach threshold for active tickets
             threshold = datetime.utcnow() - timedelta(days=7)
             query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
+
+        if q:
+            search_pattern = f"%{q}%"
+            query = query.where(
+                or_(
+                    Ticket.ticket_number.ilike(search_pattern),
+                    Ticket.title.ilike(search_pattern),
+                    Ticket.description.ilike(search_pattern),
+                )
+            )
 
         if sort_by == "assigned_at":
             order_col = TicketFolderAssignment.assigned_at
@@ -368,6 +401,7 @@ class TicketAssignmentRepository:
         routing_status: str | None = None,
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
+        q: str | None = None,
     ) -> int:
         query = (
             select(func.count(Ticket.id))
@@ -375,7 +409,7 @@ class TicketAssignmentRepository:
             .where(TicketFolderAssignment.folder_id == folder_id)
         )
         
-        if owner_id:
+        if owner_id and owner_id not in ["undefined", "null", "None"]:
             query = query.where(Ticket.owner_id == owner_id)
         
         if status:
@@ -390,6 +424,16 @@ class TicketAssignmentRepository:
             # 7-day breach threshold for active tickets
             threshold = datetime.utcnow() - timedelta(days=7)
             query = query.where(and_(Ticket.created_at < threshold, Ticket.status != 'resolved'))
+            
+        if q:
+            search_pattern = f"%{q}%"
+            query = query.where(
+                or_(
+                    Ticket.ticket_number.ilike(search_pattern),
+                    Ticket.title.ilike(search_pattern),
+                    Ticket.description.ilike(search_pattern),
+                )
+            )
             
         result = await self.session.execute(query)
         return result.scalar() or 0

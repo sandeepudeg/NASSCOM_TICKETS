@@ -228,14 +228,15 @@ class TicketService:
             except Exception as e:
                 logger.warning("ticket.embedding_failed", error=str(e), ticket_id=ticket.id)
 
-            # --- Generate Readable Ticket Number ---
+            # --- Generate Readable Ticket Number (Department-Sequence Pattern) ---
             try:
                 category_enum = Category(classification.category.value)
                 short_code = CATEGORY_SHORT_CODES.get(category_enum, "GEN")
 
-                # Sequence based on global count (offset by 100 to look more established)
+                # Global Sequence to ensure zero redundancy (no duplicates)
                 ticket_count = await self.ticket_repo.count_all()
-                ticket.ticket_number = f"TK-{short_code}-{ticket_count + 101:05d}"
+                # Pattern: TICK-STO-100101
+                ticket.ticket_number = f"TICK-{short_code}-{ticket_count + 1001:06d}"
                 logger.info(
                     "ticket.number_generated", ticket_number=ticket.ticket_number
                 )
@@ -243,7 +244,8 @@ class TicketService:
                 logger.warning(
                     "ticket.number_generation_failed", error=str(e), exc_info=True
                 )
-                ticket.ticket_number = f"TK-GEN-{ticket.id[:5]}"
+                # Fallback to unique hash if sequence fails
+                ticket.ticket_number = f"TICK-GEN-{ticket.id[:6].upper()}"
 
             try:
                 ticket = await self.ticket_repo.update(ticket)
@@ -484,6 +486,7 @@ class TicketService:
         params: TicketPaginationParams | None = None,
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
+        q: str | None = None,
     ) -> TicketListResponse:
         p_size = params.page_size if params else 50
         p_page = params.page if params else 1
@@ -501,6 +504,7 @@ class TicketService:
             sort_dir=p_sort_dir,
             sla_breach=sla_breach,
             intelligence_priority=intelligence_priority,
+            q=q,
         )
 
         total_count = await self.ticket_repo.count_tickets(
@@ -510,6 +514,7 @@ class TicketService:
             routing_status=routing_status,
             sla_breach=sla_breach,
             intelligence_priority=intelligence_priority,
+            q=q,
         )
         responses = [ticket_to_response(t) for t in tickets]
         
@@ -690,26 +695,40 @@ class TicketService:
         source_ip: str | None = None,
     ) -> TicketResponse:
         """
-        Logic for approving AI drafts and transitioning ticket to in_progress.
+        Logic for approving AI drafts and transitioning ticket status.
+        Supports both 'in_progress' and 'resolved' states.
         """
         ticket = await self.ticket_repo.get_by_id(ticket_id)
         if not ticket:
             raise HTTPError.not_found("Ticket not found")
 
-        # 1. Update ticket status to 'in_progress'
-        ticket.status = "in_progress"
+        # 1. Determine Target Status and Action
+        target_status = drafts.get("status", "in_progress")
+        action_type = "ticket_dispatch"
+        
+        if target_status == "resolved":
+            ticket.status = "resolved"
+            ticket.resolution_details = drafts.get("customer_draft", "")
+            ticket.resolved_at = datetime.utcnow()
+            action_type = "ticket_resolve"
+            logger.info("ticket.resolved_via_copilot", ticket_id=ticket.id)
+        else:
+            ticket.status = "in_progress"
+            logger.info("ticket.dispatched_via_copilot", ticket_id=ticket.id)
+
         ticket = await self.ticket_repo.update(ticket)
         
         # 2. Record in Audit Log
         audit_log = await self.audit_repo.create(
             actor_user_id=user_id,
-            action_type="ticket_dispatch",
+            action_type=action_type,
             target_resource_id=ticket_id,
             source_ip=source_ip or "127.0.0.1",
             metadata={
                 "customer_draft": drafts.get("customer_draft", ""),
                 "engineer_note": drafts.get("engineer_note", ""),
-                "action": "AI_DRAFT_APPROVED"
+                "action": "CO_PILOT_DISPATCH",
+                "final_status": target_status
             }
         )
         

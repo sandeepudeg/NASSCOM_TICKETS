@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import {
   Typography,
@@ -23,6 +23,8 @@ import {
 } from 'antd'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import axios from 'axios'
+import { getAuthToken } from '../auth/tokenStorage'
 import {
   CheckCircleOutlined,
   HistoryOutlined,
@@ -72,6 +74,7 @@ import {
 } from 'recharts'
 import { designSystemStyled } from '@ticketiq/design-system'
 import { ticketsApi } from '../api/tickets'
+import { apiClient } from '../api/client'
 import { SimilarTicket, AuditSnapshot, GlobalInsight, GraphNode, GraphEdge } from '../api/types'
 import { Button, message, notification } from 'antd'
 import { useAuth } from '../auth/useAuth'
@@ -266,33 +269,59 @@ export default function ClassificationResultPanel() {
     if (!id || !resolutionStepsInput) return
     setIsWorkflowLoading(true)
     try {
-      await ticketsApi.resolve(id, resolutionStepsInput)
-      message.success('Resolution steps submitted. Ticket moved to Awaiting Feedback.')
+      // Primary Attempt: Localhost Bypass
+      const localUrl = `http://localhost:8005/api/v1/tickets/${id}/resolve`
+      try {
+        await axios.post(localUrl, { 
+          resolution_details: String(resolutionStepsInput).trim() 
+        }, {
+          headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        })
+      } catch (err: any) {
+        // Fallback Attempt: 127.0.0.1 (Some browsers/Docker configs prefer IP)
+        if (err.message === 'Network Error') {
+          const ipUrl = `http://127.0.0.1:8005/api/v1/tickets/${id}/resolve`
+          await axios.post(ipUrl, { 
+            resolution_details: String(resolutionStepsInput).trim() 
+          }, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+          })
+        } else {
+          throw err
+        }
+      }
+      message.success('✅ RESOLUTION SUBMITTED: USER FEEDBACK AWAITED')
       setIsResolveModalOpen(false)
+      setResolutionStepsInput('')
       refetch()
-    } catch (err) {
-      message.error('Failed to submit resolution')
+    } catch (err: any) {
+      const errorDetail = err.response?.data?.detail || err.message || 'Unknown Server Error'
+      message.error(`RESOLUTION FAILED: ${errorDetail}`)
+      console.error('Resolution Submission Error:', err)
     } finally {
       setIsWorkflowLoading(false)
     }
   }
 
-  const handleSatisfy = async () => {
-    if (!id) return
-    setIsWorkflowLoading(true)
-    try {
-      await ticketsApi.satisfy(id)
+  const satisfyMutation = useMutation({
+    mutationFn: (ticketId: string) => ticketsApi.satisfy(ticketId),
+    onSuccess: () => {
       notification.success({
         message: 'Feedback Recorded',
         description: 'Thank you for your feedback. The ticket is now pending final closure by the administrator.',
         placement: 'bottomRight'
       })
       refetch()
-    } catch (err) {
-      message.error('Failed to record feedback')
-    } finally {
-      setIsWorkflowLoading(false)
+    },
+    onError: (err: any) => {
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to record feedback'
+      message.error(`Feedback failed: ${errorMsg}`)
     }
+  })
+
+  const handleSatisfy = async () => {
+    if (!id) return
+    satisfyMutation.mutate(id)
   }
 
   const handleReopen = async (reason: string) => {
@@ -405,6 +434,7 @@ export default function ClassificationResultPanel() {
   const [userComment, setUserComment] = useState('')
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+  const [markAsResolved, setMarkAsResolved] = useState(false)
 
   const handleSubmitFeedback = async () => {
     if (!id || userRating === 0) {
@@ -584,7 +614,8 @@ export default function ClassificationResultPanel() {
     try {
       await ticketsApi.dispatchDrafts(id, {
         customer_draft: customerDraft || '',
-        engineer_note: engineerNote || ''
+        engineer_note: engineerNote || '',
+        status: markAsResolved ? 'resolved' : 'in_progress'
       })
       
       notification.success({
@@ -720,6 +751,8 @@ export default function ClassificationResultPanel() {
                   type="primary" 
                   icon={<SmileOutlined />} 
                   onClick={handleSatisfy}
+                  loading={satisfyMutation.isPending}
+                  disabled={satisfyMutation.isPending}
                   style={{ background: '#10b981', borderColor: '#10b981' }}
                 >
                   I am Satisfied
@@ -937,7 +970,7 @@ export default function ClassificationResultPanel() {
                       {/* Classification Target Card */}
                       <Card
                         className="glass-effect shadow-accent"
-                        bodyStyle={{ padding: '12px 20px' }}
+                        styles={{ body: { padding: '12px 20px' } }}
                         style={{ borderLeft: `6px solid ${priorityInfo.color}` }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -970,7 +1003,7 @@ export default function ClassificationResultPanel() {
                       {/* Service Intelligence Card */}
                       <Card
                         className="glass-effect shadow-accent"
-                        bodyStyle={{ padding: '10px 16px' }}
+                        styles={{ body: { padding: '10px 16px' } }}
                         style={{ 
                           background: 'rgba(16, 185, 129, 0.02)',
                           border: '1px solid rgba(16, 185, 129, 0.05)'
@@ -1033,7 +1066,7 @@ export default function ClassificationResultPanel() {
 
                   <Col span={12}>
                     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                      <Card className="glass-effect shadow-accent" bodyStyle={{ padding: '12px 20px' }}>
+                      <Card className="glass-effect shadow-accent" styles={{ body: { padding: '12px 20px' } }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
                           <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>CONFIDENCE METRICS</Text>
                           <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 800, fontSize: '24px', lineHeight: 1 }}>
@@ -1097,7 +1130,7 @@ export default function ClassificationResultPanel() {
 
                       <Card 
                         className="glass-effect shadow-accent" 
-                        bodyStyle={{ padding: '12px 20px' }}
+                        styles={{ body: { padding: '12px 20px' } }}
                         style={{ background: 'rgba(99, 102, 241, 0.02)' }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -1321,7 +1354,7 @@ export default function ClassificationResultPanel() {
                           <Card
                             title={<Space><BulbOutlined /> AI Co-Pilot Intelligence Hub</Space>}
                             className="glass-effect"
-                            bodyStyle={{ padding: '24px' }}
+                            styles={{ body: { padding: '24px' } }}
                           >
                             <Space direction="vertical" size={24} style={{ width: '100%' }}>
                               <div style={{
@@ -1360,15 +1393,24 @@ export default function ClassificationResultPanel() {
                                     >
                                       Regenerate
                                     </Button>
-                                    <Button 
-                                      type="primary" 
-                                      icon={<RocketFilled />} 
-                                      onClick={handleReviewAndSend}
-                                      disabled={isRegenerating || !customerDraft || data.status === 'in_progress' || data.status === 'resolved'}
-                                      style={{ background: '#2563eb' }}
-                                    >
-                                      Review & Send
-                                    </Button>
+                                    <Space>
+                                      <Checkbox 
+                                        checked={markAsResolved} 
+                                        onChange={e => setMarkAsResolved(e.target.checked)}
+                                        style={{ color: '#94a3b8', fontSize: '12px' }}
+                                      >
+                                        Mark as Resolved
+                                      </Checkbox>
+                                      <Button 
+                                        type="primary" 
+                                        icon={<RocketFilled />} 
+                                        onClick={handleReviewAndSend}
+                                        disabled={isRegenerating || !customerDraft || data.status === 'resolved'}
+                                        style={{ background: markAsResolved ? '#10b981' : '#2563eb', borderColor: markAsResolved ? '#10b981' : '#2563eb' }}
+                                      >
+                                        {markAsResolved ? 'Finalize & Resolve' : 'Review & Send'}
+                                      </Button>
+                                    </Space>
                                   </Space>
                                 </div>
                                 <Row gutter={1}>
@@ -1385,11 +1427,19 @@ export default function ClassificationResultPanel() {
                                       </div>
                                       <div style={{ background: 'rgba(0,0,0,0.1)', padding: '16px', borderRadius: '8px', minHeight: '140px', border: '1px solid var(--color-border-primary)' }}>
                                         {isRegenerating ? <Spin size="small" /> : (
-                                          <div className="markdown-content" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                              {customerDraft || "_Synthesizing polite update..._"}
-                                            </ReactMarkdown>
-                                          </div>
+                                          <Input.TextArea 
+                                            value={customerDraft || ""} 
+                                            onChange={(e) => setCustomerDraft(e.target.value)}
+                                            autoSize={{ minRows: 6, maxRows: 12 }}
+                                            placeholder="Synthesize polite update..."
+                                            style={{ 
+                                              background: 'transparent', 
+                                              border: 'none', 
+                                              color: '#e2e8f0',
+                                              padding: 0,
+                                              fontSize: '13px'
+                                            }}
+                                          />
                                         )}
                                       </div>
                                     </div>
@@ -1407,11 +1457,19 @@ export default function ClassificationResultPanel() {
                                       </div>
                                       <div style={{ background: 'rgba(0,0,0,0.1)', padding: '16px', borderRadius: '8px', minHeight: '140px', border: '1px solid var(--color-border-primary)' }}>
                                         {isRegenerating ? <Spin size="small" /> : (
-                                          <div className="markdown-content" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                              {engineerNote || "_Synthesizing technical handover..._"}
-                                            </ReactMarkdown>
-                                          </div>
+                                          <Input.TextArea 
+                                            value={engineerNote || ""} 
+                                            onChange={(e) => setEngineerNote(e.target.value)}
+                                            autoSize={{ minRows: 6, maxRows: 12 }}
+                                            placeholder="Synthesize technical handover..."
+                                            style={{ 
+                                              background: 'transparent', 
+                                              border: 'none', 
+                                              color: '#e2e8f0',
+                                              padding: 0,
+                                              fontSize: '13px'
+                                            }}
+                                          />
                                         )}
                                       </div>
                                     </div>
@@ -1432,8 +1490,41 @@ export default function ClassificationResultPanel() {
                               <Card 
                                 title={<Space><AreaChartOutlined /> Real-time Recovery Metrics</Space>} 
                                 className="glass-effect"
-                                extra={<Tag color={data.status === 'resolved' ? "success" : "processing"}>{data.status === 'resolved' ? "STABLE" : "RECOVERING"}</Tag>}
+                                extra={
+                                  <Space>
+                                    <Tag color={data.status === 'resolved' ? "success" : "processing"}>
+                                      {data.status === 'resolved' ? "STABLE" : "RECOVERING"}
+                                    </Tag>
+                                  </Space>
+                                }
                               >
+                                <div style={{ marginBottom: 24, padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                  <Text strong style={{ display: 'block', fontSize: '11px', marginBottom: 12, color: 'var(--color-text-secondary)' }}>EVIDENCE & FORENSICS VAULT</Text>
+                                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                    <div style={{ 
+                                      width: 80, 
+                                      height: 80, 
+                                      border: '1px dashed rgba(255,255,255,0.2)', 
+                                      borderRadius: '8px', 
+                                      display: 'flex', 
+                                      flexDirection: 'column',
+                                      alignItems: 'center', 
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.3s'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'}
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                                    >
+                                      <CopyOutlined style={{ fontSize: 20, color: '#94a3b8', marginBottom: 4 }} />
+                                      <Text style={{ fontSize: 10, color: '#94a3b8' }}>Attach</Text>
+                                    </div>
+                                    {/* Placeholder for uploaded evidence */}
+                                    <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <FileTextOutlined style={{ fontSize: 24, color: '#6366f1' }} />
+                                    </div>
+                                  </div>
+                                </div>
                                 <div style={{ height: 300, width: '100%', marginTop: 20 }}>
                                   <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={[
@@ -1467,7 +1558,7 @@ export default function ClassificationResultPanel() {
                             </Col>
                             <Col span={8}>
                               <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                                <Card title={<Space><HeartOutlined /> Health Verification</Space>} className="glass-effect" bodyStyle={{ padding: '16px' }}>
+                                <Card title={<Space><HeartOutlined /> Health Verification</Space>} className="glass-effect" styles={{ body: { padding: '16px' } }}>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                       <Text style={{ fontSize: 12 }}>Synthetic Pulse</Text>
@@ -1484,7 +1575,7 @@ export default function ClassificationResultPanel() {
                                   </div>
                                 </Card>
                                 
-                                <Card title={<Space><BarChartOutlined /> ROI Metrics</Space>} className="glass-effect" bodyStyle={{ padding: '16px' }}>
+                                <Card title={<Space><BarChartOutlined /> ROI Metrics</Space>} className="glass-effect" styles={{ body: { padding: '16px' } }}>
                                   <div style={{ textAlign: 'center' }}>
                                     <Title level={4} style={{ color: '#10b981', margin: 0 }}>
                                       {data.roi_value_saved ? data.roi_value_saved.toFixed(1) : '44.8'}m
@@ -1929,7 +2020,7 @@ export default function ClassificationResultPanel() {
             {data.automation_status === 'completed' ? 'Remediation Verified ✅' : 'Approve & Execute Remediation'}
           </Button>
         ]}
-        bodyStyle={{ maxHeight: '600px', overflowY: 'auto', padding: '20px' }}
+        styles={{ body: { maxHeight: '600px', overflowY: 'auto', padding: '20px' } }}
         className="simulation-modal"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1992,7 +2083,7 @@ export default function ClassificationResultPanel() {
           </Button>
         ]}
         width={600}
-        bodyStyle={{ maxHeight: '500px', overflowY: 'auto' }}
+        styles={{ body: { maxHeight: '500px', overflowY: 'auto' } }}
       >
         {selectedSnapshot && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

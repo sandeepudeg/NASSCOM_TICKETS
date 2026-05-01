@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketIQ | Hackathon Champion Submission</title>
+    <style>
+        :root {
+            --color-primary: #10b981;
+            --color-secondary: #3b82f6;
+            --color-bg: #030712;
+            --color-surface: #111827;
+            --color-text: #f9fafb;
+            --color-text-dim: #9ca3af;
+            --color-accent: #8b5cf6;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .hero {
+            height: 80vh;
+            background: linear-gradient(rgba(3, 7, 18, 0.6), rgba(3, 7, 18, 0.9)), url('hackathon_hero_visual.png');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 20px;
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .hero h1 {
+            font-size: 5rem;
+            font-weight: 900;
+            margin: 0;
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            color: var(--color-text-dim);
+            max-width: 800px;
+            margin-top: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+
+        .section-card {
+            background: var(--color-surface);
+            border-radius: 24px;
+            padding: 50px;
+            margin-bottom: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-card::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--color-primary);
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .usp-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .usp-card:hover {
+            transform: translateY(-10px);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .usp-card h3 {
+            color: var(--color-secondary);
+            margin-bottom: 15px;
+        }
+
+        .visual-container {
+            margin: 40px 0;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .visual-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .mermaid-box {
+            background: #000;
+            padding: 30px;
+            border-radius: 12px;
+            border-left: 5px solid var(--color-primary);
+            margin-bottom: 30px;
+        }
+
+        .mermaid-code {
+            color: #10b981;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .stat-item h4 {
+            font-size: 3rem;
+            color: var(--color-primary);
+            margin: 0;
+        }
+
+        .stat-item p {
+            font-size: 1rem;
+            color: var(--color-text-dim);
+            text-transform: uppercase;
+        }
+
+        .tech-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .tech-tag {
+            background: var(--color-bg);
+            padding: 6px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--color-primary);
+            font-size: 0.85rem;
+            color: var(--color-primary);
+        }
+
+        footer {
+            padding: 60px;
+            text-align: center;
+            background: var(--color-surface);
+            color: var(--color-text-dim);
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>TicketIQ</h1>
+        <p>Revolutionizing Enterprise Support with Neural Intelligence & Self-Healing Workflows</p>
+    </div>
+
+    <div class="container">
+        <!-- 1. Executive Summary -->
+        <section class="section-card">
+            <h2>The Challenge</h2>
+            <p>Modern enterprises lose <strong>$1.2M annually</strong> due to manual ticket classification, PII leaks, and lack of real-time operational oversight. Legacy ITSM tools are reactive, siloed, and lack the predictive intelligence needed for sub-second incident response.</p>
+            
+            <div class="stats-row">
+                <div class="stat-item">
+                    <h4>92%</h4>
+                    <p>Accuracy Target</p>
+                </div>
+                <div class="stat-item">
+                    <h4>85%</h4>
+                    <p>Manual Effort Reduction</p>
+                </div>
+                <div class="stat-item">
+                    <h4>< 1s</h4>
+                    <p>Processing Latency</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. The Solution -->
+        <section class="section-card">
+            <h2>The Visionary Solution</h2>
+            <p>TicketIQ is a <strong>Full-Stack AIOps Ecosystem</strong> that transforms chaotic ticket streams into an organized, intelligence-driven Mission Control. It uses local LLMs for data sovereignty, Vector Embeddings for RAG-based resolutions, and a Glass-morphism dashboard for executive oversight.</p>
+            
+            <div class="visual-container">
+                <img src="solution_architecture_diagram_1777619371931.png" alt="Architecture Overview">
+            </div>
+
+            <div class="grid-3">
+                <div class="usp-card">
+                    <h3>Neural Classifier</h3>
+                    <p>Multi-layered AI that detects category, sentiment, and impact in milliseconds using LLM-as-a-Judge validation.</p>
+                </div>
+                <div class="usp-card">
+                    <h3>RAG-Engine</h3>
+                    <p>Retrieval-Augmented Generation that searches historical "Tribal Knowledge" to suggest instant resolutions.</p>
+                </div>
+                <div class="usp-card">
+                    <h3>Forensic Audit</h3>
+                    <p>Every AI decision is snapshot-captured, ensuring 100% compliance and human-in-the-loop transparency.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Technical Low-Level Design -->
+        <section class="section-card">
+            <h2>Technical Architecture (LLD)</h2>
+            <p>Engineered for high-throughput, the system uses an <strong>Asynchronous Event-Driven</strong> model. The Intelligence Core is decoupled from the UI, allowing the AI to think without blocking the user experience.</p>
+            
+            <div class="visual-container">
+                <img src="sequence_diagram_visual_1777619444453.png" alt="Process Flow">
+            </div>
+
+            <div class="mermaid-box">
+                <div class="mermaid-code">
+sequenceDiagram
+    participant User
+    participant API as Intelligence Core
+    participant AI as Neural Engine
+    participant DB as Vector Matrix
+    
+    User->>API: Ingest Batch/Ticket
+    API->>AI: Scoped Prompt (CoT)
+    AI-->>API: Intent + Sentiment + Category
+    API->>DB: Store Vector + Record
+    API-->>User: Intelligence Assigned (Real-time)
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Data Engineering & Compliance -->
+        <section class="section-card">
+            <h2>Data Engineering & Privacy</h2>
+            <p>Built with <strong>Privacy-by-Design</strong>. All data passes through a mandatory PII Scrubber before being indexed into the Neural Matrix, ensuring no sensitive data ever enters the vector store.</p>
+            
+            <div class="visual-container">
+                <img src="data_engineering_flow_visual_1777619394580.png" alt="Data Flow">
+            </div>
+
+            <div class="mermaid-box">
+                <div class="mermaid-code">
+graph LR
+    Source[CSV/Web/Log] --> Scrub[PII Scrubber]
+    Scrub --> Vector[Embedding Engine]
+    Vector --> RAG[RAG Retrieval]
+    RAG --> Action[Automated Action]
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Data Model & ERD -->
+        <section class="section-card">
+            <h2>The Neural Matrix (ERD)</h2>
+            <p>A hybrid schema combining Relational stability with Vector agility.</p>
+            
+            <div class="visual-container">
+                <img src="data_model_erd_visual_1777619417743.png" alt="ERD Visual">
+            </div>
+
+            <div class="mermaid-box">
+                <div class="mermaid-code">
+erDiagram
+    TICKET ||--o{ EMBEDDING : "Semantic Vector"
+    TICKET ||--o{ PATTERN : "Cluster Member"
+    USER ||--o{ FOLDER : "Owns"
+    FOLDER ||--o{ TICKET : "Categorized In"
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. State Transition -->
+        <section class="section-card">
+            <h2>Operational Lifecycle</h2>
+            <p>From ingestion to self-healing resolution.</p>
+            
+            <div class="visual-container">
+                <img src="state_transition_visual_1777619463465.png" alt="State Transition Map">
+            </div>
+
+            <div class="mermaid-box">
+                <div class="mermaid-code">
+stateDiagram-v2
+    [*] --> Ingested
+    Ingested --> Intelligence_Assigned
+    Intelligence_Assigned --> RAG_Enriched
+    RAG_Enriched --> Self_Healing_Approved
+    Self_Healing_Approved --> Resolved
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Tech Stack -->
+        <section class="section-card">
+            <h2>The Power Behind TicketIQ</h2>
+            <div class="tech-list">
+                <span class="tech-tag">FastAPI (Async Backend)</span>
+                <span class="tech-tag">React + Vite (Premium UI)</span>
+                <span class="tech-tag">PostgreSQL + pgvector</span>
+                <span class="tech-tag">Ollama (Local LLM)</span>
+                <span class="tech-tag">Recharts (AIOps Viz)</span>
+                <span class="tech-tag">MLflow (Model Ops)</span>
+                <span class="tech-tag">Traefik (API Gateway)</span>
+                <span class="tech-tag">Docker (Scale)</span>
+            </div>
+        </section>
+
+        <!-- 8. Future Roadmap -->
+        <section class="section-card">
+            <h2>Roadmap: Towards Autonomous AIOps</h2>
+            <ul>
+                <li><strong>Phase 1:</strong> Multi-Modal Log Analysis (Images/Screenshots support).</li>
+                <li><strong>Phase 2:</strong> Predictive SLA Self-Healing (Pre-emptive infrastructure scaling).</li>
+                <li><strong>Phase 3:</strong> Global Neural Network (Cross-enterprise anonymized learning).</li>
+            </ul>
+        </section>
+    </div>
+
+    <footer>
+        <p>Built for the Future of IT. Submitted for the Hackathon 2026.</p>
+    </footer>
+</body>
+</html>

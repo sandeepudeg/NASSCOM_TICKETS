@@ -129,7 +129,7 @@ const KnowledgeWidget = () => {
   return (
     <div style={{ padding: '24px 40px' }}>
       <Title level={5} style={{ fontSize: '13px', marginBottom: '16px', color: 'var(--color-primary)', letterSpacing: '0.1em' }}>AI KNOWLEDGE BREAKDOWN</Title>
-      <div style={{ height: 120, marginBottom: 16 }}>
+      <div style={{ height: 120, marginBottom: 16, minHeight: 120 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={data} innerRadius={35} outerRadius={55} paddingAngle={5} dataKey="value" stroke="none" />
@@ -162,7 +162,7 @@ const SentimentWidget = ({ analyticsData }: any) => {
         <div style={{ fontSize: '36px', fontWeight: 900, color: 'var(--color-primary)', letterSpacing: '-0.02em' }}>{sentiment}%</div>
         <Text strong style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.9 }}>Average Customer Tone</Text>
       </div>
-      <Progress percent={sentiment} strokeColor="var(--color-primary)" showInfo={false} strokeWidth={6} style={{ margin: '16px 0' }} trailColor="var(--color-bg-trail)" />
+      <Progress percent={sentiment} strokeColor="var(--color-primary)" showInfo={false} size={["100%", 6]} style={{ margin: '16px 0' }} trailColor="var(--color-bg-trail)" />
       <Text type="secondary" style={{ fontSize: '11px', lineHeight: '1.5', display: 'block', textAlign: 'center' }}>
         Current tickets reflect a <Text strong style={{ color: isPositive ? 'var(--color-text-success)' : 'var(--color-text-warning)' }}>{isPositive ? 'Healthy' : 'Mixed'}</Text> customer sentiment across all domains.
       </Text>
@@ -261,7 +261,7 @@ const IntelligenceHub = ({ statsData, ticketsData, analyticsData }: any) => {
     <Card
       className="glass-effect"
       style={{ marginTop: '20px', minHeight: '320px', position: 'relative' }}
-      bodyStyle={{ padding: 0 }}
+      styles={{ body: { padding: 0 } }}
       title={
         <Space>
           <RocketOutlined style={{ color: 'var(--color-primary)' }} />
@@ -422,8 +422,7 @@ const PredictiveVelocityGauge = ({ isExecuting, isDone }: { isExecuting: boolean
           percent={velocity}
           gapDegree={120}
           strokeColor={statusColor}
-          strokeWidth={10}
-          width={80}
+          size={80}
           trailColor="var(--color-bg-trail)"
           format={(percent) => (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '15px' }}>
@@ -453,7 +452,7 @@ const SecurityMonitorWidget = () => {
     <Card
       className="glass-effect shadow-accent"
       style={{ marginTop: '20px', borderLeft: '4px solid #8b5cf6' }}
-      bodyStyle={{ padding: '20px 24px' }}
+      styles={{ body: { padding: '20px 24px' } }}
       title={
         <Space>
           <SafetyCertificateOutlined style={{ color: '#8b5cf6' }} />
@@ -527,7 +526,7 @@ const StrategicIntelligenceCommand = ({ metricsData, analyticsData }: any) => {
       <Row gutter={[20, 20]}>
         <Col xs={24} lg={9}>
           <Card className="glass-effect" title={<Text strong style={{ fontSize: '13px' }}>Domain Mastery Radar</Text>}>
-            <div style={{ height: 320, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ height: 320, display: 'flex', justifyContent: 'center', minHeight: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                   <PolarGrid stroke="var(--color-border-primary)" />
@@ -548,7 +547,7 @@ const StrategicIntelligenceCommand = ({ metricsData, analyticsData }: any) => {
 
         <Col xs={24} lg={9}>
           <Card className="glass-effect" title={<Text strong style={{ fontSize: '13px' }}>Sentiment Velocity Trajectory</Text>}>
-            <div style={{ height: 320 }}>
+            <div style={{ height: 320, minHeight: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={sentimentVelocity}>
                   <defs>
@@ -740,7 +739,7 @@ const DashboardPage = () => {
 
   const openTicketsCount = (statsData?.stats || []).reduce((acc, stat) => acc + (stat?.open_tickets || 0), 0)
   const escalationQueueDepth = (escalationsData?.escalations || []).filter(Boolean).length
-  const activePatternAlerts = (alertsData?.alerts || []).filter(Boolean).length
+  const activePatternAlerts = alertsData?.total || 0
   const classifierAccuracy = metricsData?.macro_f1 != null ? (metricsData.macro_f1 * 100).toFixed(1) : '85.0'
 
   const optimizationInsight = React.useMemo(() => {
@@ -819,8 +818,7 @@ const DashboardPage = () => {
               percent={rate}
               showInfo={false}
               strokeColor="var(--color-text-success)"
-              size="small"
-              strokeWidth={4}
+              size={["100%", 4]}
               trailColor="var(--color-bg-trail)"
             />
           </Space>
@@ -1022,7 +1020,7 @@ const DashboardPage = () => {
             className="glass-effect"
             style={{ height: '100%' }}
           >
-            <div style={{ height: 300 }}>
+            <div style={{ height: 300, minHeight: 300 }}>
               {(statsData?.stats || []).length === 0 ? (
                 <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontStyle: 'italic', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                   no data available for show kindly add tickets
@@ -1055,7 +1053,7 @@ const DashboardPage = () => {
 
             <div style={{ marginTop: '32px' }}>
               <Title level={4} style={{ fontSize: '16px', marginBottom: '20px' }}>Departmental Distribution</Title>
-              <div style={{ height: 300 }}>
+              <div style={{ height: 300, minHeight: 300 }}>
                 {(statsData?.stats || []).length === 0 ? (
                   <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontStyle: 'italic', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                     no data available for show kindly add tickets
@@ -1258,7 +1256,7 @@ const DashboardPage = () => {
                         percent={((item.val || 0) / 5) * 100}
                         showInfo={false}
                         strokeColor={i === 2 ? 'var(--color-text-danger)' : 'var(--color-primary)'}
-                        size="small"
+                        size={["100%", 4]}
                         trailColor="var(--color-bg-trail)"
                       />
                     </div>
@@ -1299,7 +1297,7 @@ const DashboardPage = () => {
           <Col xs={24} lg={6}>
             <Card
               className="glass-effect shadow-accent"
-              bodyStyle={{ padding: '32px 24px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              styles={{ body: { padding: '32px 24px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } }}
               style={{ background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.02) 100%)', height: '100%', borderRadius: '16px' }}
             >
               <div style={{ textAlign: 'center', marginBottom: '32px', width: '100%' }}>
@@ -1312,8 +1310,7 @@ const DashboardPage = () => {
                   type="circle"
                   percent={Math.round((statsData?.stats || []).reduce((acc, s) => acc + (s.efficiency || 0), 0) / ((statsData?.stats || []).length || 1))}
                   strokeColor="var(--color-primary)"
-                  strokeWidth={10}
-                  width={140}
+                  size={140}
                   trailColor="var(--color-bg-trail)"
                 />
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
@@ -1363,7 +1360,7 @@ const DashboardPage = () => {
                     <Col xs={24} sm={12} lg={8} key={dept.id || idx}>
                       <Card
                         className="glass-effect shadow-accent"
-                        bodyStyle={{ padding: '16px' }}
+                        styles={{ body: { padding: '16px' } }}
                         hoverable
                         style={{
                           height: '100%',
@@ -1434,7 +1431,7 @@ const DashboardPage = () => {
               <Col xs={24} sm={12} lg={8}>
                 <Card
                   className="glass-effect shadow-accent"
-                  bodyStyle={{ padding: '16px' }}
+                  styles={{ body: { padding: '16px' } }}
                   hoverable
                   style={{
                     height: '100%',
@@ -1483,7 +1480,7 @@ const DashboardPage = () => {
               <Col xs={24} sm={12} lg={8}>
                 <Card
                   className="glass-effect shadow-accent"
-                  bodyStyle={{ padding: '16px' }}
+                  styles={{ body: { padding: '16px' } }}
                   hoverable
                   style={{
                     height: '100%',

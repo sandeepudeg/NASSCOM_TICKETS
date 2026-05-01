@@ -1,7 +1,7 @@
 @echo off
-REM TicketIQ Stable Startup Script
-echo 🎫 TicketIQ - Production Ready Startup
-echo ====================================
+REM TicketIQ Unified Startup for Windows
+echo 🎫 TicketIQ - Unified Startup (Restored State)
+echo ===========================================
 
 REM Check if Docker is running
 docker info >nul 2>&1
@@ -26,17 +26,14 @@ goto parse_args
 :start_services
 cd docker
 
-echo 🚀 Restarting services with latest fixes...
-echo    (Applied: Count badge fix, Dashboard AntD migration, Automation limit fix)
-
-REM We use the vector-store profile to ensure AI capabilities are active
+echo 🚀 Restarting services with latest code...
 docker compose --profile vector-store down --remove-orphans
 
 if %CLEAN_BUILD%==1 (
     echo 🧹 Clean Build Mode: Building with --no-cache...
     docker compose --profile vector-store build --no-cache
 ) else (
-    echo 🏗️  Building containers...
+    echo 🏗️  Building with latest changes...
     docker compose --profile vector-store build
 )
 
@@ -59,10 +56,11 @@ echo 📈 Monitoring:     http://localhost:3002 (Grafana)
 echo 🧪 ML Experiments: http://localhost:5000 (MLflow)
 echo 🛠️  Admin Portal:   http://localhost:5001 (Flask Admin)
 echo 🔍 Trace Viewer:   http://localhost:16686 (Jaeger)
+echo 🧠 AI Memory:      http://localhost:6333/dashboard (Qdrant)
 echo 📦 Storage:       http://localhost:9001 (MinIO)
 echo 🔐 Identity:      http://localhost:8080 (Keycloak)
 echo ----------------------------------------
-echo 📊 Current Intelligence State:
+echo 📊 Intelligence State:
 docker exec tickets_postgres psql -U postgres -d tickets -t -c "SELECT count(*) || ' Tickets across ' || (SELECT count(*) FROM folders WHERE deleted_at IS NULL) || ' Departments' FROM tickets;"
 echo ----------------------------------------
 echo 💡 TIP: If changes don't appear, use Ctrl+Shift+R for a Hard Refresh.
@@ -70,7 +68,7 @@ echo ----------------------------------------
 echo.
 
 if %SEED_DATA%==1 (
-    echo 🌱 Seeding database with demo data...
+    echo 🌱 Seeding database...
     docker compose exec api sh -c "PYTHONPATH=. python scripts/seed_enterprise_data.py"
     echo ✅ Seeding complete!
 )

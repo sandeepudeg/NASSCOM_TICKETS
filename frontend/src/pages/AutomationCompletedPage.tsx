@@ -67,7 +67,7 @@ export default function AutomationCompletedPage() {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['automation-archive'],
-    queryFn: () => classificationApi.getAutomationArchive({ limit: 500 }),
+    queryFn: () => classificationApi.getAutomationArchive({ limit: 100 }),
   })
 
   const handleReviewAudit = (ticket: any) => {
