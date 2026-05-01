@@ -393,6 +393,55 @@ const OrchestrationLogFeed = ({ isExecuting, isDone }: { isExecuting: boolean, i
   )
 }
 
+const PredictiveVelocityGauge = ({ isExecuting, isDone }: { isExecuting: boolean, isDone: boolean }) => {
+  const velocity = isDone ? 94 : isExecuting ? 78 : 64;
+  const statusColor = velocity > 90 ? 'var(--color-text-success)' : (velocity > 75 ? 'var(--color-primary)' : 'var(--color-text-warning)');
+
+  return (
+    <div style={{ 
+      marginTop: '16px', 
+      padding: '16px 20px', 
+      background: 'rgba(255,255,255,0.01)', 
+      borderRadius: '12px', 
+      border: '1px solid rgba(255,255,255,0.05)',
+      height: '140px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{ position: 'absolute', top: '12px', left: '20px', fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Predictive Velocity
+      </div>
+      
+      <div style={{ marginTop: '10px' }}>
+        <Progress
+          type="dashboard"
+          percent={velocity}
+          gapDegree={120}
+          strokeColor={statusColor}
+          strokeWidth={10}
+          width={80}
+          trailColor="var(--color-bg-trail)"
+          format={(percent) => (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '15px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 900, color: 'var(--color-text-primary)' }}>{percent}%</span>
+              <span style={{ fontSize: '8px', color: 'var(--color-text-secondary)', fontWeight: 700, textTransform: 'uppercase' }}>Current</span>
+            </div>
+          )}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '-5px' }}>
+         <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor, boxShadow: `0 0 6px ${statusColor}` }} />
+         <Text strong style={{ fontSize: '10px', color: statusColor }}>{velocity > 90 ? 'OPTIMAL THROUGHPUT' : (velocity > 75 ? 'ADJUSTING AFFINITY' : 'CAPACITY LIMITED')}</Text>
+      </div>
+    </div>
+  )
+}
+
 const SecurityMonitorWidget = () => {
   const complianceItems = [
     { label: 'PII Redaction', status: '100% Protected', icon: <LockOutlined style={{ color: '#10b981' }} />, color: '#10b981' },
@@ -1029,10 +1078,20 @@ const DashboardPage = () => {
                   </div>
                 )}
                 
-                <OrchestrationLogFeed 
-                  isExecuting={isOrchestrationExecuting} 
-                  isDone={isOrchestrationDone} 
-                />
+                <Row gutter={20}>
+                  <Col span={12}>
+                    <OrchestrationLogFeed 
+                      isExecuting={isOrchestrationExecuting} 
+                      isDone={isOrchestrationDone} 
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <PredictiveVelocityGauge 
+                      isExecuting={isOrchestrationExecuting} 
+                      isDone={isOrchestrationDone} 
+                    />
+                  </Col>
+                </Row>
               </div>
             </div>
           </Card>
