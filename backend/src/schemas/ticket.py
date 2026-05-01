@@ -12,7 +12,7 @@ class Category(str, Enum):
     DATABASE = "Database"
     STORAGE = "Storage"
     NETWORK = "Network"
-    ACCESS_MANAGEMENT = "Access Management"
+    ACCESS = "Access"
 
 
 class TicketStatus(str, Enum):
@@ -20,6 +20,10 @@ class TicketStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
     CLOSED = "closed"
+    AWAITING_FEEDBACK = "awaiting_feedback"
+    AWAITING_EVIDENCE = "awaiting_evidence"
+    PENDING_VISIT = "pending_visit"
+    PENDING_CLOSURE = "pending_closure"
 
 
 class RoutingStatus(str, Enum):
@@ -64,6 +68,7 @@ class TicketCreate(TicketBase):
     source_channel: str | None = "web"
     enable_judge: bool | None = False
     structured_payload: dict[str, Any] | None = None
+    owner_id: str | None = None
 
 
 class TicketUpdate(BaseModel):
@@ -128,6 +133,11 @@ class TicketResponse(TicketBase):
     complexity_score: int = 1
     estimated_resolution_at: datetime | None = None
     sla_status: str | None = "on_track"
+    
+    # Resolution & Enterprise Flow (Phase 9)
+    resolution_details: str | None = None
+    hold_type: str | None = None
+    status_changed_at: datetime | None = None
 
 
 class TicketListResponse(BaseModel):

@@ -69,3 +69,21 @@ class AuditService:
             }
             for s in snapshots
         ]
+    async def get_logs_for_ticket(self, ticket_id: str) -> list[dict]:
+        """
+        Retrieves all audit logs for a specific ticket.
+        """
+        query = select(AuditLog).where(AuditLog.target_resource_id == ticket_id).order_by(AuditLog.timestamp.desc())
+        result = await self.session.execute(query)
+        logs = result.scalars().all()
+        
+        return [
+            {
+                "id": l.id,
+                "actor_user_id": l.actor_user_id,
+                "action_type": l.action_type,
+                "timestamp": l.timestamp,
+                "metadata": json.loads(l.metadata_json) if l.metadata_json else {}
+            }
+            for l in logs
+        ]

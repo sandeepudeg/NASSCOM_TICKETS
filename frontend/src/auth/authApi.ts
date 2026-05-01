@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { setAuthToken, setRefreshToken, clearAuthToken, getRefreshToken } from './tokenStorage'
+import { setAuthToken, setRefreshToken, setUserRole, setUserId, clearAuthToken, getRefreshToken } from './tokenStorage'
 
 interface LoginRequest {
   username: string
@@ -10,6 +10,8 @@ interface LoginRequest {
 interface LoginResponse {
   access_token: string
   refresh_token: string
+  role: string
+  user_id: string
   token_type: string
   expires_in: number
 }
@@ -29,10 +31,12 @@ export const authApi = {
   // Login with username and password
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const response = await authClient.post<LoginResponse>('/auth/login', credentials)
-    const { access_token, refresh_token } = response.data
+    const { access_token, refresh_token, role, user_id } = response.data
     
     setAuthToken(access_token)
     setRefreshToken(refresh_token)
+    setUserRole(role)
+    setUserId(user_id)
     
     return response.data
   },

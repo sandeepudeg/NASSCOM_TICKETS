@@ -33,6 +33,7 @@ import { ticketsApi } from '../api/tickets'
 import { classificationApi } from '../api/classification'
 import { useFolderStore } from '../stores/folderStore'
 import { designSystemStyled } from '@ticketiq/design-system'
+import { getUserRole, getUserId } from '../auth/tokenStorage'
 import type { MenuProps } from 'antd'
 
 const { Sider } = Layout
@@ -152,26 +153,38 @@ export default function FolderSidebar() {
 
   // Fetch folders and stats
   const { data: statsData, isLoading: isStatsLoading } = useQuery({
-    queryKey: ['folders-stats'],
-    queryFn: () => foldersApi.getStats(),
+    queryKey: ['folders-stats', getUserRole(), getUserId()],
+    queryFn: () => foldersApi.getStats({ 
+      ticket_owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined 
+    }),
   })
 
   // Fetch all tickets count (just for the count)
   const { data: ticketsData } = useQuery({
-    queryKey: ['tickets-count'],
-    queryFn: () => ticketsApi.list({ page_size: 1 }),
+    queryKey: ['tickets-count', getUserRole(), getUserId()],
+    queryFn: () => ticketsApi.list({ 
+      page_size: 1,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
   })
 
   // Fetch escalations count
   const { data: escalationsData } = useQuery({
-    queryKey: ['escalations-count'],
-    queryFn: () => classificationApi.getEscalations({ limit: 0 }),
+    queryKey: ['escalations-count', getUserRole(), getUserId()],
+    queryFn: () => classificationApi.getEscalations({ 
+      limit: 0,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
   })
 
   // Fetch alerts count
   const { data: alertsData } = useQuery({
-    queryKey: ['alerts-count'],
-    queryFn: () => classificationApi.getPatternAlerts({ status: 'active', limit: 0 }),
+    queryKey: ['alerts-count', getUserRole(), getUserId()],
+    queryFn: () => classificationApi.getPatternAlerts({ 
+      status: 'active', 
+      limit: 0,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
   })
 
   // Fetch automation candidates count
@@ -188,8 +201,12 @@ export default function FolderSidebar() {
   
   // Fetch SLA breached count
   const { data: slaBreachData } = useQuery({
-    queryKey: ['sla-breach-count'],
-    queryFn: () => ticketsApi.list({ page_size: 1, sla_breach: true }),
+    queryKey: ['sla-breach-count', getUserRole(), getUserId()],
+    queryFn: () => ticketsApi.list({ 
+      page_size: 1, 
+      sla_breach: true,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
   })
 
   const handleFolderClick = (folderId: string) => {
@@ -223,7 +240,11 @@ export default function FolderSidebar() {
     )
   }
 
-  const menuItems: MenuProps['items'] = [
+  const userRole = getUserRole()
+  const userId = getUserId()
+  const isAdmin = userRole === 'admin' || userId === 'admin'
+
+  const menuItems: any[] = [
     {
       key: 'main-header',
       type: 'group',
@@ -239,35 +260,37 @@ export default function FolderSidebar() {
           key: 'all-tickets',
           label: (
             <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <span>All Tickets</span>
+              <span>{isAdmin ? 'All Tickets' : 'My Tickets'}</span>
               {renderBadge(ticketsData?.total || 0)}
             </div>
           ),
           icon: <UnorderedListOutlined />,
           onClick: () => navigate('/tickets'),
         },
-        {
-          key: 'escalations',
-          label: (
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <span>Escalations</span>
-              {renderBadge(escalationsData?.total || 0, '#fff', '#ef4444')}
-            </div>
-          ),
-          icon: <StarOutlined />,
-          onClick: () => navigate('/escalations'),
-        },
-        {
-          key: 'sla-breach',
-          label: (
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <span>SLA Breached</span>
-              {renderBadge(slaBreachData?.total || 0, '#fff', '#ef4444')}
-            </div>
-          ),
-          icon: <ClockCircleOutlined />,
-          onClick: () => navigate('/tickets?sla_breach=true'),
-        },
+        ...(isAdmin ? [
+          {
+            key: 'escalations',
+            label: (
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <span>Escalations</span>
+                {renderBadge(escalationsData?.total || 0, '#fff', '#ef4444')}
+              </div>
+            ),
+            icon: <StarOutlined />,
+            onClick: () => navigate('/escalations'),
+          },
+          {
+            key: 'sla-breach',
+            label: (
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <span>SLA Breached</span>
+                {renderBadge(slaBreachData?.total || 0, '#fff', '#ef4444')}
+              </div>
+            ),
+            icon: <ClockCircleOutlined />,
+            onClick: () => navigate('/tickets?sla_breach=true'),
+          },
+        ] : []),
         {
           key: 'new-ticket',
           label: 'New Ticket',
@@ -276,88 +299,93 @@ export default function FolderSidebar() {
         },
       ]
     },
-    {
-      key: 'depts-header',
-      type: 'group',
-      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', paddingLeft: '12px', display: 'block', marginBottom: '4px' }}>DEPARTMENTS</Text>,
-      children: (statsData?.stats || []).map((folder) => {
-        const iconMap: Record<string, any> = {
-          Storage: <DatabaseOutlined />,
-          Security: <SecurityScanOutlined />,
-          Network: <GlobalOutlined />,
-          Application: <CloudServerOutlined />,
-          Infrastructure: <RocketOutlined />,
-          'Access Management': <KeyOutlined />,
-        }
-        return {
-          key: folder.id,
-          label: (
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px', overflow: 'hidden' }}>
-              <span style={{ 
-                overflow: 'hidden', 
-                textOverflow: 'ellipsis', 
-                whiteSpace: 'nowrap',
-                flex: 1
-              }} title={folder.name}>{folder.name}</span>
-              {renderBadge(folder.open_tickets, folder.name === 'Security' ? '#f59e0b' : undefined, folder.name === 'Security' ? 'rgba(245, 158, 11, 0.1)' : undefined)}
-            </div>
-          ),
-          icon: iconMap[folder.name] || <FolderOutlined />,
-          onClick: () => handleFolderClick(folder.id),
-        }
-      })
-    },
-    {
-      key: 'intelligence-header',
-      type: 'group',
-      label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', paddingLeft: '12px', display: 'block', marginBottom: '4px' }}>INTELLIGENCE</Text>,
-      children: [
-        {
-          key: 'alerts',
-          label: (
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <span>Pattern Alerts</span>
-              {renderBadge(alertsData?.alerts.length || 0, '#f59e0b', 'rgba(245, 158, 11, 0.1)')}
-            </div>
-          ),
-          icon: <LineChartOutlined />,
-          onClick: () => navigate('/pattern-alerts'),
-        },
-          {
-            key: 'automation-available',
+    ...(isAdmin ? [
+      {
+        key: 'depts-header',
+        type: 'group',
+        label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', paddingLeft: '12px', display: 'block', marginBottom: '4px' }}>DEPARTMENTS</Text>,
+        children: (statsData?.stats || []).map((folder: any) => {
+          const iconMap: Record<string, any> = {
+            Storage: <DatabaseOutlined />,
+            Security: <SecurityScanOutlined />,
+            Network: <GlobalOutlined />,
+            Application: <CloudServerOutlined />,
+            Infrastructure: <RocketOutlined />,
+            Access: <KeyOutlined />,
+          }
+          return {
+            key: folder.id,
             label: (
-              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <span>Automation Available</span>
-                {renderBadge(automationData?.total || 0, '#8b5cf6', 'rgba(139, 92, 246, 0.1)')}
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px', overflow: 'hidden' }}>
+                <span style={{ 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis', 
+                  whiteSpace: 'nowrap',
+                  flex: 1
+                }} title={folder.name}>{folder.name}</span>
+                {renderBadge(folder.open_tickets, folder.name === 'security' ? '#f59e0b' : undefined, folder.name === 'security' ? 'rgba(245, 158, 11, 0.1)' : undefined)}
               </div>
             ),
-            icon: <ThunderboltOutlined />,
-            onClick: () => navigate('/automation-available'),
-          },
+            icon: iconMap[folder.name] || <FolderOutlined />,
+            onClick: () => handleFolderClick(folder.id),
+          }
+        })
+      },
+      {
+        key: 'intelligence-header',
+        type: 'group',
+        label: <Text style={{ color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', paddingLeft: '12px', display: 'block', marginBottom: '4px' }}>INTELLIGENCE</Text>,
+        children: [
           {
-            key: 'automation-completed',
+            key: 'alerts',
             label: (
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <span>Automation Completed</span>
-                {renderBadge(archiveData?.total || 0, '#10b981', 'rgba(16, 185, 129, 0.1)')}
+                <span>Pattern Alerts</span>
+                {renderBadge(alertsData?.alerts.length || 0, '#f59e0b', 'rgba(245, 158, 11, 0.1)')}
               </div>
             ),
-            icon: <CheckCircleOutlined />,
-            onClick: () => navigate('/automation-completed'),
+            icon: <LineChartOutlined />,
+            onClick: () => navigate('/pattern-alerts'),
           },
-        {
-          key: 'metrics',
-          label: 'Model Metrics',
-          icon: <ClockCircleOutlined />,
-          onClick: () => navigate('/model/metrics'),
-        },
-      ]
-    }
+            {
+              key: 'automation-available',
+              label: (
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <span>Automation Available</span>
+                  {renderBadge(automationData?.total || 0, '#8b5cf6', 'rgba(139, 92, 246, 0.1)')}
+                </div>
+              ),
+              icon: <ThunderboltOutlined />,
+              onClick: () => navigate('/automation-available'),
+            },
+            {
+              key: 'automation-completed',
+              label: (
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <span>Automation Completed</span>
+                  {renderBadge(archiveData?.total || 0, '#10b981', 'rgba(16, 185, 129, 0.1)')}
+                </div>
+              ),
+              icon: <CheckCircleOutlined />,
+              onClick: () => navigate('/automation-completed'),
+            },
+          {
+            key: 'metrics',
+            label: 'Model Metrics',
+            icon: <ClockCircleOutlined />,
+            onClick: () => navigate('/model/metrics'),
+          },
+        ]
+      }
+    ] : [])
   ]
 
   const ContentUI = () => (
     <>
-      <SidebarHeader style={{ border: 'none', height: '80px', padding: '0 20px' }}>
+      <SidebarHeader 
+        style={{ border: 'none', height: '80px', padding: '0 20px', cursor: 'pointer' }}
+        onClick={() => navigate('/dashboard')}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
             width: '32px', height: '32px', background: 'var(--color-primary)', 
@@ -409,16 +437,18 @@ export default function FolderSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div 
-          className={`settings-link master-control ${location.pathname === '/master-control' ? 'active' : ''}`}
-          onClick={() => {
-            navigate('/master-control')
-            if (isMobile) setMobileDrawerOpen(false)
-          }}
-        >
-          <SafetyCertificateOutlined />
-          <span>Master Control</span>
-        </div>
+        {isAdmin && (
+          <div 
+            className={`settings-link master-control ${location.pathname === '/master-control' ? 'active' : ''}`}
+            onClick={() => {
+              navigate('/master-control')
+              if (isMobile) setMobileDrawerOpen(false)
+            }}
+          >
+            <SafetyCertificateOutlined />
+            <span>Master Control</span>
+          </div>
+        )}
 
         <div 
           className={`settings-link ${location.pathname === '/settings' ? 'active' : ''}`}
@@ -428,7 +458,7 @@ export default function FolderSidebar() {
           }}
         >
           <SettingOutlined />
-          <span>Settings</span>
+          <span>{isAdmin ? 'Settings' : 'Preferences'}</span>
         </div>
       </SidebarFooter>
     </>

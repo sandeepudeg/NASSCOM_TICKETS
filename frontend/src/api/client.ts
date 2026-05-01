@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { ProblemDetails } from './types'
-import { getAuthToken } from '../auth/tokenStorage'
+import { getAuthToken, getUserId } from '../auth/tokenStorage'
 import { refreshAccessToken, handleSessionExpiry } from '../auth/tokenRefresh'
 
 // Track if we're currently refreshing to avoid multiple refresh attempts
@@ -42,12 +42,17 @@ const createApiClient = (): AxiosInstance => {
     },
   })
 
-  // Request interceptor - inject JWT token
+  // Request interceptor - inject JWT token and User ID
   client.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
       const token = getAuthToken()
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`
+      }
+      
+      const userId = getUserId()
+      if (userId && config.headers) {
+        config.headers['X-User-Id'] = userId
       }
       return config
     },

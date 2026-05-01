@@ -67,6 +67,11 @@ export const ticketsApi = {
     return data
   },
 
+  getTicketLogs: async (id: string): Promise<any[]> => {
+    const { data } = await apiClient.get(`/tickets/${id}/logs`)
+    return data
+  },
+
   // List all tickets with filtering
   list: async (params?: {
     page?: number
@@ -76,6 +81,7 @@ export const ticketsApi = {
     routing_status?: string
     sla_breach?: boolean
     intelligence_priority?: string
+    owner_id?: string
   }): Promise<TicketListResponse> => {
     const response = await apiClient.get<TicketListResponse>('/tickets', { params })
     return response.data
@@ -105,6 +111,36 @@ export const ticketsApi = {
 
   polishDescription: async (text: string): Promise<{ polished_text: string }> => {
     const response = await apiClient.post<{ polished_text: string }>('/tickets/polish-description', { text })
+    return response.data
+  },
+
+  resolve: async (ticketId: string, resolutionDetails: string): Promise<ClassificationResponse> => {
+    const response = await apiClient.post<ClassificationResponse>(`/tickets/${ticketId}/resolve`, { resolution_details: resolutionDetails })
+    return response.data
+  },
+
+  satisfy: async (ticketId: string): Promise<ClassificationResponse> => {
+    const response = await apiClient.post<ClassificationResponse>(`/tickets/${ticketId}/satisfy`)
+    return response.data
+  },
+
+  reopen: async (ticketId: string, reason: string): Promise<ClassificationResponse> => {
+    const response = await apiClient.post<ClassificationResponse>(`/tickets/${ticketId}/reopen`, { reason })
+    return response.data
+  },
+
+  setHold: async (ticket_id: string, holdType: string): Promise<ClassificationResponse> => {
+    const response = await apiClient.post<ClassificationResponse>(`/tickets/${ticket_id}/hold`, { hold_type: holdType })
+    return response.data
+  },
+
+  close: async (ticket_id: string): Promise<ClassificationResponse> => {
+    const response = await apiClient.post<ClassificationResponse>(`/tickets/${ticket_id}/close`)
+    return response.data
+  },
+
+  submitFeedback: async (ticket_id: string, rating: number, comment: string): Promise<any> => {
+    const response = await apiClient.post(`/tickets/${ticket_id}/feedback`, { rating, comment })
     return response.data
   },
 }

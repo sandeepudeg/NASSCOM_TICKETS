@@ -246,6 +246,8 @@ services:
     container_name: tickets_api
     ports:
       - "8005:8005"
+    env_file:
+      - ../backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/tickets
       OLLAMA_BASE_URL: http://ollama:11434

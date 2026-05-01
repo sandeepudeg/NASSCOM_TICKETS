@@ -63,6 +63,7 @@ export interface Ticket {
   source_channel?: string
   causal_context: Record<string, unknown> | null
   parse_warning: string | null
+  owner_id: string
   created_at: string
   updated_at: string
   evaluation_matrix: EvaluationMatrix | null
@@ -79,6 +80,9 @@ export interface Ticket {
   complexity_score?: number
   estimated_resolution_at?: string
   sla_status?: string
+  resolution_details?: string
+  hold_type?: string
+  status_changed_at?: string
 }
 
 export interface SimilarTicket {
@@ -143,6 +147,9 @@ export interface ClassificationResponse {
   status: string
   roi_value_saved?: number
   resolution_time_ms?: number
+  resolution_details?: string
+  hold_type?: string
+  status_changed_at?: string
   input_format?: 'text' | 'json_log' | 'otlp_trace' | 'prometheus_alert'
 }
 
@@ -153,6 +160,7 @@ export interface CreateTicketRequest {
   source_channel?: string
   enable_judge?: boolean
   structured_payload?: Record<string, any>
+  owner_id?: string
 }
 
 export interface TicketListResponse {

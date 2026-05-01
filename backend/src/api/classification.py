@@ -133,11 +133,13 @@ async def override_category(
 async def get_escalation_queue(
     page_size: int = Query(50, ge=1, le=200),
     page: int = Query(1, ge=1),
+    owner_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     ticket_repo = TicketRepository(db)
     tickets = await ticket_repo.list_tickets(
         routing_status="escalated",
+        owner_id=owner_id,
         page_size=page_size,
         page=page,
         sort_by="created_at",
@@ -148,6 +150,8 @@ async def get_escalation_queue(
     from src.repositories.models import Ticket
     
     total_query = select(func.count(Ticket.id)).where(Ticket.routing_status == "escalated")
+    if owner_id:
+        total_query = total_query.where(Ticket.owner_id == owner_id)
     total_result = await db.execute(total_query)
     total = total_result.scalar() or 0
     
@@ -166,10 +170,25 @@ async def get_escalation_queue(
 @router.get("/pattern-alerts", response_model=PatternAlertResponse)
 async def get_pattern_alerts(
     page_size: int = Query(50, ge=1, le=200),
+    owner_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     alert_repo = PatternAlertRepository(db)
     alerts = await alert_repo.list_active(page_size)
+
+    # Filter for specific user if requested
+    if owner_id:
+        ticket_repo = TicketRepository(db)
+        # Get all ticket IDs owned by this user
+        user_tickets, _ = await ticket_repo.list_tickets(owner_id=owner_id, page_size=1000)
+        user_ticket_ids = {t.id for t in user_tickets}
+        
+        filtered_alerts = []
+        for alert in alerts:
+            alert_ticket_ids = json.loads(alert.ticket_ids_json) if alert.ticket_ids_json else []
+            if any(tid in user_ticket_ids for tid in alert_ticket_ids):
+                filtered_alerts.append(alert)
+        alerts = filtered_alerts
 
     pattern_alerts = [
         PatternAlert(

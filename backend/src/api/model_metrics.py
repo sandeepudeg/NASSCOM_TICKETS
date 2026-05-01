@@ -57,7 +57,7 @@ async def get_model_metrics(version: str | None = Query(None)):
                         "Database": metrics.get("f1_database", 0.0),
                         "Storage": metrics.get("f1_storage", 0.0),
                         "Network": metrics.get("f1_network", 0.0),
-                        "Access Management": metrics.get("f1_access_management", 0.0),
+                        "Access": metrics.get("f1_access", 0.0),
                     },
                     "last_updated": datetime.fromtimestamp(
                         run.info.start_time / 1000
@@ -83,7 +83,7 @@ async def get_model_metrics(version: str | None = Query(None)):
             "Database": 0.84,
             "Storage": 0.86,
             "Network": 0.83,
-            "Access Management": 0.87,
+            "Access": 0.87,
         },
         "last_updated": datetime.utcnow().isoformat(),
         "source": "unavailable",

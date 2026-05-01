@@ -15,6 +15,7 @@ import { ticketsApi } from '../api/tickets'
 import { foldersApi } from '../api/folders'
 import { designSystemStyled } from '@ticketiq/design-system'
 import type { Ticket } from '../api/types'
+import { getUserRole, getUserId } from '../auth/tokenStorage'
 
 const { Text, Title } = Typography
 
@@ -77,25 +78,34 @@ export default function TicketListPage() {
   })
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['tickets', folderId, filters],
-    queryFn: () => 
-      folderId 
-        ? foldersApi.listTickets(folderId, { ...filters, page: filters.page || 1, page_size: 25 })
-        : ticketsApi.list({ ...filters, page: filters.page || 1, page_size: 25 }),
+    queryKey: ['tickets', folderId, filters, getUserRole(), getUserId()],
+    queryFn: () => {
+      const isAdmin = getUserRole() === 'admin'
+      const queryParams = { 
+        ...filters, 
+        page: filters.page || 1, 
+        page_size: 25,
+        owner_id: !isAdmin ? getUserId() || undefined : undefined
+      }
+      
+      return folderId 
+        ? foldersApi.listTickets(folderId, queryParams)
+        : ticketsApi.list(queryParams)
+    },
   })
 
 
 
   const columns: ColumnsType<Ticket> = [
     {
-      title: <div style={{ whiteSpace: 'nowrap', color: 'var(--color-text-secondary)' }}>SR. NO.</div>,
-      key: 'srno',
-      width: 85,
-      render: (_: any, __: any, index: number) => (
-        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
-          {((filters.page || 1) - 1) * 25 + index + 1}
-        </Text>
-      ),
+      title: 'SR. NO.',
+      key: 'sr_no',
+      width: 80,
+      render: (_: any, __: any, index: number) => {
+        const page = filters.page || 1
+        const pageSize = 25
+        return (page - 1) * pageSize + index + 1
+      },
     },
     {
       title: 'REF',
@@ -122,6 +132,17 @@ export default function TicketListPage() {
              {record.is_automation_candidate && <Tag color="purple" style={{ fontSize: '9px', borderRadius: '2px', margin: 0 }}>AUTO-READY</Tag>}
           </Space>
         </Space>
+      ),
+    },
+    {
+      title: 'User',
+      dataIndex: 'owner_id',
+      key: 'owner_id',
+      width: 120,
+      render: (owner: string) => (
+        <Text style={{ fontWeight: 600, color: 'var(--color-text-secondary)', fontSize: '11px', textTransform: 'capitalize' }}>
+          {owner || 'SYSTEM'}
+        </Text>
       ),
     },
     {

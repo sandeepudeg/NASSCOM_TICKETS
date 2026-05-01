@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
 import { Layout as AntLayout, Menu, Typography, Space, Button, Drawer, Breadcrumb, Tag, Badge, Popover, List } from 'antd'
 import {
   DashboardOutlined,
@@ -16,7 +16,7 @@ import {
 } from '@ant-design/icons'
 import { designSystemStyled, useThemeMode } from '@ticketiq/design-system'
 import FolderSidebar from './FolderSidebar'
-import { clearAuthToken } from '../auth/tokenStorage'
+import { clearAuthToken, getUserRole, getUserId } from '../auth/tokenStorage'
 import { useFolderStore } from '../stores/folderStore'
 import { useLayoutStore } from '../stores/layoutStore'
 import { useTokenRefresh } from '../auth/useTokenRefresh'
@@ -155,7 +155,7 @@ export default function Layout() {
 
   // Fetch notifications
   const { data: notifications, refetch: refetchNotifications } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', getUserRole(), getUserId()],
     queryFn: () => notificationsApi.list(),
     refetchInterval: 30000, // Every 30 seconds
   })
@@ -181,6 +181,8 @@ export default function Layout() {
     navigate(path)
     setMobileMenuOpen(false)
   }
+
+  const isAdmin = getUserRole() === 'admin'
 
   const menuItems: MenuProps['items'] = [
     {
@@ -208,24 +210,30 @@ export default function Layout() {
       icon: <WarningOutlined />,
       label: 'Alerts',
     },
-    {
-      key: '/model/metrics',
-      icon: <BarChartOutlined />,
-      label: 'Intelligence',
-    },
+    ...(isAdmin ? [
+      {
+        key: '/model/metrics',
+        icon: <BarChartOutlined />,
+        label: 'Intelligence',
+      }
+    ] : []),
   ]
 
   // Breadcrumb items based on path
   const pathSnippets = location.pathname.split('/').filter(i => i)
+  const isDashboardOnly = pathSnippets.length === 1 && pathSnippets[0] === 'dashboard'
+  
   const breadcrumbItems = [
-    { title: 'Home', href: '/dashboard' },
-    ...pathSnippets.map((snippet, index) => {
+    { 
+      title: <Link to="/dashboard" style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Home</Link> 
+    },
+    ...(isDashboardOnly ? [] : pathSnippets.map((snippet, index) => {
       const url = `/${pathSnippets.slice(0, index + 1).join('/')}`
+      const title = snippet.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
       return {
-        title: snippet.charAt(0).toUpperCase() + snippet.slice(1).replace('-', ' '),
-        href: url
+        title: index === pathSnippets.length - 1 ? title : <Link to={url}>{title}</Link>
       }
-    })
+    }))
   ]
 
   return (
@@ -242,7 +250,10 @@ export default function Layout() {
               />
             )}
             {!isMobile && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div 
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                onClick={() => navigate('/dashboard')}
+              >
                 <div style={{
                   width: '32px',
                   height: '32px',
@@ -261,7 +272,8 @@ export default function Layout() {
             {!isMobile && (
               <Breadcrumb
                 items={breadcrumbItems}
-                style={{ marginLeft: '12px', fontSize: '13px', fontWeight: 500, color: 'var(--color-text-secondary)' }}
+                className="enterprise-breadcrumbs"
+                style={{ marginLeft: '12px', fontSize: '13px', fontWeight: 500 }}
               />
             )}
           </Space>

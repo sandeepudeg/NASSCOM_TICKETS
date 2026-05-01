@@ -1,6 +1,8 @@
 // In-memory token storage (not localStorage for security)
 let authToken: string | null = null
 let refreshToken: string | null = null
+let userRole: string | null = null
+let userId: string | null = null
 let tokenExpiresAt: number | null = null
 
 // Callbacks for token expiry events
@@ -30,9 +32,27 @@ export const setRefreshToken = (token: string): void => {
   refreshToken = token
 }
 
+export const getUserRole = (): string | null => {
+  return userRole
+}
+
+export const setUserRole = (role: string): void => {
+  userRole = role
+}
+
+export const getUserId = (): string | null => {
+  return userId
+}
+
+export const setUserId = (id: string): void => {
+  userId = id
+}
+
 export const clearAuthToken = (): void => {
   authToken = null
   refreshToken = null
+  userRole = null
+  userId = null
   tokenExpiresAt = null
 }
 

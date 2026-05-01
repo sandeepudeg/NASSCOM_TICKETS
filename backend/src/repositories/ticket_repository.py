@@ -305,6 +305,7 @@ class TicketAssignmentRepository:
     async def get_folder_tickets(
         self,
         folder_id: str,
+        owner_id: str | None = None,
         page_size: int = 50,
         page: int = 1,
         sort_by: str = "assigned_at",
@@ -321,6 +322,9 @@ class TicketAssignmentRepository:
             .options(selectinload(Ticket.similar_tickets))
             .where(TicketFolderAssignment.folder_id == folder_id)
         )
+
+        if owner_id:
+            query = query.where(Ticket.owner_id == owner_id)
 
         if status:
             query = query.where(Ticket.status == status)
@@ -358,6 +362,7 @@ class TicketAssignmentRepository:
     async def count_folder_tickets(
         self,
         folder_id: str,
+        owner_id: str | None = None,
         status: str | None = None,
         category: str | None = None,
         routing_status: str | None = None,
@@ -369,6 +374,9 @@ class TicketAssignmentRepository:
             .join(TicketFolderAssignment, Ticket.id == TicketFolderAssignment.ticket_id)
             .where(TicketFolderAssignment.folder_id == folder_id)
         )
+        
+        if owner_id:
+            query = query.where(Ticket.owner_id == owner_id)
         
         if status:
             query = query.where(Ticket.status == status)

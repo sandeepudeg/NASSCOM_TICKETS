@@ -19,6 +19,7 @@ import {
 import { WarningOutlined, DownloadOutlined, SyncOutlined } from '@ant-design/icons'
 import { classificationApi } from '../api/classification'
 import { designSystemStyled } from '@ticketiq/design-system'
+import { getUserRole, getUserId } from '../auth/tokenStorage'
 import type { EscalationTicket } from '../api/types'
 
 const { Text, Title } = Typography
@@ -47,8 +48,11 @@ export default function EscalationQueuePage() {
   const queryClient = useQueryClient()
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['escalations'],
-    queryFn: () => classificationApi.getEscalations({ limit: 200 }),
+    queryKey: ['escalations', getUserRole(), getUserId()],
+    queryFn: () => classificationApi.getEscalations({ 
+      limit: 200,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
   })
 
   const overrideMutation = useMutation({
@@ -95,9 +99,9 @@ export default function EscalationQueuePage() {
 
   const columns = [
     {
-      title: <div style={{ whiteSpace: 'nowrap' }}>SR. NO.</div>,
-      key: 'srno',
-      width: 85,
+      title: 'SR. NO.',
+      key: 'serial_number',
+      width: 70,
       render: (_: any, __: any, index: number) => (
         <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
           {(currentPage - 1) * PAGE_SIZE + index + 1}
@@ -138,6 +142,17 @@ export default function EscalationQueuePage() {
           display: 'block'
         }}>
           {text}
+        </Text>
+      ),
+    },
+    {
+      title: 'User',
+      dataIndex: 'owner_id',
+      key: 'owner_id',
+      width: 120,
+      render: (owner: string) => (
+        <Text style={{ fontWeight: 600, color: 'var(--color-text-secondary)', fontSize: '11px', textTransform: 'capitalize' }}>
+          {owner || 'SYSTEM'}
         </Text>
       ),
     },

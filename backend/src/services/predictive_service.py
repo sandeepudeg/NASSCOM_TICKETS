@@ -10,7 +10,7 @@ class PredictiveService:
         Category.DATABASE: 90,
         Category.STORAGE: 60,
         Category.NETWORK: 30,
-        Category.ACCESS_MANAGEMENT: 15,
+        Category.ACCESS: 15,
     }
 
     @classmethod

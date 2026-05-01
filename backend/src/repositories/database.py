@@ -134,7 +134,7 @@ async def seed_department_folders() -> None:
 
     from src.repositories.models import Folder
 
-    admin_id = "admin"
+    admin_ids = ["admin", "system"]
     categories = [
         "Infrastructure",
         "Application",
@@ -142,22 +142,23 @@ async def seed_department_folders() -> None:
         "Database",
         "Storage",
         "Network",
-        "Access Management",
+        "Access",
     ]
 
     async with async_session_maker() as session:
         try:
-            for cat in categories:
-                folder_name = f"{cat} Department"
-                # Check if folder exists
-                stmt = select(Folder).where(
-                    Folder.name == folder_name, Folder.owner_id == admin_id
-                )
-                result = await session.execute(stmt)
-                if not result.scalar_one_or_none():
-                    # Create folder
-                    new_folder = Folder(name=folder_name, owner_id=admin_id)
-                    session.add(new_folder)
+            for admin_id in admin_ids:
+                for cat in categories:
+                    folder_name = cat
+                    # Check if folder exists
+                    stmt = select(Folder).where(
+                        Folder.name == folder_name, Folder.owner_id == admin_id
+                    )
+                    result = await session.execute(stmt)
+                    if not result.scalar_one_or_none():
+                        # Create folder
+                        new_folder = Folder(name=folder_name, owner_id=admin_id)
+                        session.add(new_folder)
 
             await session.commit()
         except Exception:
@@ -276,7 +277,7 @@ async def seed_test_tickets() -> None:
     from src.repositories.models import Ticket, Folder, TicketFolderAssignment, PatternAlert, SimilarTicket
 
     admin_ids = ["admin", "system"]
-    CATEGORIES = ["Infrastructure", "Application", "Security", "Database", "Storage", "Network", "Access Management"]
+    CATEGORIES = ["Infrastructure", "Application", "Security", "Database", "Storage", "Network", "Access"]
     
     TEMPLATES = {
         "Infrastructure": ["Server cluster {id} high CPU usage warning", "VPC Peering failure {id}", "Load Balancer {id} health failure"],
@@ -285,7 +286,7 @@ async def seed_test_tickets() -> None:
         "Database": ["Postgres slow query {id}", "Database backup failure {id}", "Connection pool exhausted {id}"],
         "Storage": ["S3 bucket {id} access denied", "Disk space low (95%) on {id}", "EFS mount failure {id}"],
         "Network": ["Wireless AP {id} offline", "VPN tunnel {id} status Down", "DNS resolution failure {id}"],
-        "Access Management": ["Password reset for {id}", "New employee AD creation {id}", "MFA device reset {id}"]
+        "Access": ["Password reset for {id}", "New employee AD creation {id}", "MFA device reset {id}"]
     }
 
     ACTIONABLE_STEPS = {
@@ -325,7 +326,7 @@ async def seed_test_tickets() -> None:
             "3. Verify bucket policy JSON for unauthorized DENY statements.",
             "4. Refresh the MinIO mount point on the application server."
         ],
-        "Access Management": [
+        "Access": [
             "1. Verify SAML response from Identity Provider (IdP).",
             "2. Resync user {id} from Active Directory using the sync-job.",
             "3. Reset the MFA seed for the affected account.",

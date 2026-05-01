@@ -154,7 +154,7 @@ Title: {title}
 Description: {description}
 
 Return ONLY a JSON object with:
-- "category": one of Infrastructure, Application, Security, Database, Storage, Network, Access Management
+- "category": one of Infrastructure, Application, Security, Database, Storage, Network, Access
 - "confidence": confidence in category (0.0-1.0)
 - "sentiment_score": Detect user frustration/anger (0.0=Neutral/Happy, 1.0=Highly Frustrated/Irate)
 - "impact_score": Detect business impact (0.0=Low/Personal, 1.0=Critical/Widespread/Multiple Users)
@@ -177,7 +177,11 @@ Example: {{"category": "Application", "confidence": 0.85, "sentiment_score": 0.4
 
                 result = json.loads(content)
 
-                category = Category(result.get("category", "Application"))
+                category_val = str(result.get("category", "Application")).title()
+                try:
+                    category = Category(category_val)
+                except ValueError:
+                    category = Category.APPLICATION
                 confidence = float(result.get("confidence", 0.5))
                 confidence = max(0.0, min(1.0, confidence))
 

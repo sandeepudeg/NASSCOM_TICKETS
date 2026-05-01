@@ -27,7 +27,7 @@ class AutomationService:
             # Reverted timeout to 5 minutes as requested
             self._client = AsyncClient(
                 host=settings.ollama_base_url,
-                timeout=300.0 
+                timeout=60.0 
             )
         return self._client
 
@@ -135,24 +135,50 @@ class AutomationService:
             # Adjusted to 270s (slightly under 300s infrastructure limit)
             report = await asyncio.wait_for(
                 self._get_llm_response(prompt),
-                timeout=270.0
+                timeout=120.0
             )
             
             logger.info("automation.llm_response_received", ticket_id=ticket_id, char_count=len(report))
             
             ticket.automation_simulation_report = report
             ticket.automation_status = "pending_approval"
+            
+            # Record in Audit Log for Feedback Loop
+            from src.repositories.audit_repository import AuditLogRepository
+            audit_repo = AuditLogRepository(self.session)
+            await audit_repo.create(
+                actor_user_id="system",
+                action_type="ticket_simulate",
+                target_resource_id=ticket_id,
+                metadata={
+                    "status": "success",
+                    "action": "AGENTIC_SIMULATION_COMPLETED"
+                }
+            )
+            
             await self.session.commit()
             return report
         except asyncio.TimeoutError:
             logger.error("automation.simulation_timeout", ticket_id=ticket_id)
-            ticket.automation_status = "failed"
-            await self.session.commit()
-            return "Simulation failed: The AI analysis took longer than the 5-minute safety limit. Please try again or simplify the ticket description."
+            await self.session.rollback()
+            try:
+                ticket = await self.session.get(Ticket, ticket_id)
+                if ticket:
+                    ticket.automation_status = "failed"
+                    await self.session.commit()
+            except:
+                pass
+            return "Simulation failed: The AI analysis timed out. Please try again or simplify the ticket description."
         except Exception as e:
             logger.error("automation.simulation_failed", error=str(e), ticket_id=ticket_id)
-            ticket.automation_status = "failed"
-            await self.session.commit()
+            await self.session.rollback()
+            try:
+                ticket = await self.session.get(Ticket, ticket_id)
+                if ticket:
+                    ticket.automation_status = "failed"
+                    await self.session.commit()
+            except:
+                pass
             return f"Simulation failed: {str(e)}"
 
     async def execute_remediation(self, ticket_id: str) -> dict[str, Any]:
@@ -222,7 +248,7 @@ class AutomationService:
         await asyncio.sleep(2)
         
         # 1. Synthetic Pulse Check
-        pulse_status = "passed" if ticket.category != "Security" else "passed_with_review"
+        pulse_status = "passed" if ticket.category != "security" else "passed_with_review"
         
         # 2. Configuration Drift Detection
         drift_found = False

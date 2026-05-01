@@ -17,12 +17,14 @@ import {
   SafetyCertificateOutlined,
   LockOutlined,
   AuditOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  PlusCircleOutlined
 } from '@ant-design/icons'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList, PieChart, Pie } from 'recharts'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { designSystemStyled } from '@ticketiq/design-system'
+import { getUserRole, getUserId } from '../auth/tokenStorage'
 import { ticketsApi } from '../api/tickets'
 import { foldersApi } from '../api/folders'
 import { classificationApi } from '../api/classification'
@@ -355,9 +357,24 @@ const OrchestrationLogFeed = ({ isExecuting, isDone }: { isExecuting: boolean, i
       minHeight: '140px'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
-        <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Live Orchestration Log
-        </div>
+        <Space size={12}>
+          <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Live Orchestration Log
+          </div>
+          {isDone && (
+            <Button 
+              type="link" 
+              size="small" 
+              onClick={(e: any) => {
+                e.preventDefault();
+                (window as any).resetOrchestration?.();
+              }}
+              style={{ fontSize: '9px', padding: 0, height: 'auto', color: 'var(--color-text-muted)' }}
+            >
+              [ Reset Optimization ]
+            </Button>
+          )}
+        </Space>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: isExecuting ? 'var(--color-text-warning)' : 'var(--color-text-success)', boxShadow: `0 0 8px ${isExecuting ? 'var(--color-text-warning)' : 'var(--color-text-success)'}` }} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -478,16 +495,29 @@ const OperationalHealthWidget = ({ analyticsData }: any) => {
 }
 
 const DashboardPage = () => {
+  const isAdmin = getUserRole() === 'admin'
   const [isOrchestrationExecuting, setIsOrchestrationExecuting] = React.useState(false)
-  const [isOrchestrationDone, setIsOrchestrationDone] = React.useState(false)
+  const [isOrchestrationDone, setIsOrchestrationDone] = React.useState(localStorage.getItem('orchestration_active') === 'true')
 
   const handleApproveShift = () => {
     setIsOrchestrationExecuting(true)
     setTimeout(() => {
       setIsOrchestrationExecuting(false)
       setIsOrchestrationDone(true)
+      localStorage.setItem('orchestration_active', 'true')
     }, 2000)
   }
+
+  const handleResetOrchestration = () => {
+    setIsOrchestrationDone(false)
+    localStorage.removeItem('orchestration_active')
+  }
+
+  // Attach to window for the child component to access (simple bridge for the demo)
+  React.useEffect(() => {
+    (window as any).resetOrchestration = handleResetOrchestration
+    return () => { delete (window as any).resetOrchestration }
+  }, [])
 
   const queryOptions = {
     refetchInterval: 30000,
@@ -495,20 +525,30 @@ const DashboardPage = () => {
   }
 
   const { data: ticketsData, refetch: refetchTickets } = useQuery({
-    queryKey: ['tickets-summary'],
-    queryFn: () => ticketsApi.list({ page_size: 10 }),
+    queryKey: ['tickets-summary', getUserRole(), getUserId()],
+    queryFn: () => ticketsApi.list({ 
+      page_size: 10,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
     ...queryOptions,
   })
 
   const { data: escalationsData, refetch: refetchEscalations } = useQuery({
-    queryKey: ['escalations-summary'],
-    queryFn: () => classificationApi.getEscalations({ limit: 5 }),
+    queryKey: ['escalations-summary', getUserRole(), getUserId()],
+    queryFn: () => classificationApi.getEscalations({ 
+      limit: 5,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
     ...queryOptions,
   })
 
   const { data: alertsData, refetch: refetchAlerts } = useQuery({
-    queryKey: ['pattern-alerts-summary'],
-    queryFn: () => classificationApi.getPatternAlerts({ status: 'active' as const, limit: 100 }),
+    queryKey: ['pattern-alerts-summary', getUserRole(), getUserId()],
+    queryFn: () => classificationApi.getPatternAlerts({ 
+      status: 'active' as const, 
+      limit: 100,
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
     ...queryOptions,
   })
 
@@ -519,8 +559,10 @@ const DashboardPage = () => {
   })
 
   const { data: statsData, refetch: refetchStats } = useQuery({
-    queryKey: ['folders-stats-summary'],
-    queryFn: () => foldersApi.getStats(),
+    queryKey: ['folders-stats-summary', getUserRole(), getUserId()],
+    queryFn: () => foldersApi.getStats({
+      ticket_owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
     ...queryOptions,
   })
 
@@ -565,14 +607,6 @@ const DashboardPage = () => {
   }, [statsData])
 
   const deptTableColumns = [
-    {
-      title: 'SR. NO.',
-      key: 'serial',
-      width: 80,
-      render: (_: any, __: any, index: number) => (
-        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>{index + 1}</Text>
-      ),
-    },
     {
       title: 'DEPARTMENT',
       dataIndex: 'name',
@@ -640,6 +674,88 @@ const DashboardPage = () => {
   }
 
 
+  if (!isAdmin) {
+    return (
+      <DashboardContainer style={{ paddingTop: '40px' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <Text style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            User Workspace
+          </Text>
+          <Title level={2} style={{ margin: '4px 0 0', fontWeight: 800, fontSize: '32px', letterSpacing: '-0.02em' }}>
+            My Service Portal
+          </Title>
+        </div>
+
+        <Row gutter={[20, 20]} style={{ marginBottom: '32px' }}>
+          <Col xs={24} md={12}>
+            <Link to="/tickets" style={{ display: 'block' }}>
+              <StatCard className="glass-effect" hoverable>
+                <StatLabel>Track Progress</StatLabel>
+                <StatValue>
+                  {ticketsData?.total || 0}
+                  <SyncOutlined style={{ fontSize: '18px', color: 'var(--color-primary)' }} />
+                </StatValue>
+                <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Ongoing service requests</Text>
+              </StatCard>
+            </Link>
+          </Col>
+          <Col xs={24} md={12}>
+            <Link to="/tickets/new" style={{ display: 'block' }}>
+              <StatCard className="glass-effect" hoverable style={{ border: '1px solid var(--color-primary)', background: 'rgba(99, 102, 241, 0.02)' }}>
+                <StatLabel>Need Help?</StatLabel>
+                <StatValue style={{ color: 'var(--color-primary)' }}>
+                  RAISE NEW TICKET
+                  <PlusCircleOutlined style={{ fontSize: '18px', color: 'inherit' }} />
+                </StatValue>
+                <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Get expert assistance immediately</Text>
+              </StatCard>
+            </Link>
+          </Col>
+        </Row>
+
+        <Card 
+          title={<Space><FileTextOutlined style={{ color: 'var(--color-primary)' }} /><Text strong style={{ fontSize: '14px' }}>Active Requests</Text></Space>}
+          className="glass-effect"
+          extra={<Link to="/tickets" style={{ fontWeight: 600 }}>View All Tracking</Link>}
+        >
+          <Table
+            columns={[
+              { 
+                title: 'TICKET #', 
+                dataIndex: 'ticket_number', 
+                key: 'num', 
+                render: (t: string, record: any) => <Link to={`/tickets/${record.id}`}><Text strong style={{ color: 'var(--color-primary)' }}>#{t || record.id?.slice(0,8)}</Text></Link> 
+              },
+              { title: 'SUBJECT', dataIndex: 'title', key: 'title', render: (t: string) => <Text style={{ fontWeight: 500 }}>{t}</Text> },
+              { 
+                title: 'USER', 
+                dataIndex: 'owner_id', 
+                key: 'owner', 
+                render: (o: string) => <Text style={{ fontWeight: 600, color: 'var(--color-text-secondary)', fontSize: '11px', textTransform: 'capitalize' }}>{o || 'SYSTEM'}</Text> 
+              },
+              { 
+                title: 'STATUS', 
+                dataIndex: 'status', 
+                key: 'status', 
+                align: 'center',
+                render: (s: string) => (
+                  <Tag color={s === 'open' ? 'processing' : 'success'} bordered={false} style={{ borderRadius: '4px', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                    {s || 'OPEN'}
+                  </Tag>
+                ) 
+              },
+              { title: 'LAST UPDATED', dataIndex: 'updated_at', key: 'date', align: 'right', render: (d: string) => <Text type="secondary" style={{ fontSize: '12px' }}>{new Date(d || Date.now()).toLocaleDateString()}</Text> }
+            ]}
+            dataSource={ticketsData?.tickets?.slice(0, 5) || []}
+            pagination={false}
+            rowKey="id"
+            className="high-density-table"
+          />
+        </Card>
+      </DashboardContainer>
+    )
+  }
+
   return (
     <DashboardContainer style={{ paddingTop: '40px' }}>
 
@@ -663,7 +779,7 @@ const DashboardPage = () => {
       </div>
 
       <Row gutter={[20, 20]} style={{ marginBottom: '32px' }}>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={isAdmin ? 6 : 12}>
           <Link to="/tickets" style={{ display: 'block' }}>
             <StatCard className="glass-effect" hoverable>
               <StatLabel>Active Tickets</StatLabel>
@@ -676,44 +792,61 @@ const DashboardPage = () => {
           </Link>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Link to="/escalations" style={{ display: 'block' }}>
-            <StatCard className="glass-effect" hoverable>
-              <StatLabel>Escalations</StatLabel>
-              <StatValue style={{ color: escalationQueueDepth > 0 ? 'var(--color-text-warning)' : 'var(--color-text-success)' }}>
-                {escalationQueueDepth}
-                <WarningOutlined style={{ fontSize: '18px', color: 'inherit' }} />
-              </StatValue>
-              <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Action required</Text>
-            </StatCard>
-          </Link>
-        </Col>
+        {isAdmin ? (
+          <>
+            <Col xs={24} sm={12} lg={6}>
+              <Link to="/escalations" style={{ display: 'block' }}>
+                <StatCard className="glass-effect" hoverable>
+                  <StatLabel>Escalations</StatLabel>
+                  <StatValue style={{ color: escalationQueueDepth > 0 ? 'var(--color-text-warning)' : 'var(--color-text-success)' }}>
+                    {escalationQueueDepth}
+                    <WarningOutlined style={{ fontSize: '18px', color: 'inherit' }} />
+                  </StatValue>
+                  <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Action required</Text>
+                </StatCard>
+              </Link>
+            </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Link to="/pattern-alerts">
-            <StatCard className="glass-effect" hoverable>
-              <StatLabel>Pattern Alerts</StatLabel>
-              <StatValue style={{ color: activePatternAlerts > 0 ? 'var(--color-text-warning)' : 'var(--color-text-success)' }}>
-                {activePatternAlerts}
-                <BellOutlined style={{ fontSize: '18px', color: 'inherit' }} />
-              </StatValue>
-              <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>System health stable</Text>
-            </StatCard>
-          </Link>
-        </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Link to="/pattern-alerts">
+                <StatCard className="glass-effect" hoverable>
+                  <StatLabel>Pattern Alerts</StatLabel>
+                  <StatValue style={{ color: activePatternAlerts > 0 ? 'var(--color-text-warning)' : 'var(--color-text-success)' }}>
+                    {activePatternAlerts}
+                    <BellOutlined style={{ fontSize: '18px', color: 'inherit' }} />
+                  </StatValue>
+                  <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>System health stable</Text>
+                </StatCard>
+              </Link>
+            </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Link to="/model/metrics">
-            <StatCard className="glass-effect" hoverable>
-              <StatLabel>Classifier Accuracy</StatLabel>
-              <StatValue style={{ color: 'var(--color-text-success)' }}>
-                {classifierAccuracy}%
-                <ArrowUpOutlined style={{ fontSize: '18px', color: 'inherit' }} />
-              </StatValue>
-              <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>+2.4% vs last week</Text>
-            </StatCard>
-          </Link>
-        </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Link to="/model/metrics">
+                <StatCard className="glass-effect" hoverable>
+                  <StatLabel>Classifier Accuracy</StatLabel>
+                  <StatValue style={{ color: 'var(--color-text-success)' }}>
+                    {classifierAccuracy}%
+                    <ArrowUpOutlined style={{ fontSize: '18px', color: 'inherit' }} />
+                  </StatValue>
+                  <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>+2.4% vs last week</Text>
+                </StatCard>
+              </Link>
+            </Col>
+          </>
+        ) : (
+          <Col xs={24} sm={12} lg={12}>
+            <Link to="/tickets/new" style={{ display: 'block' }}>
+              <StatCard className="glass-effect" hoverable style={{ border: '1px dashed var(--color-primary)' }}>
+                <StatLabel>Create New Request</StatLabel>
+                <StatValue style={{ color: 'var(--color-primary)' }}>
+                  RAISE TICKET
+                  <PlusCircleOutlined style={{ fontSize: '18px', color: 'inherit' }} />
+                </StatValue>
+                <Text style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Get expert assistance immediately</Text>
+              </StatCard>
+            </Link>
+          </Col>
+        )}
       </Row>
 
       <Row gutter={[20, 20]}>

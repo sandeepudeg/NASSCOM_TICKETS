@@ -42,11 +42,12 @@ async def create_folder(
 
 @router.get("/stats", response_model=FolderStatsResponse)
 async def get_all_folder_stats(
+    ticket_owner_id: str | None = Query(None),
     x_user_id: str = Header(default="system"),
     db: AsyncSession = Depends(get_db),
 ):
     service = FolderService(db)
-    return await service.get_all_folder_stats(x_user_id)
+    return await service.get_all_folder_stats(x_user_id, ticket_owner_id)
 
 
 @router.get(
@@ -153,6 +154,7 @@ async def get_folder_tickets(
     routing_status: str | None = Query(None),
     sla_breach: bool | None = Query(None),
     intelligence_priority: str | None = Query(None),
+    owner_id: str | None = Query(None),
     sort_by: str = Query("assigned_at", pattern="^(assigned_at|status|created_at)$"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     x_user_id: str = Header(default="system"),
@@ -173,7 +175,8 @@ async def get_folder_tickets(
         category=category,
         routing_status=routing_status,
         sla_breach=sla_breach,
-        intelligence_priority=intelligence_priority
+        intelligence_priority=intelligence_priority,
+        owner_id=owner_id
     )
     return TicketListResponse(
         tickets=tickets,

@@ -37,6 +37,8 @@ import ImportWorkspace from '../workspaces/ImportWorkspace'
 import { HistoryOutlined } from '@ant-design/icons'
 import { apiClient } from '../api/client'
 
+import { getUserRole } from '../auth/tokenStorage'
+
 const { Title, Text } = Typography
 
 const PageContainer = designSystemStyled.div`
@@ -116,13 +118,18 @@ const SectionHeader = ({ icon, title, subtitle }: { icon: React.ReactNode, title
 )
 
 export default function SettingsPage() {
+  const isAdmin = getUserRole() === 'admin'
   const [searchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState('intel')
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'intel' : 'profile')
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab) setActiveTab(tab)
-  }, [searchParams, setActiveTab])
+    if (tab) {
+      if (isAdmin || tab === 'profile') {
+        setActiveTab(tab)
+      }
+    }
+  }, [searchParams, setActiveTab, isAdmin])
 
   const [intelForm] = Form.useForm()
   const [guardForm] = Form.useForm()
@@ -167,7 +174,70 @@ export default function SettingsPage() {
     { key: '4', category: 'API Timeout', dept: 'Applications' },
   ]
 
-  const tabs = [
+  const allTabs = [
+    {
+      key: 'profile',
+      label: <Space><UserOutlined />Account Profile</Space>,
+      children: (
+        <div style={{ padding: '0 24px 24px' }}>
+          <SectionHeader 
+            icon={<UserOutlined />} 
+            title="Personal Identity" 
+            subtitle="Manage your enterprise credentials and regional presence." 
+          />
+          <Form layout="vertical">
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item label={<Text strong>Display Name</Text>}>
+                  <Input defaultValue="User Performance" prefix={<UserOutlined style={{ opacity: 0.3 }} />} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label={<Text strong>Global ID</Text>}>
+                  <Input defaultValue="USR-2941-GRID" disabled prefix={<KeyOutlined style={{ opacity: 0.3 }} />} />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Form.Item label={<Text strong>Enterprise Communication</Text>}>
+              <Input defaultValue="user@company.global" prefix={<GlobalOutlined style={{ opacity: 0.3 }} />} />
+            </Form.Item>
+            <Button type="primary" onClick={() => handleSave('Profile')}>Update Profile</Button>
+          </Form>
+        </div>
+      )
+    },
+    {
+      key: 'notifications',
+      label: <Space><BellOutlined />Notifications</Space>,
+      children: (
+        <div style={{ padding: '0 24px 24px' }}>
+          <SectionHeader 
+            icon={<BellOutlined />} 
+            title="Event Persistence" 
+            subtitle="Define how you receive system-generated alerts." 
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {[
+              { title: 'In-Platform Signals', desc: 'Real-time toast notifications for all ticket updates.' },
+              { title: 'Electronic Mail Digests', desc: 'Daily summary of ticket status and SLA movements.' },
+              { title: 'Agentic SMS Overlays', desc: 'Critical alerts forwarded to mobile endpoint.' }
+            ].map((n, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border-primary)' }}>
+                <div>
+                  <Text strong style={{ display: 'block' }}>{n.title}</Text>
+                  <Text style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontWeight: 500 }}>{n.desc}</Text>
+                </div>
+                <Switch defaultChecked={i < 2} />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 32 }}>
+            <Button type="primary" onClick={() => handleSave('Notification Signals')}>Save Notification Matrix</Button>
+          </div>
+        </div>
+      )
+    },
+  ].concat(isAdmin ? [
     {
       key: 'ingestion',
       label: <Space><HistoryOutlined />Data Ingestion</Space>,
@@ -497,42 +567,10 @@ export default function SettingsPage() {
           </Form>
         </div>
       )
-    },
-    {
-      key: 'profile',
-      label: <Space><UserOutlined />Profile</Space>,
-      children: (
-        <div style={{ padding: '0 24px 24px' }}>
-          <SectionHeader 
-            icon={<UserOutlined />} 
-            title="User Profile" 
-            subtitle="Manage your identity within the TicketIQ ecosystem." 
-          />
-          <Form 
-            form={profileForm} 
-            layout="vertical" 
-            style={{ maxWidth: 600 }}
-            onFinish={() => handleSave('User Profile')}
-          >
-            <Row gutter={24}>
-              <Col span={12}>
-                <Form.Item label="Full Name"><Input defaultValue="Admin User" /></Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item label="Job Title"><Input defaultValue="Intelligence Operator" /></Form.Item>
-              </Col>
-            </Row>
-            <Form.Item label="Departmental Role"><Input defaultValue="L3 Support Engineering" /></Form.Item>
-            <Form.Item label="Notification Email"><Input defaultValue="admin@ticketiq.ai" /></Form.Item>
-            
-            <div style={{ marginTop: 24 }}>
-              <Button type="primary" icon={<SaveOutlined />} htmlType="submit">Update Profile</Button>
-            </div>
-          </Form>
-        </div>
-      )
     }
-  ]
+  ] : [])
+
+  const tabs = allTabs
 
   const currentIndex = tabs.findIndex(t => t.key === activeTab);
   const isFirst = currentIndex === 0;

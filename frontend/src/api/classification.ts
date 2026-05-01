@@ -12,6 +12,7 @@ export const classificationApi = {
   getEscalations: async (params?: {
     cursor?: string
     limit?: number
+    owner_id?: string
   }): Promise<{ escalations: EscalationTicket[]; next_cursor: string | null; total: number }> => {
     const response = await apiClient.get('/classification/escalations', { params })
     return response.data
@@ -34,6 +35,7 @@ export const classificationApi = {
     cursor?: string
     limit?: number
     status?: 'active' | 'acknowledged' | 'snoozed' | 'dismissed'
+    owner_id?: string
   }): Promise<{ alerts: PatternAlert[]; next_cursor: string | null; total: number }> => {
     const response = await apiClient.get('/classification/pattern-alerts', { params })
     return response.data

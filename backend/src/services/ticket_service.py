@@ -49,7 +49,7 @@ CATEGORY_SHORT_CODES = {
     Category.DATABASE: "DB",
     Category.STORAGE: "STR",
     Category.NETWORK: "NET",
-    Category.ACCESS_MANAGEMENT: "ACC",
+    Category.ACCESS: "ACC",
 }
 
 

@@ -6,6 +6,7 @@ import { InfoCircleOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { ticketsApi } from '../api/tickets'
 import { designSystemStyled } from '@ticketiq/design-system'
 import type { CreateTicketRequest } from '../api/types'
+import { getUserRole, getUserId } from '../auth/tokenStorage'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -43,6 +44,18 @@ export default function TicketSubmissionForm() {
   const [form] = Form.useForm()
   const [inputFormat, setInputFormat] = useState<string>('text')
   const [isPolishing, setIsPolishing] = useState(false)
+  
+  const userRole = getUserRole()
+  const userId = getUserId()
+  const isAdmin = userRole === 'admin'
+  
+  const USERS = [
+    { value: 'admin', label: 'Administrator (Self)' },
+    ...Array.from({ length: 10 }, (_, i) => ({
+      value: `User${i + 1}`,
+      label: `User ${i + 1}`
+    }))
+  ]
 
   const handlePolish = async () => {
     const text = form.getFieldValue('incident_description_unique')
@@ -81,6 +94,7 @@ export default function TicketSubmissionForm() {
       priority: values.incident_priority_unique,
       source_channel: values.incident_channel_unique,
       enable_judge: values.enable_judge_unique,
+      owner_id: values.incident_owner_unique,
     }
 
     if (inputFormat !== 'text' && values.incident_payload_unique) {
@@ -108,7 +122,28 @@ export default function TicketSubmissionForm() {
           onFinish={handleSubmit}
           requiredMark="optional"
           autoComplete="off"
+          initialValues={{
+            incident_owner_unique: userId,
+            incident_priority_unique: 'medium',
+            incident_channel_unique: 'web'
+          }}
         >
+          {isAdmin && (
+            <Form.Item
+              label={<Text strong>Ticket Owner (Raise on behalf of)</Text>}
+              name="incident_owner_unique"
+              rules={[{ required: true, message: 'Please select a ticket owner' }]}
+            >
+              <Select size="large" showSearch optionFilterProp="label">
+                {USERS.map((u) => (
+                  <Select.Option key={u.value} value={u.value} label={u.label}>
+                    {u.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
           <Form.Item
             label={<Text strong>Incident Title</Text>}
             name="incident_title_unique"

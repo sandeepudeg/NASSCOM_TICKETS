@@ -156,4 +156,7 @@ def ticket_to_response(
         automation_verification_json=getattr(ticket, "automation_verification_json", None),
         roi_value_saved=getattr(ticket, "roi_value_saved", None),
         resolution_time_ms=getattr(ticket, "resolution_time_ms", None),
+        resolution_details=getattr(ticket, "resolution_details", None),
+        hold_type=getattr(ticket, "hold_type", None),
+        status_changed_at=getattr(ticket, "status_changed_at", None),
     )

@@ -31,6 +31,7 @@ from src.services.graph_service import GraphService
 from src.services.copilot_service import CopilotService
 from src.services.global_service import GlobalService
 from src.services.audit_service import AuditService
+from src.services.workflow_service import WorkflowService
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -45,9 +46,12 @@ async def create_ticket(
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketService(db)
+    # Use provided owner_id if available (typically for admins), otherwise use x_user_id
+    owner_id = ticket_data.owner_id if ticket_data.owner_id else x_user_id
+    
     return await service.create_ticket(
         ticket_data,
-        owner_id=x_user_id,
+        owner_id=owner_id,
         source_ip=x_forwarded_for.split(",")[0] if x_forwarded_for else None,
     )
 
@@ -63,6 +67,7 @@ async def list_tickets(
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     sla_breach: bool | None = Query(None),
     intelligence_priority: str | None = Query(None),
+    owner_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = TicketService(db)
@@ -79,6 +84,7 @@ async def list_tickets(
         params=params,
         sla_breach=sla_breach,
         intelligence_priority=intelligence_priority,
+        owner_id=owner_id,
     )
 
 
@@ -486,6 +492,16 @@ async def get_ticket_snapshots(
     """
     service = AuditService(db)
     return await service.get_snapshots_for_ticket(ticket_id)
+@router.get("/{ticket_id}/logs", tags=["Governance"])
+async def get_ticket_logs(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retrieves all audit logs captured during the ticket lifecycle.
+    """
+    service = AuditService(db)
+    return await service.get_logs_for_ticket(ticket_id)
 @router.post("/{ticket_id}/dispatch", tags=["Intelligence"])
 async def dispatch_drafts(
     ticket_id: str,
@@ -518,3 +534,105 @@ async def polish_description(
     text = payload.get("text", "")
     service = CopilotService(db)
     return await service.polish_text(text)
+
+
+@router.post("/{ticket_id}/resolve", tags=["Workflow"], response_model=TicketResponse)
+async def resolve_ticket(
+    ticket_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+):
+    """Provides detailed resolution steps and moves ticket to awaiting_feedback."""
+    steps = payload.get("resolution_details", "")
+    service = WorkflowService(db)
+    ticket = await service.provide_resolution(ticket_id, steps, x_user_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+@router.post("/{ticket_id}/satisfy", tags=["Workflow"], response_model=TicketResponse)
+async def satisfy_ticket(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+):
+    """User marks ticket as satisfied, moving it to pending_closure."""
+    service = WorkflowService(db)
+    ticket = await service.mark_satisfied(ticket_id, x_user_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+@router.post("/{ticket_id}/feedback", tags=["Workflow"])
+async def submit_ticket_feedback(
+    ticket_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+):
+    """User provides star rating and detailed comments for the resolution."""
+    rating = payload.get("rating", 5)
+    comment = payload.get("comment", "")
+    service = WorkflowService(db)
+    ticket = await service.submit_feedback(ticket_id, rating, comment, x_user_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+@router.post("/{ticket_id}/reopen", tags=["Workflow"], response_model=TicketResponse)
+async def reopen_ticket(
+    ticket_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+):
+    """User reopens ticket if resolution was insufficient."""
+    reason = payload.get("reason", "No reason provided")
+    service = WorkflowService(db)
+    ticket = await service.reopen_ticket(ticket_id, x_user_id, reason)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+@router.post("/{ticket_id}/hold", tags=["Workflow"], response_model=TicketResponse)
+async def set_ticket_hold(
+    ticket_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+):
+    """Sets a hold status (evidence_needed or in_person_visit)."""
+    hold_type = payload.get("hold_type")
+    service = WorkflowService(db)
+    ticket = await service.set_hold(ticket_id, hold_type, x_user_id)
+    if not ticket:
+        raise HTTPException(status_code=400, detail="Invalid hold type or ticket not found")
+    return ticket
+
+@router.post("/{ticket_id}/close", tags=["Workflow"], response_model=TicketResponse)
+async def close_ticket(
+    ticket_id: str,
+    db: AsyncSession = Depends(get_db),
+    x_user_id: str = Header(default="system"),
+):
+    """Administrator performs final alignment and closes the ticket."""
+    service = WorkflowService(db)
+    ticket = await service.close_ticket(ticket_id, x_user_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+@router.post("/workflow/auto-close", tags=["Workflow"])
+async def run_auto_closures(
+    db: AsyncSession = Depends(get_db),
+):
+    """Triggers the 7-day auto-closure logic for idle feedback tickets."""
+    service = WorkflowService(db)
+    count = await service.process_auto_closures()
+    return {"status": "success", "processed_count": count}

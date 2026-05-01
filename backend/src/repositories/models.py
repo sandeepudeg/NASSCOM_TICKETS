@@ -64,13 +64,23 @@ class Ticket(Base):
             "Database",
             "Storage",
             "Network",
-            "Access Management",
+            "Access",
             name="category_enum",
         ),
         nullable=True,
     )
     status = Column(
-        SQLEnum("open", "in_progress", "resolved", "closed", name="status_enum"),
+        SQLEnum(
+            "open", 
+            "in_progress", 
+            "resolved", 
+            "closed", 
+            "awaiting_feedback", 
+            "awaiting_evidence", 
+            "pending_visit", 
+            "pending_closure", 
+            name="status_enum"
+        ),
         default="open",
         nullable=False,
     )
@@ -130,6 +140,10 @@ class Ticket(Base):
     automation_simulation_report = Column(Text, nullable=True)
     automation_runbook_id = Column(String, ForeignKey("automation_runbooks.id"), nullable=True)
 
+    # Resolution & Enterprise Flow (Phase 9)
+    resolution_details = Column(Text, nullable=True)
+    hold_type = Column(String(50), nullable=True) # evidence_needed, in_person_visit
+
     # Verification & Industrial Metrics
     automation_verification_json = Column(Text, nullable=True) # Pulse, Drift, Forensics
     roi_value_saved = Column(Float, nullable=True)             # Estimated minutes saved
@@ -139,6 +153,7 @@ class Ticket(Base):
     updated_at = Column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
+    status_changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     resolved_at = Column(DateTime, nullable=True)
 
     folder_assignments = relationship(
@@ -195,7 +210,7 @@ class SimilarTicket(Base):
             "Database",
             "Storage",
             "Network",
-            "Access Management",
+            "Access",
             name="similar_category_enum",
         ),
         nullable=False,
@@ -234,6 +249,13 @@ class AuditLog(Base):
             "webhook_delivery_failed",
             "retrain_skipped_concurrent",
             "ticket_dispatch",
+            "ticket_resolve",
+            "ticket_satisfy",
+            "ticket_reopen",
+            "ticket_hold",
+            "ticket_simulate",
+            "ticket_remediate",
+            "ticket_verify",
             name="audit_action_enum",
         ),
         nullable=False,
@@ -264,7 +286,7 @@ class PatternAlert(Base):
             "Database",
             "Storage",
             "Network",
-            "Access Management",
+            "Access",
             name="pattern_category_enum",
         ),
         nullable=False,
@@ -301,7 +323,7 @@ class AgentOverride(Base):
             "Database",
             "Storage",
             "Network",
-            "Access Management",
+            "Access",
             name="override_original_category_enum",
         ),
         nullable=False,
@@ -314,7 +336,7 @@ class AgentOverride(Base):
             "Database",
             "Storage",
             "Network",
-            "Access Management",
+            "Access",
             name="override_corrected_category_enum",
         ),
         nullable=False,

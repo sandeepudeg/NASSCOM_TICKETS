@@ -120,6 +120,17 @@ export default function AutomationCompletedPage() {
       ),
     },
     {
+      title: 'User',
+      dataIndex: 'owner_id',
+      key: 'owner_id',
+      width: 100,
+      render: (owner: string) => (
+        <Text style={{ fontWeight: 600, color: 'var(--color-text-secondary)', fontSize: '11px', textTransform: 'capitalize' }}>
+          {owner || 'SYSTEM'}
+        </Text>
+      ),
+    },
+    {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',

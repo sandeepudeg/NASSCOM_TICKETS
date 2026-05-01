@@ -15,6 +15,8 @@ import AutomationPage from './pages/AutomationPage'
 import AutomationCompletedPage from './pages/AutomationCompletedPage'
 import MasterControlPage from './pages/MasterControlPage'
 
+import AdminRoute from './auth/AdminRoute'
+
 function App() {
   return (
     <DesignSystemThemeProvider 
@@ -41,10 +43,10 @@ function App() {
           <Route path="tickets" element={<TicketListPage />} />
           <Route path="escalations" element={<EscalationQueuePage />} />
           <Route path="pattern-alerts" element={<PatternAlertsPage />} />
-          <Route path="automation-available" element={<AutomationPage />} />
-          <Route path="automation-completed" element={<AutomationCompletedPage />} />
-          <Route path="model/metrics" element={<ModelPerformancePage />} />
-          <Route path="master-control" element={<MasterControlPage />} />
+          <Route path="automation-available" element={<AdminRoute><AutomationPage /></AdminRoute>} />
+          <Route path="automation-completed" element={<AdminRoute><AutomationCompletedPage /></AdminRoute>} />
+          <Route path="model/metrics" element={<AdminRoute><ModelPerformancePage /></AdminRoute>} />
+          <Route path="master-control" element={<AdminRoute><MasterControlPage /></AdminRoute>} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

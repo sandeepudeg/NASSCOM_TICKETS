@@ -92,6 +92,17 @@ export default function AutomationPage() {
       ),
     },
     {
+      title: 'User',
+      dataIndex: 'owner_id',
+      key: 'owner_id',
+      width: 100,
+      render: (owner: string) => (
+        <Text style={{ fontWeight: 600, color: 'var(--color-text-secondary)', fontSize: '11px', textTransform: 'capitalize' }}>
+          {owner || 'SYSTEM'}
+        </Text>
+      ),
+    },
+    {
       title: 'Department',
       dataIndex: 'category',
       key: 'category',

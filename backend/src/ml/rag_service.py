@@ -25,7 +25,10 @@ class RAGService:
     @property
     def client(self) -> AsyncClient:
         if self._client is None:
-            self._client = AsyncClient(host=settings.ollama_base_url)
+            self._client = AsyncClient(
+                host=settings.ollama_base_url,
+                timeout=60.0 # Optimized for Groq-enabled environment
+            )
         return self._client
 
     @property

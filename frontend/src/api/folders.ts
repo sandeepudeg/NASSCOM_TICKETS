@@ -54,6 +54,7 @@ export const foldersApi = {
       routing_status?: string;
       sla_breach?: boolean;
       intelligence_priority?: string;
+      owner_id?: string;
     }
   ): Promise<TicketListResponse> => {
     const response = await apiClient.get<TicketListResponse>(
@@ -85,8 +86,8 @@ export const foldersApi = {
   },
 
   // Get aggregated stats for all folders
-  getStats: async (): Promise<FolderStatsResponse> => {
-    const response = await apiClient.get<FolderStatsResponse>('/folders/stats')
+  getStats: async (params?: { ticket_owner_id?: string }): Promise<FolderStatsResponse> => {
+    const response = await apiClient.get<FolderStatsResponse>('/folders/stats', { params })
     return response.data
   },
 }

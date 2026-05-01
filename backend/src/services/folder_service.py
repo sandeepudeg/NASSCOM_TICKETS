@@ -221,8 +221,8 @@ class FolderService:
         assignment_repo = TicketAssignmentRepository(self.session)
         return await assignment_repo.count_folder_tickets(folder_id)
 
-    async def get_all_folder_stats(self, owner_id: str) -> FolderStatsResponse:
-        stats_list = await self.folder_repo.get_all_stats(owner_id)
+    async def get_all_folder_stats(self, owner_id: str, ticket_owner_id: str | None = None) -> FolderStatsResponse:
+        stats_list = await self.folder_repo.get_all_stats(owner_id, ticket_owner_id)
 
         stats = [FolderStat(**s) for s in stats_list]
         return FolderStatsResponse(stats=stats, total_folders=len(stats))

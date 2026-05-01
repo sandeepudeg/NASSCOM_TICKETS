@@ -21,7 +21,7 @@ CATEGORY_SHORT_CODES = {
     Category.DATABASE: "DB",
     Category.STORAGE: "STR",
     Category.NETWORK: "NET",
-    Category.ACCESS_MANAGEMENT: "ACC",
+    Category.ACCESS: "ACC",
 }
 
 
@@ -80,21 +80,32 @@ class ImportService:
                     )
 
                     # Optional fields
-                    category = (
+                    category_raw = (
                         row.get(mapping.get("category"))
                         if "category" in mapping and mapping.get("category")
                         else None
                     )
+                    category = None
+                    if category_raw and isinstance(category_raw, str):
+                        normalized = category_raw.strip().title()
+                        # Validate against Category enum values
+                        if normalized in [c.value for c in Category]:
+                            category = normalized
+                        else:
+                            # Try to find a partial match or handle common variations if needed
+                            # For now, we'll just log or fallback to None if it doesn't match exactly
+                            pass
                     priority = (
                         row.get(mapping.get("priority"))
                         if "priority" in mapping and mapping.get("priority")
                         else "medium"
                     )
-                    status = (
+                    status_raw = (
                         row.get(mapping.get("status"))
                         if "status" in mapping and mapping.get("status")
                         else "open"
                     )
+                    status = str(status_raw).lower() if status_raw else "open"
 
                     # 4. Mandatory PII Scrubbing
                     scrubbed_title, title_metrics = PIIScrubber.scrub(raw_title)

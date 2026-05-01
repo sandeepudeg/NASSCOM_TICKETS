@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ticketsApi } from '../api/tickets'
 import { 
   Typography, 
@@ -83,6 +84,7 @@ import { useNavigate } from 'react-router-dom'
 
 export default function ImportWorkspace() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [currentStep, setCurrentStep] = useState(0)
   const [file, setFile] = useState<any>(null)
   const [headers, setHeaders] = useState<string[]>([])
@@ -182,6 +184,14 @@ export default function ImportWorkspace() {
       if (data.success) {
         setImportResult(data)
         setCurrentStep(2)
+        // Invalidate queries to refresh sidebar and dashboard counts
+        queryClient.invalidateQueries({ queryKey: ['folders-stats'] })
+        queryClient.invalidateQueries({ queryKey: ['tickets-count'] })
+        queryClient.invalidateQueries({ queryKey: ['escalations-count'] })
+        queryClient.invalidateQueries({ queryKey: ['alerts-count'] })
+        queryClient.invalidateQueries({ queryKey: ['automation-count'] })
+        queryClient.invalidateQueries({ queryKey: ['sla-breach-count'] })
+        message.success('Import completed successfully')
       } else {
         message.error(data.error || 'Import failed')
       }

@@ -197,6 +197,7 @@ class TicketAssignmentService:
         routing_status: str | None = None,
         sla_breach: bool | None = None,
         intelligence_priority: str | None = None,
+        owner_id: str | None = None,
     ) -> tuple[list[TicketResponse], int]:
         folder = await self.folder_repo.get_by_id(folder_id, user_id)
         if not folder:
@@ -204,6 +205,7 @@ class TicketAssignmentService:
 
         tickets = await self.assignment_repo.get_folder_tickets(
             folder_id=folder_id,
+            owner_id=owner_id,
             page_size=params.page_size,
             page=params.page,
             sort_by=params.sort_by,
@@ -217,6 +219,7 @@ class TicketAssignmentService:
 
         total = await self.assignment_repo.count_folder_tickets(
             folder_id=folder_id,
+            owner_id=owner_id,
             status=status,
             category=category,
             routing_status=routing_status,

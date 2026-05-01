@@ -5,6 +5,7 @@ import { isAuthenticated, clearAuthToken } from './tokenStorage'
 interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
+  username: string | null
   error: string | null
   login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
@@ -14,16 +15,18 @@ interface AuthState {
 export const useAuth = create<AuthState>((set) => ({
   isAuthenticated: isAuthenticated(),
   isLoading: false,
+  username: localStorage.getItem('auth_username'),
   error: null,
 
   login: async (username: string, password: string) => {
     set({ isLoading: true, error: null })
     try {
       await authApi.login({ username, password })
-      set({ isAuthenticated: true, isLoading: false })
+      localStorage.setItem('auth_username', username)
+      set({ isAuthenticated: true, isLoading: false, username })
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 'Login failed'
-      set({ isAuthenticated: false, isLoading: false, error: errorMessage })
+      set({ isAuthenticated: false, isLoading: false, error: errorMessage, username: null })
       throw error
     }
   },
@@ -34,11 +37,14 @@ export const useAuth = create<AuthState>((set) => ({
       await authApi.logout()
     } finally {
       clearAuthToken()
-      set({ isAuthenticated: false, isLoading: false, error: null })
+      localStorage.removeItem('auth_username')
+      set({ isAuthenticated: false, isLoading: false, error: null, username: null })
     }
   },
 
   checkAuth: () => {
-    set({ isAuthenticated: isAuthenticated() })
+    const isAuth = isAuthenticated()
+    const username = localStorage.getItem('auth_username')
+    set({ isAuthenticated: isAuth, username: isAuth ? username : null })
   },
 }))

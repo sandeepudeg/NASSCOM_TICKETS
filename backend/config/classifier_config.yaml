@@ -50,7 +50,7 @@ categories:
       - "High latency to database server"
       - "DNS resolution failing for internal services"
     
-  - name: Access Management
+  - name: Access
     description: Account lockouts, permission errors, SSO failures, or provisioning requests
     examples:
       - "User locked out after password reset"

@@ -26,6 +26,8 @@ import { classificationApi } from '../api/classification'
 import { designSystemStyled } from '@ticketiq/design-system'
 import type { PatternAlert } from '../api/types'
 
+import { getUserRole, getUserId } from '../auth/tokenStorage'
+
 const { Text, Title } = Typography
 
 const PageContainer = designSystemStyled.div`
@@ -37,12 +39,16 @@ export default function PatternAlertsPage() {
   const [selectedAlert, setSelectedAlert] = useState<PatternAlert | null>(null)
   const [actionModalVisible, setActionModalVisible] = useState(false)
   const [actionType, setActionType] = useState<'acknowledge' | 'snooze' | 'dismiss'>('acknowledge')
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
   const [form] = Form.useForm()
   const queryClient = useQueryClient()
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['pattern-alerts'],
-    queryFn: () => classificationApi.getPatternAlerts(),
+    queryKey: ['pattern-alerts', getUserRole(), getUserId()],
+    queryFn: () => classificationApi.getPatternAlerts({
+      owner_id: getUserRole() === 'admin' ? undefined : getUserId() || undefined
+    }),
   })
 
   const updateAlertMutation = useMutation({
@@ -118,12 +124,12 @@ export default function PatternAlertsPage() {
 
   const columns = [
     {
-      title: <div style={{ whiteSpace: 'nowrap' }}>SR. NO.</div>,
-      key: 'srno',
-      width: 85,
+      title: 'SR. NO.',
+      key: 'serial_number',
+      width: 70,
       render: (_: any, __: any, index: number) => (
         <Text style={{ color: 'var(--color-text-secondary)', fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }}>
-          {index + 1}
+          {(currentPage - 1) * PAGE_SIZE + index + 1}
         </Text>
       ),
     },
@@ -131,20 +137,31 @@ export default function PatternAlertsPage() {
       title: 'Significance',
       dataIndex: 'cluster_size',
       key: 'count',
-      width: 100,
+      width: 180,
+      align: 'center' as const,
       render: (count: number) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Badge 
-            count={count} 
-            overflowCount={99}
-            style={{ 
-              backgroundColor: count > 10 ? 'var(--color-text-danger)' : 'var(--color-text-warning)',
-              boxShadow: count > 10 ? '0 0 10px var(--color-bg-trail)' : 'none',
-              fontSize: '10px',
-              fontWeight: 700
-            }} 
-          />
-          <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 700 }}>TICKETS</Text>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          gap: '8px', 
+          whiteSpace: 'nowrap',
+          width: '100%'
+        }}>
+          <Text strong style={{ 
+            color: count > 10 ? 'var(--color-text-danger)' : 'var(--color-text-warning)',
+            fontSize: '14px',
+            letterSpacing: '0.02em'
+          }}>
+            {count}
+          </Text>
+          <Text style={{ 
+            fontSize: '11px', 
+            color: 'var(--color-text-secondary)', 
+            fontWeight: 700, 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em'
+          }}>Tickets</Text>
         </div>
       ),
     },
@@ -152,6 +169,7 @@ export default function PatternAlertsPage() {
       title: 'Detected Pattern',
       dataIndex: 'representative_title',
       key: 'title',
+      width: 500,
       render: (text: string) => (
         <div style={{ padding: '4px 0' }}>
           <Text strong style={{ color: 'var(--color-text-primary)', fontSize: '14px', display: 'block', marginBottom: '4px' }}>
@@ -280,8 +298,14 @@ export default function PatternAlertsPage() {
           dataSource={(data as any)?.alerts || []}
           columns={columns}
           rowKey="id"
-          pagination={{ pageSize: 10, position: ['bottomRight'] }}
-          className="high-density-table"
+          tableLayout="fixed"
+          pagination={{ 
+            current: currentPage,
+            pageSize: PAGE_SIZE, 
+            position: ['bottomCenter'],
+            onChange: (page) => setCurrentPage(page)
+          }}
+          className="high-density-table center-pagination"
           locale={{ 
             emptyText: (
               <div style={{ padding: '48px 0', textAlign: 'center' }}>

@@ -128,7 +128,7 @@ class FolderRepository:
             await self.session.delete(assignment)
         await self.session.flush()
 
-    async def get_all_stats(self, owner_id: str) -> list[dict]:
+    async def get_all_stats(self, owner_id: str, ticket_owner_id: str | None = None) -> list[dict]:
         """Aggregate statistics for all folders owned by a user."""
         from src.repositories.models import Ticket
         from datetime import timedelta, datetime
@@ -159,8 +159,12 @@ class FolderRepository:
             )
             .outerjoin(Ticket, TicketFolderAssignment.ticket_id == Ticket.id)
             .where(Folder.owner_id == owner_id, Folder.deleted_at.is_(None))
-            .group_by(Folder.id, Folder.name)
         )
+
+        if ticket_owner_id:
+            query = query.where(Ticket.owner_id == ticket_owner_id)
+
+        query = query.group_by(Folder.id, Folder.name)
 
         result = await self.session.execute(query)
         stats = []

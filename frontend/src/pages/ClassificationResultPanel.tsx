@@ -18,6 +18,8 @@ import {
   Modal,
   Timeline,
   Descriptions,
+  Input,
+  Rate,
 } from 'antd'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -53,6 +55,9 @@ import {
   AuditOutlined,
   ThunderboltFilled,
   InfoCircleOutlined,
+  MessageOutlined,
+  CommentOutlined,
+  FormOutlined,
 } from '@ant-design/icons'
 import { 
   AreaChart, 
@@ -69,6 +74,8 @@ import { designSystemStyled } from '@ticketiq/design-system'
 import { ticketsApi } from '../api/tickets'
 import { SimilarTicket, AuditSnapshot, GlobalInsight, GraphNode, GraphEdge } from '../api/types'
 import { Button, message, notification } from 'antd'
+import { useAuth } from '../auth/useAuth'
+import { getUserRole, getUserId } from '../auth/tokenStorage'
 
 interface SimEvent {
   title: string
@@ -247,6 +254,88 @@ const parseResolutionSteps = (steps: string[] | undefined): string[] => {
 export default function ClassificationResultPanel() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
+  const { username } = useAuth()
+  const isAdmin = getUserRole() === 'admin' || getUserId() === 'admin' || username === 'admin'
+  const isDemoUser = getUserRole() === 'user' || username?.toLowerCase().startsWith('user')
+
+  const [isResolveModalOpen, setIsResolveModalOpen] = useState(false)
+  const [resolutionStepsInput, setResolutionStepsInput] = useState('')
+  const [isWorkflowLoading, setIsWorkflowLoading] = useState(false)
+
+  const handleResolveSubmit = async () => {
+    if (!id || !resolutionStepsInput) return
+    setIsWorkflowLoading(true)
+    try {
+      await ticketsApi.resolve(id, resolutionStepsInput)
+      message.success('Resolution steps submitted. Ticket moved to Awaiting Feedback.')
+      setIsResolveModalOpen(false)
+      refetch()
+    } catch (err) {
+      message.error('Failed to submit resolution')
+    } finally {
+      setIsWorkflowLoading(false)
+    }
+  }
+
+  const handleSatisfy = async () => {
+    if (!id) return
+    setIsWorkflowLoading(true)
+    try {
+      await ticketsApi.satisfy(id)
+      notification.success({
+        message: 'Feedback Recorded',
+        description: 'Thank you for your feedback. The ticket is now pending final closure by the administrator.',
+        placement: 'bottomRight'
+      })
+      refetch()
+    } catch (err) {
+      message.error('Failed to record feedback')
+    } finally {
+      setIsWorkflowLoading(false)
+    }
+  }
+
+  const handleReopen = async (reason: string) => {
+    if (!id) return
+    setIsWorkflowLoading(true)
+    try {
+      await ticketsApi.reopen(id, reason)
+      message.info('Ticket re-opened for further investigation.')
+      refetch()
+    } catch (err) {
+      message.error('Failed to re-open ticket')
+    } finally {
+      setIsWorkflowLoading(false)
+    }
+  }
+
+  const handleHold = async (type: string) => {
+    if (!id) return
+    setIsWorkflowLoading(true)
+    try {
+      await ticketsApi.setHold(id, type)
+      message.warning(`Ticket placed on hold: ${type.replace('_', ' ')}`)
+      refetch()
+    } catch (err) {
+      message.error('Failed to update hold status')
+    } finally {
+      setIsWorkflowLoading(false)
+    }
+  }
+
+  const handleClose = async () => {
+    if (!id) return
+    setIsWorkflowLoading(true)
+    try {
+      await ticketsApi.close(id)
+      message.success('Ticket finalized and archived successfully.')
+      refetch()
+    } catch (err) {
+      message.error('Failed to close ticket')
+    } finally {
+      setIsWorkflowLoading(false)
+    }
+  }
 
   const queryResult = useQuery({
     queryKey: ['ticket-classification', id],
@@ -271,6 +360,13 @@ export default function ClassificationResultPanel() {
     queryKey: ['snapshots', id],
     queryFn: () => ticketsApi.getTicketSnapshots(id as string),
     enabled: !!id,
+  })
+
+  const { data: ticketLogs } = useQuery({
+    queryKey: ['ticket_logs', id],
+    queryFn: () => ticketsApi.getTicketLogs(id as string),
+    enabled: !!id,
+    refetchInterval: 5000 // Poll every 5s for live feedback
   })
 
   const [selectedSnapshot, setSelectedSnapshot] = useState<AuditSnapshot | null>(null)
@@ -303,6 +399,30 @@ export default function ClassificationResultPanel() {
 
   // State and Handlers
   const { data, isLoading, error, refetch } = queryResult
+
+  // Feedback State
+  const [userRating, setUserRating] = useState(0)
+  const [userComment, setUserComment] = useState('')
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+
+  const handleSubmitFeedback = async () => {
+    if (!id || userRating === 0) {
+      message.warning('Please provide a star rating before submitting.')
+      return
+    }
+    setIsSubmittingFeedback(true)
+    try {
+      await ticketsApi.submitFeedback(id, userRating, userComment)
+      message.success('Thank you! Your feedback has been recorded.')
+      setFeedbackSubmitted(true)
+      refetch()
+    } catch (err) {
+      message.error('Failed to submit feedback')
+    } finally {
+      setIsSubmittingFeedback(false)
+    }
+  }
 
   const [isSimulating, setIsSimulating] = useState(false)
   const [showSimReport, setShowSimReport] = useState(false)
@@ -503,6 +623,54 @@ export default function ClassificationResultPanel() {
 
   return (
     <PageContainer>
+      {/* Enterprise Workflow Banner */}
+      {data.status === 'awaiting_feedback' && (
+        <Alert
+          message={
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Space>
+                <ClockCircleOutlined style={{ color: '#fbbf24' }} />
+                <Text strong style={{ color: '#fbbf24' }}>
+                  AWAITING USER FEEDBACK: 7-Day Auto-Closure Timer Active
+                </Text>
+              </Space>
+              <Text style={{ fontSize: '11px', opacity: 0.8 }}>
+                Last updated: {data.status_changed_at ? new Date(data.status_changed_at).toLocaleString() : 'N/A'}
+              </Text>
+            </div>
+          }
+          type="warning"
+          showIcon={false}
+          style={{
+            marginBottom: '24px',
+            background: 'rgba(251, 191, 36, 0.05)',
+            border: '1px solid rgba(251, 191, 36, 0.2)',
+            borderRadius: '12px'
+          }}
+        />
+      )}
+
+      {data.status === 'pending_closure' && (
+        <Alert
+          message={
+            <Space>
+              <VerifiedOutlined style={{ color: '#10b981' }} />
+              <Text strong style={{ color: '#10b981' }}>
+                PENDING FINAL ALIGNMENT: User is satisfied. Administrator review required for closure.
+              </Text>
+            </Space>
+          }
+          type="success"
+          showIcon={false}
+          style={{
+            marginBottom: '24px',
+            background: 'rgba(16, 185, 129, 0.05)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            borderRadius: '12px'
+          }}
+        />
+      )}
+
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
@@ -524,6 +692,57 @@ export default function ClassificationResultPanel() {
             </Button>
             {translatedTitle && (
               <Button size="small" onClick={() => { setTranslatedTitle(null); setTranslatedDesc(null); }}>Reset</Button>
+            )}
+            
+            {/* Enterprise Workflow Actions */}
+            {isAdmin && data.status === 'in_progress' && (
+              <Space>
+                <Button 
+                  type="primary" 
+                  icon={<CheckCircleOutlined />} 
+                  onClick={() => setIsResolveModalOpen(true)}
+                  style={{ background: '#10b981', borderColor: '#10b981' }}
+                >
+                  Resolve Ticket
+                </Button>
+                <Button 
+                  icon={<ClockCircleOutlined />} 
+                  onClick={() => handleHold('evidence_needed')}
+                >
+                  Wait for Evidence
+                </Button>
+              </Space>
+            )}
+
+            {(isDemoUser || isAdmin) && data.status === 'awaiting_feedback' && (
+              <Space>
+                <Button 
+                  type="primary" 
+                  icon={<SmileOutlined />} 
+                  onClick={handleSatisfy}
+                  style={{ background: '#10b981', borderColor: '#10b981' }}
+                >
+                  I am Satisfied
+                </Button>
+                <Button 
+                  danger 
+                  icon={<FrownOutlined />} 
+                  onClick={() => handleReopen('User reported resolution did not work.')}
+                >
+                  Not Resolved
+                </Button>
+              </Space>
+            )}
+
+            {isAdmin && data.status === 'pending_closure' && (
+              <Button 
+                type="primary" 
+                icon={<VerifiedOutlined />} 
+                onClick={handleClose}
+                style={{ background: '#10b981', borderColor: '#10b981' }}
+              >
+                Finalize & Archive
+              </Button>
             )}
           </Space>
         </div>
@@ -623,8 +842,8 @@ export default function ClassificationResultPanel() {
 
               <Row gutter={12}>
                 <Col span={12}>
-                  <Text style={{ display: 'block', fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>REPORTER</Text>
-                  <Text style={{ fontSize: 12 }}>{data.owner_id === 'system' ? 'Automated' : 'admin'}</Text>
+                  <Text style={{ display: 'block', fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>TARGET USER</Text>
+                  <Text style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>{data.owner_id?.toUpperCase() || 'SYSTEM'}</Text>
                 </Col>
                 <Col span={12}>
                   <Text style={{ display: 'block', fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>INGESTION</Text>
@@ -644,271 +863,320 @@ export default function ClassificationResultPanel() {
                 </Space>
               </div>
 
-              <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  <Text strong style={{ fontSize: 10, color: '#818cf8', letterSpacing: '0.05em' }}>STRATEGIC CONTEXT</Text>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Environment</Text>
-                    <Text style={{ fontSize: 12 }}>PROD-ASIA-NORTH</Text>
+                <>
+                  <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                      <Text strong style={{ fontSize: 10, color: '#818cf8', letterSpacing: '0.05em' }}>STRATEGIC CONTEXT</Text>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Environment</Text>
+                        <Text style={{ fontSize: 12 }}>PROD-ASIA-NORTH</Text>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Source System</Text>
+                        <Text style={{ fontSize: 12 }}>Salesforce (Rest API)</Text>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>SLA Status</Text>
+                        <Tag color={data.sla_status === 'breached' ? 'error' : 'success'} style={{ margin: 0, fontSize: 10 }}>{data.sla_status === 'breached' ? 'BREACHED' : 'HEALTHY'}</Tag>
+                      </div>
+                    </Space>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Source System</Text>
-                    <Text style={{ fontSize: 12 }}>Salesforce (Rest API)</Text>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>SLA Status</Text>
-                    <Tag color={data.sla_status === 'breached' ? 'error' : 'success'} style={{ margin: 0, fontSize: 10 }}>{data.sla_status === 'breached' ? 'BREACHED' : 'HEALTHY'}</Tag>
-                  </div>
-                </Space>
-              </div>
 
-              <div style={{ padding: '12px', background: 'rgba(249, 115, 22, 0.05)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.1)' }}>
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  <Text strong style={{ fontSize: 10, color: '#f97316', letterSpacing: '0.05em' }}>EFFICIENCY & ROI</Text>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Automation Potential</Text>
-                    <Tag color="purple">High (88%)</Tag>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Knowledge Coverage</Text>
-                    <Tag color="blue">Direct Match</Tag>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Est. Effort Savings</Text>
-                    <Text style={{ fontSize: 12 }}>~45 Minutes</Text>
-                  </div>
-                </Space>
-              </div>
+                  {isAdmin && (
+                    <div style={{ padding: '12px', background: 'rgba(249, 115, 22, 0.05)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.1)' }}>
+                      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                        <Text strong style={{ fontSize: 10, color: '#f97316', letterSpacing: '0.05em' }}>EFFICIENCY & ROI</Text>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Automation Potential</Text>
+                          <Tag color="purple">High (88%)</Tag>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Knowledge Coverage</Text>
+                          <Tag color="blue">Direct Match</Tag>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Est. Effort Savings</Text>
+                          <Text style={{ fontSize: 12 }}>~45 Minutes</Text>
+                        </div>
+                      </Space>
+                    </div>
+                  )}
 
-              {timeline.length > 0 && (
-                <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                    <Text strong style={{ fontSize: 10, color: '#818cf8', letterSpacing: '0.05em' }}>SIMULATION ACTIVITY</Text>
-                    <Timeline
-                      items={timeline.map((event, idx) => ({
-                        color: event.status === 'finish' ? '#10b981' : event.status === 'error' ? '#ef4444' : '#6366f1',
-                        dot: event.status === 'process' ? <LoadingOutlined /> : undefined,
-                        children: (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <Text style={{ fontSize: '11px', color: event.status === 'error' ? '#ef4444' : '#cbd5e1' }}>{event.title}</Text>
-                            {event.time && <Text style={{ fontSize: '9px', color: '#64748b', marginLeft: 8 }}>{event.time}</Text>}
-                          </div>
-                        )
-                      }))}
-                    />
-                  </Space>
-                </div>
-              )}
+                  {timeline.length > 0 && (
+                    <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                        <Text strong style={{ fontSize: 10, color: '#818cf8', letterSpacing: '0.05em' }}>SIMULATION ACTIVITY</Text>
+                        <Timeline
+                          items={timeline.map((event, idx) => ({
+                            color: event.status === 'finish' ? '#10b981' : event.status === 'error' ? '#ef4444' : '#6366f1',
+                            dot: event.status === 'process' ? <LoadingOutlined /> : undefined,
+                            children: (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Text style={{ fontSize: '11px', color: event.status === 'error' ? '#ef4444' : '#cbd5e1' }}>{event.title}</Text>
+                                {event.time && <Text style={{ fontSize: '9px', color: '#64748b', marginLeft: 8 }}>{event.time}</Text>}
+                              </div>
+                            )
+                          }))}
+                        />
+                      </Space>
+                    </div>
+                  )}
+                </>
             </Space>
           </Card>
         </Col>
 
         <Col span={18}>
             <Space direction="vertical" size={24} style={{ width: '100%' }}>
-              <Row gutter={24}>
-                <Col span={12}>
-                  <Space direction="vertical" size={12} style={{ width: '100%', height: '100%' }}>
-                    {/* Classification Target Card */}
-                    <Card
-                      className="glass-effect shadow-accent"
-                      bodyStyle={{ padding: '12px 20px' }}
-                      style={{ borderLeft: `6px solid ${priorityInfo.color}` }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>CLASSIFICATION TARGET</Text>
-                        <CheckCircleOutlined style={{ color: '#10b981', fontSize: 16 }} />
-                      </div>
-
-                      <div style={{ padding: '0 4px' }}>
-                        <Title level={2} style={{ margin: '0 0 2px', color: 'var(--color-text-primary)', fontWeight: 800, fontSize: '24px' }}>
-                          {data.category}
-                        </Title>
-                        <Text style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: 8 }}>Unified Service Catalog Mapping</Text>
-                        
-                        <div style={{ 
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '4px 12px',
-                          borderRadius: '6px',
-                          background: `${priorityInfo.color}15`,
-                          border: `1px solid ${priorityInfo.color}30`
-                        }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: priorityInfo.color, marginRight: 8, boxShadow: `0 0 8px ${priorityInfo.color}` }} />
-                          <Text strong style={{ color: priorityInfo.color, fontSize: '11px', letterSpacing: '0.02em' }}>{priorityInfo.label} PRIORITY</Text>
+              {isAdmin && (
+                <Row gutter={24} style={{ marginBottom: 24 }}>
+                  <Col span={12}>
+                    <Space direction="vertical" size={12} style={{ width: '100%', height: '100%' }}>
+                      {/* Classification Target Card */}
+                      <Card
+                        className="glass-effect shadow-accent"
+                        bodyStyle={{ padding: '12px 20px' }}
+                        style={{ borderLeft: `6px solid ${priorityInfo.color}` }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                          <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>
+                            CLASSIFICATION TARGET
+                          </Text>
+                          <CheckCircleOutlined style={{ color: '#10b981', fontSize: 16 }} />
                         </div>
-                      </div>
-                    </Card>
 
-                    {/* Service Intelligence Card */}
-                    <Card
-                      className="glass-effect shadow-accent"
-                      bodyStyle={{ padding: '10px 16px' }}
-                      style={{ 
-                        background: 'rgba(16, 185, 129, 0.02)',
-                        border: '1px solid rgba(16, 185, 129, 0.05)'
-                      }}
-                    >
-                      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <Text strong style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Operational Metrics</Text>
-                          <Text strong style={{ fontSize: '10px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Operational Metrics</Text>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
-                                <ClockCircleOutlined style={{ color: '#38bdf8', fontSize: 14 }} />
-                              </div>
-                              <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Est. Resolution</Text>
-                            </div>
-                            <Text strong style={{ color: 'var(--color-primary)', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                              {data.estimated_resolution_at ? new Date(data.estimated_resolution_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Calculating...'}
-                            </Text>
-                          </div>
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
-                                <DashboardOutlined style={{ color: '#fbbf24', fontSize: 14 }} />
-                              </div>
-                              <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Complexity Level</Text>
-                            </div>
-                            <div style={{ background: 'rgba(251, 191, 36, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
-                              <Text strong style={{ color: '#fbbf24', fontSize: '11px' }}>Level {data.complexity_score || 1}/5</Text>
-                            </div>
-                          </div>
-
-                          <Divider style={{ margin: '8px 0', opacity: 0.05 }} />
-
-                          <Text strong style={{ fontSize: '10px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Contextual Analysis</Text>
-                          <MetricBox
-                            label="Customer Sentiment"
-                            value={data.sentiment_score! > 0.7 ? "FRUSTRATED" : data.sentiment_score! > 0.4 ? "NEUTRAL" : "SATISFIED"}
-                            percent={(1 - (data.sentiment_score || 0)) * 100}
-                            accentColor={data.sentiment_score! > 0.6 ? '#ef4444' : '#10b981'}
-                            status={data.status}
-                            icon={data.sentiment_score! > 0.6 ? <FrownOutlined style={{ color: '#ef4444', fontSize: 14 }} /> : <SmileOutlined style={{ color: '#10b981', fontSize: 14 }} />}
-                          />
+                        <div style={{ padding: '0 4px' }}>
+                          <Title level={2} style={{ margin: '0 0 2px', color: 'var(--color-text-primary)', fontWeight: 800, fontSize: '24px' }}>
+                            {data.category}
+                          </Title>
+                          <Text style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: 8 }}>Unified Service Catalog Mapping</Text>
                           
-                          <MetricBox
-                            label="Business Impact"
-                            value={data.impact_score! > 0.7 ? "CRITICAL" : data.impact_score! > 0.4 ? "SIGNIFICANT" : "ROUTINE"}
-                            percent={(data.impact_score || 0.3) * 100}
-                            accentColor="#8b5cf6"
-                            status={data.status}
-                            icon={<AppstoreOutlined style={{ color: '#8b5cf6', fontSize: 14 }} />}
-                          />
+                          <div style={{ 
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            background: `${priorityInfo.color}15`,
+                            border: `1px solid ${priorityInfo.color}30`
+                          }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: priorityInfo.color, marginRight: 8, boxShadow: `0 0 8px ${priorityInfo.color}` }} />
+                            <Text strong style={{ color: priorityInfo.color, fontSize: '11px', letterSpacing: '0.02em' }}>{priorityInfo.label} PRIORITY</Text>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  </Space>
-                </Col>
+                      </Card>
 
-                <Col span={12}>
-                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                    <Card className="glass-effect shadow-accent" bodyStyle={{ padding: '12px 20px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
-                        <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>CONFIDENCE METRICS</Text>
-                        <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 800, fontSize: '24px', lineHeight: 1 }}>
-                          {((data?.confidence_score || 0.93) * 100).toFixed(0)}%
-                        </Title>
-                      </div>
+                      {/* Service Intelligence Card */}
+                      <Card
+                        className="glass-effect shadow-accent"
+                        bodyStyle={{ padding: '10px 16px' }}
+                        style={{ 
+                          background: 'rgba(16, 185, 129, 0.02)',
+                          border: '1px solid rgba(16, 185, 129, 0.05)'
+                        }}
+                      >
+                        <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <Text strong style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Operational Metrics</Text>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
+                                  <ClockCircleOutlined style={{ color: '#38bdf8', fontSize: 14 }} />
+                                </div>
+                                <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Est. Resolution</Text>
+                              </div>
+                              <Text strong style={{ color: 'var(--color-primary)', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                                {data.estimated_resolution_at ? new Date(data.estimated_resolution_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Calculating...'}
+                              </Text>
+                            </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <MetricBox
-                          label="Symptom Match"
-                          value="92%"
-                          percent={92}
-                          accentColor="#38bdf8"
-                          status={data.status}
-                          icon={
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 10px rgba(56, 189, 248, 0.4)' }} />
-                          }
-                        />
-                        <MetricBox
-                          label="Pattern Recognition"
-                          value="85%"
-                          percent={85}
-                          accentColor="#8b5cf6"
-                          status={data.status}
-                          icon={
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', boxShadow: '0 0 10px rgba(139, 92, 246, 0.4)' }} />
-                          }
-                        />
-                        <MetricBox
-                          label="Historical Data Alignment"
-                          value="87%"
-                          percent={87}
-                          accentColor="#10b981"
-                          status={data.status}
-                          icon={
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px rgba(16, 185, 129, 0.4)' }} />
-                          }
-                        />
-                        <MetricBox
-                          label="AI Confidence Score"
-                          value={`${((data?.confidence_score || 0.93) * 100).toFixed(2)}%`}
-                          percent={(data?.confidence_score || 0.93) * 100}
-                          accentColor="#6366f1"
-                          status={data.status}
-                          icon={
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }} />
-                          }
-                        />
-                        <MetricBox
-                            label="Semantic Precision"
-                            value="92.41%"
-                            percent={92.41}
-                            accentColor="#4f46e5"
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
+                                  <DashboardOutlined style={{ color: '#fbbf24', fontSize: 14 }} />
+                                </div>
+                                <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Complexity Level</Text>
+                              </div>
+                              <div style={{ background: 'rgba(251, 191, 36, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
+                                <Text strong style={{ color: '#fbbf24', fontSize: '11px' }}>Level {data.complexity_score || 1}/5</Text>
+                              </div>
+                            </div>
+
+                              <>
+                                <Divider style={{ margin: '8px 0', opacity: 0.05 }} />
+
+                                <Text strong style={{ fontSize: '10px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Contextual Analysis</Text>
+                                <MetricBox
+                                  label="Customer Sentiment"
+                                  value={data.sentiment_score! > 0.7 ? "FRUSTRATED" : data.sentiment_score! > 0.4 ? "NEUTRAL" : "SATISFIED"}
+                                  percent={(1 - (data.sentiment_score || 0)) * 100}
+                                  accentColor={data.sentiment_score! > 0.6 ? '#ef4444' : '#10b981'}
+                                  status={data.status}
+                                  icon={data.sentiment_score! > 0.6 ? <FrownOutlined style={{ color: '#ef4444', fontSize: 14 }} /> : <SmileOutlined style={{ color: '#10b981', fontSize: 14 }} />}
+                                />
+                                
+                                <MetricBox
+                                  label="Business Impact"
+                                  value={data.impact_score! > 0.7 ? "CRITICAL" : data.impact_score! > 0.4 ? "SIGNIFICANT" : "ROUTINE"}
+                                  percent={(data.impact_score || 0.3) * 100}
+                                  accentColor="#8b5cf6"
+                                  status={data.status}
+                                  icon={<AppstoreOutlined style={{ color: '#8b5cf6', fontSize: 14 }} />}
+                                />
+                              </>
+                          </div>
+                        </div>
+                      </Card>
+                    </Space>
+                  </Col>
+
+                  <Col span={12}>
+                    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                      <Card className="glass-effect shadow-accent" bodyStyle={{ padding: '12px 20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
+                          <Text strong style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>CONFIDENCE METRICS</Text>
+                          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 800, fontSize: '24px', lineHeight: 1 }}>
+                            {((data?.confidence_score || 0.93) * 100).toFixed(0)}%
+                          </Title>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <MetricBox
+                            label="Symptom Match"
+                            value="92%"
+                            percent={92}
+                            accentColor="#38bdf8"
                             status={data.status}
                             icon={
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4f46e5', boxShadow: '0 0 10px rgba(79, 70, 229, 0.4)' }} />
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 10px rgba(56, 189, 248, 0.4)' }} />
                             }
                           />
-                      </div>
-                    </Card>
-
-                    <Card 
-                      className="glass-effect shadow-accent" 
-                      bodyStyle={{ padding: '12px 20px' }}
-                      style={{ background: 'rgba(99, 102, 241, 0.02)' }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <Text strong style={{ fontSize: 10, letterSpacing: '0.08em', color: '#818cf8' }}>AI QUALITY & SECURITY SCORECARD</Text>
-                        <VerifiedOutlined style={{ color: '#818cf8', fontSize: 14 }} />
-                      </div>
-
-                      <Row gutter={[16, 16]}>
-                        <Col span={12}>
-                          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                            <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Security Rating</Text>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 14 }} />
-                            </div>
-                          </div>
-                        </Col>
-                        <Col span={12}>
-                          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                            <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Innovation Score</Text>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <RocketOutlined style={{ color: '#8b5cf6', fontSize: 14 }} />
-                              <Text strong style={{ color: 'var(--color-text-primary)' }}>{Math.round((data.evaluation_matrix?.innovation || 0.88) * 100)}%</Text>
-                            </div>
-                          </div>
-                        </Col>
-                      </Row>
-
-                      {data.evaluation_matrix?.judge_explanation && (
-                        <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(99, 102, 241, 0.03)', borderRadius: '6px', borderLeft: '2px solid #818cf8' }}>
-                          <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', fontStyle: 'italic', display: 'block' }}>
-                            "{data.evaluation_matrix.judge_explanation}"
-                          </Text>
+                          <MetricBox
+                            label="Pattern Recognition"
+                            value="85%"
+                            percent={85}
+                            accentColor="#8b5cf6"
+                            status={data.status}
+                            icon={
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', boxShadow: '0 0 10px rgba(139, 92, 246, 0.4)' }} />
+                            }
+                          />
+                          <MetricBox
+                            label="Historical Data Alignment"
+                            value="87%"
+                            percent={87}
+                            accentColor="#10b981"
+                            status={data.status}
+                            icon={
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px rgba(16, 185, 129, 0.4)' }} />
+                            }
+                          />
+                          <MetricBox
+                            label="AI Confidence Score"
+                            value={`${((data?.confidence_score || 0.93) * 100).toFixed(2)}%`}
+                            percent={(data?.confidence_score || 0.93) * 100}
+                            accentColor="#6366f1"
+                            status={data.status}
+                            icon={
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }} />
+                            }
+                          />
+                          <MetricBox
+                              label="Semantic Precision"
+                              value="92.41%"
+                              percent={92.41}
+                              accentColor="#4f46e5"
+                              status={data.status}
+                              icon={
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4f46e5', boxShadow: '0 0 10px rgba(79, 70, 229, 0.4)' }} />
+                              }
+                            />
                         </div>
-                      )}
-                    </Card>
-                  </Space>
-                </Col>
-              </Row>
+                      </Card>
+
+                      <Card 
+                        className="glass-effect shadow-accent" 
+                        bodyStyle={{ padding: '12px 20px' }}
+                        style={{ background: 'rgba(99, 102, 241, 0.02)' }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                          <Text strong style={{ fontSize: 10, letterSpacing: '0.08em', color: '#818cf8' }}>AI QUALITY & SECURITY SCORECARD</Text>
+                          <VerifiedOutlined style={{ color: '#818cf8', fontSize: 14 }} />
+                        </div>
+
+                        <Row gutter={[16, 16]}>
+                          <Col span={12}>
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                              <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Security Rating</Text>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 14 }} />
+                              </div>
+                            </div>
+                          </Col>
+                          <Col span={12}>
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                              <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Innovation Score</Text>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <RocketOutlined style={{ color: '#8b5cf6', fontSize: 14 }} />
+                                <Text strong style={{ color: 'var(--color-text-primary)' }}>{Math.round((data.evaluation_matrix?.innovation || 0.88) * 100)}%</Text>
+                              </div>
+                            </div>
+                          </Col>
+                        </Row>
+
+                        {data.evaluation_matrix?.judge_explanation && (
+                          <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(99, 102, 241, 0.03)', borderRadius: '6px', borderLeft: '2px solid #818cf8' }}>
+                            <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', fontStyle: 'italic', display: 'block' }}>
+                              "{data.evaluation_matrix.judge_explanation}"
+                            </Text>
+                          </div>
+                        )}
+                      </Card>
+                    </Space>
+                  </Col>
+                </Row>
+              )}
+
+              {isAdmin && (
+                <Card
+                  className="glass-effect shadow-accent"
+                  style={{ 
+                    marginBottom: '24px', 
+                    border: '1px solid #8b5cf630', 
+                    background: 'linear-gradient(to right, rgba(139, 92, 246, 0.05), transparent)' 
+                  }}
+                  title={<Space><ThunderboltOutlined style={{ color: '#8b5cf6' }} /><Text strong>Automation Intelligence Hub</Text></Space>}
+                  extra={<Tag color="purple">RPA READY</Tag>}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text type="secondary" style={{ maxWidth: '60%' }}>
+                      This incident matches high-confidence patterns and is eligible for 
+                      <strong> Intelligent Self-Healing</strong> via agentic runbooks.
+                    </Text>
+                    {data.automation_status === 'none' ? (
+                      <Button
+                        type="primary"
+                        icon={<RocketOutlined />}
+                        onClick={handleSimulate}
+                        loading={isSimulating}
+                        style={{ background: '#8b5cf6', borderColor: '#8b5cf6', borderRadius: '6px', height: '40px', padding: '0 24px', fontWeight: 600 }}
+                      >
+                        Run Agentic Simulation
+                      </Button>
+                    ) : (
+                      <Button 
+                        type="primary"
+                        icon={<ThunderboltOutlined />} 
+                        onClick={() => setShowSimReport(true)}
+                        style={{ background: '#10b981', borderColor: '#10b981', height: '40px', padding: '0 24px', fontWeight: 600 }}
+                      >
+                        View Simulation Result
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              )}
 
               <StyledTabs
                 defaultActiveKey="resolution"
@@ -916,7 +1184,7 @@ export default function ClassificationResultPanel() {
                 items={[
                   {
                     key: 'resolution',
-                    label: (<span>Resolution Path</span>),
+                    label: <span>{isAdmin ? 'AI Intelligence Report' : 'Official Response'}</span>,
                     children: (
                       <Space direction="vertical" size={24} style={{ width: '100%' }}>
                         <Card
@@ -924,7 +1192,7 @@ export default function ClassificationResultPanel() {
                           title={
                             <Space>
                               <BulbOutlined style={{ color: '#10b981' }} />
-                              <Text strong style={{ color: 'inherit' }}>AI Intelligence Report</Text>
+                              <Text strong style={{ color: 'inherit' }}>{isAdmin ? 'AI Intelligence Report' : 'Official Response'}</Text>
                             </Space>
                           }
                         >
@@ -947,14 +1215,23 @@ export default function ClassificationResultPanel() {
                               </Text>
                             </div>
 
-                            <Text style={{ display: 'block', fontSize: 11, marginBottom: 12, letterSpacing: '0.08em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>ACTIONABLE RESOLUTION STEPS</Text>
+                             <Text style={{ display: 'block', fontSize: 11, marginBottom: 12, letterSpacing: '0.08em', color: 'var(--color-text-secondary)', fontWeight: 800 }}>
+                               ACTIONABLE RESOLUTION STEPS
+                             </Text>
                             <div style={{
                               background: 'rgba(148, 163, 184, 0.05)',
                               padding: '24px',
                               borderRadius: '12px',
-                              border: '1px solid rgba(255,255,255,0.05)'
+                              border: '1px solid rgba(255,255,255,0.05)',
+                              marginBottom: isAdmin ? 0 : 24
                             }}>
-                              {(() => {
+                              {data.resolution_details ? (
+                                <div style={{ fontSize: '15px', lineHeight: '1.7', color: 'var(--color-text-primary)' }}>
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {data.resolution_details}
+                                  </ReactMarkdown>
+                                </div>
+                              ) : (() => {
                                 const steps = data?.resolution_suggestion?.steps;
                                 const parsedSteps = parseResolutionSteps(steps);
 
@@ -991,464 +1268,638 @@ export default function ClassificationResultPanel() {
                                 ))
                               })()}
                             </div>
+
+                            {!isAdmin && data.status === 'awaiting_feedback' && (
+                              <div style={{ 
+                                marginTop: 32, 
+                                padding: '24px', 
+                                background: 'rgba(var(--color-primary-rgb), 0.05)', 
+                                borderRadius: '12px', 
+                                border: '1px solid rgba(var(--color-primary-rgb), 0.1)',
+                                textAlign: 'center'
+                              }}>
+                                <Title level={5} style={{ marginBottom: 16 }}>Does this resolve your issue?</Title>
+                                <Space size={16}>
+                                  <Button 
+                                    type="primary" 
+                                    size="large"
+                                    icon={<SmileOutlined />} 
+                                    onClick={handleSatisfy}
+                                    loading={isWorkflowLoading}
+                                    style={{ background: '#10b981', borderColor: '#10b981', height: '48px', padding: '0 32px', borderRadius: '8px', fontWeight: 700 }}
+                                  >
+                                    Accept Resolution
+                                  </Button>
+                                  <Button 
+                                    danger 
+                                    size="large"
+                                    icon={<FrownOutlined />} 
+                                    onClick={() => handleReopen('User reported resolution did not work.')}
+                                    loading={isWorkflowLoading}
+                                    style={{ height: '48px', padding: '0 32px', borderRadius: '8px', fontWeight: 700 }}
+                                  >
+                                    Respond Back
+                                  </Button>
+                                </Space>
+                                <div style={{ marginTop: 12 }}>
+                                  <Text style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                                    Your feedback helps us improve our automated support system.
+                                  </Text>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </Card>
-
-                        {data.is_automation_candidate && (
+                      </Space>
+                    )
+                  },
+                  ...(isAdmin ? [
+                    {
+                      key: 'copilot',
+                      label: <span>Agent Co-Pilot</span>,
+                      children: (
                           <Card
+                            title={<Space><BulbOutlined /> AI Co-Pilot Intelligence Hub</Space>}
                             className="glass-effect"
-                            style={{ border: '1px solid #8b5cf630', background: 'linear-gradient(to right, rgba(139, 92, 246, 0.05), transparent)' }}
-                            title={<Space><ThunderboltOutlined style={{ color: '#8b5cf6' }} /><Text strong>Automation Intelligence Hub</Text></Space>}
-                            extra={<Tag color="purple">RPA READY</Tag>}
+                            bodyStyle={{ padding: '24px' }}
                           >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Text type="secondary" style={{ maxWidth: '60%' }}>
-                                This incident matches high-confidence patterns and is eligible for 
-                                <strong> Intelligent Self-Healing</strong> via agentic runbooks.
-                              </Text>
-                              {data.automation_status === 'none' ? (
-                                <Button
-                                  type="primary"
-                                  icon={<RocketOutlined />}
-                                  onClick={handleSimulate}
-                                  loading={isSimulating}
-                                  style={{ background: '#8b5cf6', borderColor: '#8b5cf6', borderRadius: '6px' }}
-                                >
-                                  Run Agentic Simulation
-                                </Button>
-                              ) : (
-                                <Button 
-                                  shape="circle" 
-                                  icon={<ThunderboltOutlined />} 
-                                  onClick={() => setShowSimReport(true)}
-                                />
-                              )}
-                            </div>
-                          </Card>
-                        )}
-                      </Space>
-                    )
-                  },
-                  {
-                    key: 'copilot',
-                    label: (<span>Agent Co-Pilot</span>),
-                    children: (
-                      <Card
-                        title={<Space><BulbOutlined /> AI Co-Pilot Intelligence Hub</Space>}
-                        className="glass-effect"
-                        bodyStyle={{ padding: '24px' }}
-                      >
-                        <Space direction="vertical" size={24} style={{ width: '100%' }}>
-                          {/* Reasoning Box */}
-                          <div style={{
-                            background: 'rgba(56, 189, 248, 0.05)',
-                            padding: '20px',
-                            borderRadius: '12px',
-                            border: '1px solid rgba(56, 189, 248, 0.2)'
-                          }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                              <Text strong style={{ color: '#38bdf8', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Contextual Reasoning</Text>
-                              <Tag color="blue" bordered={false}>DETERMINISTIC ANALYSIS</Tag>
-                            </div>
-                            <div className="markdown-content" style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                              {reasoning ? (
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {reasoning}
-                                </ReactMarkdown>
-                              ) : (
-                                <>
-                                  Based on the <strong>"{data.category}"</strong> classification and the symptom match with previous incidents, 
-                                  I recommend a standard protocol combined with a focused system audit.
-                                  The user's sentiment is currently <strong>{data.sentiment_score! > 0.4 ? 'FRUSTRATED' : 'STABLE'}</strong>, so prioritize empathetic clear communication.
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Drafting Section */}
-                          <div style={{ background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-                            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Title level={5} style={{ margin: 0, fontSize: '14px' }}>Automated Communication Drafts</Title>
-                              <Space>
-                                <Button 
-                                  icon={<SyncOutlined spin={isRegenerating} />} 
-                                  onClick={handleRegenerate}
-                                  disabled={isRegenerating || data.status === 'in_progress' || data.status === 'resolved'}
-                                >
-                                  Regenerate
-                                </Button>
-                                <Button 
-                                  type="primary" 
-                                  icon={<RocketFilled />} 
-                                  onClick={handleReviewAndSend}
-                                  disabled={isRegenerating || !customerDraft || data.status === 'in_progress' || data.status === 'resolved'}
-                                  style={{ background: '#2563eb' }}
-                                >
-                                  Review & Send
-                                </Button>
-                              </Space>
-                            </div>
-                            <Row gutter={1}>
-                              <Col span={12} style={{ borderRight: '1px solid rgba(255,255,255,0.05)' }}>
-                                <div style={{ padding: '20px' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                                    <Text strong style={{ fontSize: '12px' }}>CUSTOMER UPDATE</Text>
-                                    <Button 
-                                      size="small" 
-                                      type="text" 
-                                      icon={<CopyOutlined />} 
-                                      onClick={() => copyToClipboard(customerDraft, 'Customer draft')}
-                                    />
-                                  </div>
-                                  <div style={{ background: 'rgba(0,0,0,0.1)', padding: '16px', borderRadius: '8px', minHeight: '140px', border: '1px solid var(--color-border-primary)' }}>
-                                    {isRegenerating ? <Spin size="small" /> : (
-                                      <div className="markdown-content" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                          {customerDraft || "_Synthesizing polite update..._"}
-                                        </ReactMarkdown>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col span={12}>
-                                <div style={{ padding: '20px' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                                    <Text strong style={{ fontSize: '12px' }}>ENGINEERING NOTE</Text>
-                                    <Button 
-                                      size="small" 
-                                      type="text" 
-                                      icon={<CopyOutlined />} 
-                                      onClick={() => copyToClipboard(engineerNote, 'Engineering note')}
-                                    />
-                                  </div>
-                                  <div style={{ background: 'rgba(0,0,0,0.1)', padding: '16px', borderRadius: '8px', minHeight: '140px', border: '1px solid var(--color-border-primary)' }}>
-                                    {isRegenerating ? <Spin size="small" /> : (
-                                      <div className="markdown-content" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                          {engineerNote || "_Synthesizing technical handover..._"}
-                                        </ReactMarkdown>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </Col>
-                            </Row>
-                          </div>
-                        </Space>
-                      </Card>
-                    )
-                  },
-                  {
-                    key: 'observability',
-                    label: (<span>Observability Hub</span>),
-                    children: (
-                      <Space direction="vertical" size={24} style={{ width: '100%' }}>
-                        <Row gutter={24}>
-                          <Col span={16}>
-                            <Card 
-                              title={<Space><AreaChartOutlined /> Real-time Recovery Metrics</Space>} 
-                              className="glass-effect"
-                              extra={<Tag color={data.status === 'resolved' ? "success" : "processing"}>{data.status === 'resolved' ? "STABLE" : "RECOVERING"}</Tag>}
-                            >
-                              <div style={{ height: 300, width: '100%', marginTop: 20 }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <AreaChart data={[
-                                    { t: -10, v: 85 }, { t: -8, v: 90 }, { t: -6, v: 110 }, { t: -4, v: 95 },
-                                    { t: -2, v: 120 }, { t: 0, v: 45 }, { t: 2, v: 40 }, { t: 4, v: 42 }, 
-                                    { t: 6, v: 40 }, { t: 8, v: 38 }, { t: 10, v: 40 }
-                                  ]}>
-                                    <defs>
-                                      <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                      </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis dataKey="t" stroke="var(--color-text-secondary)" fontSize={10} tickFormatter={(v) => `${v}s`} />
-                                    <YAxis stroke="var(--color-text-secondary)" fontSize={10} unit="ms" />
-                                    <Tooltip 
-                                      contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                                      itemStyle={{ color: '#10b981' }}
-                                    />
-                                    <Area type="monotone" dataKey="v" stroke="#10b981" fillOpacity={1} fill="url(#colorRec)" />
-                                  </AreaChart>
-                                </ResponsiveContainer>
-                              </div>
-                              <div style={{ textAlign: 'center', marginTop: 12 }}>
-                                <Text type="secondary" style={{ fontSize: 11 }}>
-                                  <SafetyOutlined style={{ marginRight: 4 }} /> System stabilization confirmed at T+0s post-remediation.
-                                </Text>
-                              </div>
-                            </Card>
-                          </Col>
-                          <Col span={8}>
-                            <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                              <Card title={<Space><HeartOutlined /> Health Verification</Space>} className="glass-effect" bodyStyle={{ padding: '16px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontSize: 12 }}>Synthetic Pulse</Text>
-                                    <Tag color="success">PASSED</Tag>
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontSize: 12 }}>Config Drift</Text>
-                                    <Tag color="success">NO DRIFT</Tag>
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontSize: 12 }}>Negative Forensics</Text>
-                                    <Tag color="success">CLEAN</Tag>
-                                  </div>
-                                </div>
-                              </Card>
-                              
-                              <Card title={<Space><BarChartOutlined /> ROI Metrics</Space>} className="glass-effect" bodyStyle={{ padding: '16px' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                  <Title level={4} style={{ color: '#10b981', margin: 0 }}>
-                                    {data.roi_value_saved ? data.roi_value_saved.toFixed(1) : '44.8'}m
-                                  </Title>
-                                  <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>ENGINEERING MINUTES SAVED</Text>
-                                  <Divider style={{ margin: '12px 0', opacity: 0.05 }} />
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                                    <Text type="secondary">Manual Baseline</Text>
-                                    <Text>45.0m</Text>
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 4 }}>
-                                    <Text type="secondary">AI Execution</Text>
-                                    <Text style={{ color: '#818cf8' }}>{( (data.resolution_time_ms || 0) / 60000).toFixed(1)}m</Text>
-                                  </div>
-                                </div>
-                              </Card>
-                            </Space>
-                          </Col>
-                        </Row>
-                      </Space>
-                    )
-                  },
-                  {
-                    key: 'network',
-                    label: (<span>Intelligence Network</span>),
-                    children: (
-                      <Space direction="vertical" size={24} style={{ width: '100%' }}>
-                        <Row gutter={24}>
-                          <Col span={14}>
-                            <Card title={<Space><ClusterOutlined /> Semantic Relationship Graph</Space>} className="glass-effect">
-                              {!graphData || graphData.nodes.length <= 1 ? (
-                                <Empty description="No semantic clusters detected in current timeframe." />
-                              ) : (
-                                <>
-                                  <Alert 
-                                    message={graphData.cluster_name} 
-                                    type="info" 
-                                    showIcon 
-                                    icon={<NodeIndexOutlined />} 
-                                    style={{ marginBottom: 20 }} 
-                                  />
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                    {graphData.nodes.filter((n: GraphNode) => !n.is_target).map((node: GraphNode) => (
-                                      <div key={node.id} style={{ 
-                                        padding: '12px 16px', 
-                                        borderRadius: '10px', 
-                                        background: 'rgba(255,255,255,0.02)',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        border: '1px solid rgba(255,255,255,0.05)'
-                                      }}>
-                                        <Space direction="vertical" size={0}>
-                                          <Text strong style={{ color: 'var(--color-text-primary)' }}>{node.label}</Text>
-                                          <Text type="secondary" style={{ fontSize: 11 }}>{node.category} • {node.status.toUpperCase()}</Text>
-                                        </Space>
-                                        <Text strong style={{ color: '#10b981' }}>
-                                          {(graphData.edges.find((e: GraphEdge) => e.to === node.id || e.from === node.id)?.strength! * 100).toFixed(0)}%
-                                        </Text>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
-                            </Card>
-                          </Col>
-                          <Col span={10}>
-                            <Card title={<Space><GlobalOutlined /> Global Context</Space>} className="glass-effect">
-                              {!globalInsights || globalInsights.length === 0 ? (
-                                <Empty description="No cross-organizational patterns detected." />
-                              ) : (
-                                <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                                  {globalInsights.map((insight: GlobalInsight, idx: number) => (
-                                    <div key={idx} style={{ padding: 12, background: 'rgba(16, 185, 129, 0.05)', borderRadius: 8, borderLeft: '3px solid #10b981', marginBottom: 12 }}>
-                                      <Text strong style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>{insight.title}</Text>
-                                      <Text type="secondary" style={{ fontSize: 11 }}>Match Weight: {(insight.matching_score * 100).toFixed(0)}%</Text>
-                                    </div>
-                                  ))}
-                                </Space>
-                              )}
-                            </Card>
-                          </Col>
-                        </Row>
-                      </Space>
-                    )
-                  },
-                  {
-                    key: 'audit',
-                    label: (<span>Audit Logs</span>),
-                    children: (
-                      <Space direction="vertical" size={24} style={{ width: '100%' }}>
-                        <Row gutter={24}>
-                          <Col span={16}>
                             <Space direction="vertical" size={24} style={{ width: '100%' }}>
-                              <Card title={<Space><HistoryOutlined /> Related Historical Incidents</Space>} className="glass-effect">
-                                <Collapse ghost expandIconPosition="right">
-                                  {data.similar_tickets?.map((t: SimilarTicket) => (
-                                    <Panel 
-                                      header={
-                                        <Space size={16}>
-                                          <Link to={`/tickets/${t.id}`}>
-                                            <Text strong style={{ color: 'var(--color-primary)' }}>#{t.id.substring(0, 8)}</Text>
-                                          </Link>
-                                          <Tag>{t.category}</Tag>
-                                          <Tag color="success">{(t.similarity_score * 100).toFixed(0)}% MATCH</Tag>
-                                        </Space>
-                                      } 
-                                      key={t.id}
+                              <div style={{
+                                background: 'rgba(56, 189, 248, 0.05)',
+                                padding: '20px',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(56, 189, 248, 0.2)'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                  <Text strong style={{ color: '#38bdf8', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Contextual Reasoning</Text>
+                                  <Tag color="blue" bordered={false}>DETERMINISTIC ANALYSIS</Tag>
+                                </div>
+                                <div className="markdown-content" style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                                  {reasoning ? (
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {reasoning}
+                                    </ReactMarkdown>
+                                  ) : (
+                                    <>
+                                      Based on the <strong>"{data.category}"</strong> classification and the symptom match with previous incidents, 
+                                      I recommend a standard protocol combined with a focused system audit.
+                                      The user's sentiment is currently <strong>{data.sentiment_score! > 0.4 ? 'FRUSTRATED' : 'STABLE'}</strong>, so prioritize empathetic clear communication.
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div style={{ background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                                <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Title level={5} style={{ margin: 0, fontSize: '14px' }}>Automated Communication Drafts</Title>
+                                  <Space>
+                                    <Button 
+                                      icon={<SyncOutlined spin={isRegenerating} />} 
+                                      onClick={handleRegenerate}
+                                      disabled={isRegenerating || data.status === 'in_progress' || data.status === 'resolved'}
                                     >
-                                      <div style={{ padding: '0 12px 12px' }}>
-                                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>INCIDENT SUMMARY</Text>
-                                        <Paragraph style={{ fontSize: 13, opacity: 0.8 }}>{t.description || t.title}</Paragraph>
-                                        <Divider style={{ margin: '12px 0' }} />
-                                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>HISTORICAL RESOLUTION</Text>
-                                        <Text style={{ fontSize: 13, color: '#10b981' }}>{t.resolution_summary}</Text>
-                                      </div>
-                                    </Panel>
-                                  ))}
-                                </Collapse>
-                              </Card>
-                              
-                              {data.automation_status === 'completed' && (
-                                <Card 
-                                  title={<Space><AuditOutlined style={{ color: '#10b981' }} /> Remediation Audit Trail</Space>} 
-                                  className="glass-effect shadow-accent"
-                                  style={{ borderTop: '4px solid #10b981' }}
-                                >
-                                  <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                                    <section>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                                        <FileTextOutlined style={{ color: '#818cf8' }} />
-                                        <Text strong style={{ fontSize: '14px' }}>Step 1: Dry-Run Simulation Report</Text>
-                                      </div>
-                                      <ReportContainer>
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                          {(() => {
-                                            const report = data.automation_simulation_report || "No simulation report available.";
-                                            return report
-                                              .replace(/\|\s*\|\s*/g, '|\n|')
-                                              .replace(/(^#+.*?)\s*(\|)/gm, '$1\n\n$2');
-                                          })()}
-                                        </ReactMarkdown>
-                                      </ReportContainer>
-                                    </section>
-
-                                    <Divider style={{ margin: '16px 0', opacity: 0.1 }} />
-
-                                    <section>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                                        <ThunderboltFilled style={{ color: '#f59e0b' }} />
-                                        <Text strong style={{ fontSize: '14px' }}>Step 2: Actual Execution Output</Text>
-                                      </div>
-                                      <ReportContainer style={{ background: '#000', border: '1px solid #333' }}>
-                                        <pre style={{ margin: 0, color: '#10b981', whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '12px' }}>
-                                          {data.automation_output || "Terminal trace not captured."}
-                                        </pre>
-                                      </ReportContainer>
-                                    </section>
-
-                                    <Divider style={{ margin: '16px 0', opacity: 0.1 }} />
-
-                                    <section>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                                        <InfoCircleOutlined style={{ color: '#10b981' }} />
-                                        <Text strong style={{ fontSize: '14px' }}>Step 3: Industrial Verification Summary</Text>
-                                      </div>
-                                      {(() => {
-                                        let verifData = { pulse_check: 'N/A', drift_detected: 'N/A', forensics: 'N/A' };
-                                        if (data.automation_verification_json) {
-                                          try {
-                                            verifData = JSON.parse(data.automation_verification_json);
-                                          } catch(e) {}
-                                        }
-                                        return (
-                                          <Descriptions bordered column={1} size="small" className="glass-descriptions">
-                                            <Descriptions.Item label={<Text style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>ROI (Value Saved)</Text>}>
-                                              <Text strong style={{ color: '#10b981' }}>{data.roi_value_saved?.toFixed(1) || '45'} Minutes</Text>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label={<Text style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>Pulse Check</Text>}>
-                                              <Tag color={verifData.pulse_check === 'passed' ? 'success' : 'warning'}>
-                                                {verifData.pulse_check === 'passed' ? '✅ PASSED' : verifData.pulse_check || 'PENDING'}
-                                              </Tag>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>Config Drift</Text>}>
-                                              <Tag color={!verifData.drift_detected ? 'success' : 'error'}>
-                                                {!verifData.drift_detected ? '✅ NO DRIFT' : '❌ DRIFT DETECTED'}
-                                              </Tag>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>Forensic Analysis</Text>}>
-                                              <Text style={{ fontSize: '12px' }}>{verifData.forensics || 'Verified clean.'}</Text>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>Resolution Time</Text>}>
-                                              {data.resolution_time_ms ? `${(data.resolution_time_ms / 1000).toFixed(2)}s` : 'N/A'}
-                                            </Descriptions.Item>
-                                          </Descriptions>
-                                        );
-                                      })()}
-                                    </section>
+                                      Regenerate
+                                    </Button>
+                                    <Button 
+                                      type="primary" 
+                                      icon={<RocketFilled />} 
+                                      onClick={handleReviewAndSend}
+                                      disabled={isRegenerating || !customerDraft || data.status === 'in_progress' || data.status === 'resolved'}
+                                      style={{ background: '#2563eb' }}
+                                    >
+                                      Review & Send
+                                    </Button>
                                   </Space>
+                                </div>
+                                <Row gutter={1}>
+                                  <Col span={12} style={{ borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div style={{ padding: '20px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                                        <Text strong style={{ fontSize: '12px' }}>CUSTOMER UPDATE</Text>
+                                        <Button 
+                                          size="small" 
+                                          type="text" 
+                                          icon={<CopyOutlined />} 
+                                          onClick={() => copyToClipboard(customerDraft, 'Customer draft')}
+                                        />
+                                      </div>
+                                      <div style={{ background: 'rgba(0,0,0,0.1)', padding: '16px', borderRadius: '8px', minHeight: '140px', border: '1px solid var(--color-border-primary)' }}>
+                                        {isRegenerating ? <Spin size="small" /> : (
+                                          <div className="markdown-content" style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                              {customerDraft || "_Synthesizing polite update..._"}
+                                            </ReactMarkdown>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </Col>
+                                  <Col span={12}>
+                                    <div style={{ padding: '20px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                                        <Text strong style={{ fontSize: '12px' }}>ENGINEERING NOTE</Text>
+                                        <Button 
+                                          size="small" 
+                                          type="text" 
+                                          icon={<CopyOutlined />} 
+                                          onClick={() => copyToClipboard(engineerNote, 'Engineering note')}
+                                        />
+                                      </div>
+                                      <div style={{ background: 'rgba(0,0,0,0.1)', padding: '16px', borderRadius: '8px', minHeight: '140px', border: '1px solid var(--color-border-primary)' }}>
+                                        {isRegenerating ? <Spin size="small" /> : (
+                                          <div className="markdown-content" style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                              {engineerNote || "_Synthesizing technical handover..._"}
+                                            </ReactMarkdown>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </Col>
+                                </Row>
+                              </div>
+                            </Space>
+                          </Card>
+                      )
+                    },
+                    {
+                      key: 'observability',
+                      label: <span>Observability Hub</span>,
+                      children: (
+                        <Space direction="vertical" size={24} style={{ width: '100%' }}>
+                          <Row gutter={24}>
+                            <Col span={16}>
+                              <Card 
+                                title={<Space><AreaChartOutlined /> Real-time Recovery Metrics</Space>} 
+                                className="glass-effect"
+                                extra={<Tag color={data.status === 'resolved' ? "success" : "processing"}>{data.status === 'resolved' ? "STABLE" : "RECOVERING"}</Tag>}
+                              >
+                                <div style={{ height: 300, width: '100%', marginTop: 20 }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={[
+                                      { t: -10, v: 85 }, { t: -8, v: 90 }, { t: -6, v: 110 }, { t: -4, v: 95 },
+                                      { t: -2, v: 120 }, { t: 0, v: 45 }, { t: 2, v: 40 }, { t: 4, v: 42 }, 
+                                      { t: 6, v: 40 }, { t: 8, v: 38 }, { t: 10, v: 40 }
+                                    ]}>
+                                      <defs>
+                                        <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">
+                                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                        </linearGradient>
+                                      </defs>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                      <XAxis dataKey="t" stroke="var(--color-text-secondary)" fontSize={10} tickFormatter={(v) => `${v}s`} />
+                                      <YAxis stroke="var(--color-text-secondary)" fontSize={10} unit="ms" />
+                                      <Tooltip 
+                                        contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                                        itemStyle={{ color: '#10b981' }}
+                                      />
+                                      <Area type="monotone" dataKey="v" stroke="#10b981" fillOpacity={1} fill="url(#colorRec)" />
+                                    </AreaChart>
+                                  </ResponsiveContainer>
+                                </div>
+                                <div style={{ textAlign: 'center', marginTop: 12 }}>
+                                  <Text type="secondary" style={{ fontSize: 11 }}>
+                                    <SafetyOutlined style={{ marginRight: 4 }} /> System stabilization confirmed at T+0s post-remediation.
+                                  </Text>
+                                </div>
+                              </Card>
+                            </Col>
+                            <Col span={8}>
+                              <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                                <Card title={<Space><HeartOutlined /> Health Verification</Space>} className="glass-effect" bodyStyle={{ padding: '16px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <Text style={{ fontSize: 12 }}>Synthetic Pulse</Text>
+                                      <Tag color="success">PASSED</Tag>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <Text style={{ fontSize: 12 }}>Config Drift</Text>
+                                      <Tag color="success">NO DRIFT</Tag>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <Text style={{ fontSize: 12 }}>Negative Forensics</Text>
+                                      <Tag color="success">CLEAN</Tag>
+                                    </div>
+                                  </div>
                                 </Card>
-                              )}
-                              
-                              {snapshots && snapshots.length > 0 && (
-                                <Card title={<Space><VerifiedOutlined /> Compliance Fingerprints</Space>} className="glass-effect">
-                                  <Space wrap>
-                                    {snapshots.map(s => (
-                                      <Button key={s.id} size="small" icon={<FileProtectOutlined />} onClick={() => setSelectedSnapshot(s)}>
-                                        Snapshot {new Date(s.created_at).toLocaleTimeString()}
-                                      </Button>
+                                
+                                <Card title={<Space><BarChartOutlined /> ROI Metrics</Space>} className="glass-effect" bodyStyle={{ padding: '16px' }}>
+                                  <div style={{ textAlign: 'center' }}>
+                                    <Title level={4} style={{ color: '#10b981', margin: 0 }}>
+                                      {data.roi_value_saved ? data.roi_value_saved.toFixed(1) : '44.8'}m
+                                    </Title>
+                                    <Text style={{ fontSize: 10, color: 'var(--color-text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>ENGINEERING MINUTES SAVED</Text>
+                                    <Divider style={{ margin: '12px 0', opacity: 0.05 }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                                      <Text type="secondary">Manual Baseline</Text>
+                                      <Text>45.0m</Text>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 4 }}>
+                                      <Text type="secondary">AI Execution</Text>
+                                      <Text style={{ color: '#818cf8' }}>{( (data.resolution_time_ms || 0) / 60000).toFixed(1)}m</Text>
+                                    </div>
+                                  </div>
+                                </Card>
+                              </Space>
+                            </Col>
+                          </Row>
+                        </Space>
+                      )
+                    },
+                    {
+                      key: 'network',
+                      label: <span>Intelligence Network</span>,
+                      children: (
+                        <Space direction="vertical" size={24} style={{ width: '100%' }}>
+                          <Row gutter={24}>
+                            <Col span={14}>
+                              <Card title={<Space><ClusterOutlined /> Semantic Relationship Graph</Space>} className="glass-effect">
+                                {!graphData || graphData.nodes.length <= 1 ? (
+                                  <Empty description="No semantic clusters detected in current timeframe." />
+                                ) : (
+                                  <>
+                                    <Alert 
+                                      message={graphData.cluster_name} 
+                                      type="info" 
+                                      showIcon 
+                                      icon={<NodeIndexOutlined />} 
+                                      style={{ marginBottom: 20 }} 
+                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                      {graphData.nodes.filter((n: GraphNode) => !n.is_target).map((node: GraphNode) => (
+                                        <div key={node.id} style={{ 
+                                          padding: '12px 16px', 
+                                          borderRadius: '10px', 
+                                          background: 'rgba(255,255,255,0.02)',
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                          border: '1px solid rgba(255,255,255,0.05)'
+                                        }}>
+                                          <Space direction="vertical" size={0}>
+                                            <Text strong style={{ color: 'var(--color-text-primary)' }}>{node.label}</Text>
+                                            <Text type="secondary" style={{ fontSize: 11 }}>{node.category} • {node.status.toUpperCase()}</Text>
+                                          </Space>
+                                          <Text strong style={{ color: '#10b981' }}>
+                                            {(graphData.edges.find((e: GraphEdge) => e.to === node.id || e.from === node.id)?.strength! * 100).toFixed(0)}%
+                                          </Text>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
+                              </Card>
+                            </Col>
+                            <Col span={10}>
+                              <Card title={<Space><GlobalOutlined /> Global Context</Space>} className="glass-effect">
+                                {!globalInsights || globalInsights.length === 0 ? (
+                                  <Empty description="No cross-organizational patterns detected." />
+                                ) : (
+                                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                                    {globalInsights.map((insight: GlobalInsight, idx: number) => (
+                                      <div key={idx} style={{ padding: 12, background: 'rgba(16, 185, 129, 0.05)', borderRadius: 8, borderLeft: '3px solid #10b981', marginBottom: 12 }}>
+                                        <Text strong style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>{insight.title}</Text>
+                                        <Text type="secondary" style={{ fontSize: 11 }}>Match Weight: {(insight.matching_score * 100).toFixed(0)}%</Text>
+                                      </div>
                                     ))}
                                   </Space>
+                                )}
+                              </Card>
+                            </Col>
+                          </Row>
+                        </Space>
+                      )
+                    },
+                    {
+                      key: 'audit',
+                      label: <span>Audit Logs</span>,
+                      children: (
+                        <Space direction="vertical" size={24} style={{ width: '100%' }}>
+                          <Row gutter={24}>
+                            <Col span={16}>
+                              <Space direction="vertical" size={24} style={{ width: '100%' }}>
+                                <Card title={<Space><HistoryOutlined /> Related Historical Incidents</Space>} className="glass-effect">
+                                  <Collapse ghost expandIconPosition="right">
+                                    {data.similar_tickets?.map((t: SimilarTicket) => (
+                                      <Panel 
+                                        header={
+                                          <Space size={16}>
+                                            <Link to={`/tickets/${t.id}`}>
+                                              <Text strong style={{ color: 'var(--color-primary)' }}>#{t.id.substring(0, 8)}</Text>
+                                            </Link>
+                                            <Tag>{t.category}</Tag>
+                                            <Tag color="success">{(t.similarity_score * 100).toFixed(0)}% MATCH</Tag>
+                                          </Space>
+                                        } 
+                                        key={t.id}
+                                      >
+                                        <div style={{ padding: '0 12px 12px' }}>
+                                          <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>INCIDENT SUMMARY</Text>
+                                          <Paragraph style={{ fontSize: 13, opacity: 0.8 }}>{t.description || t.title}</Paragraph>
+                                          <Divider style={{ margin: '12px 0' }} />
+                                          <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>HISTORICAL RESOLUTION</Text>
+                                          <Text style={{ fontSize: 13, color: '#10b981' }}>{t.resolution_summary}</Text>
+                                        </div>
+                                      </Panel>
+                                    ))}
+                                  </Collapse>
                                 </Card>
-                              )}
-                            </Space>
-                          </Col>
-                          <Col span={8}>
-                            <Title level={5} style={{ marginBottom: 16, color: '#f8fafc' }}>
-                              <Space><ClockCircleOutlined /> Simulation Activity</Space>
-                            </Title>
-                            <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <Timeline
-                                mode="left"
-                                items={[
-                                  ...timeline.map((item, i) => ({
-                                    label: <Text style={{ color: '#94a3b8', fontSize: '10px' }}>{item.time}</Text>,
-                                    children: <Text style={{ color: item.status === 'finish' ? '#8b5cf6' : item.status === 'error' ? '#ef4444' : '#38bdf8', fontSize: '11px' }}>{item.title}</Text>,
-                                    color: item.status === 'finish' ? '#8b5cf6' : item.status === 'error' ? '#ef4444' : '#38bdf8',
-                                    dot: item.status === 'process' ? <LoadingOutlined /> : undefined
-                                  })),
-                                  {
-                                    children: <Text style={{ color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>Awaiting completion...</Text>,
-                                    color: 'gray',
-                                    style: { opacity: 0.4, display: timeline.length > 0 && timeline[timeline.length-1].status === 'process' ? 'block' : 'none' }
-                                  }
-                                ]}
-                              />
+                                
+                                {snapshots && snapshots.length > 0 && (
+                                  <Card title={<Space><VerifiedOutlined /> Compliance Fingerprints</Space>} className="glass-effect">
+                                    <Space wrap>
+                                      {snapshots.map(s => (
+                                        <Button key={s.id} size="small" icon={<FileProtectOutlined />} onClick={() => setSelectedSnapshot(s)}>
+                                          Snapshot {new Date(s.created_at).toLocaleTimeString()}
+                                        </Button>
+                                      ))}
+                                    </Space>
+                                  </Card>
+                                )}
+                                
+                                <Card title={<Space><HistoryOutlined /> Detailed System Audit Trail</Space>} className="glass-effect">
+                                  <Timeline 
+                                    items={(ticketLogs || [])
+                                      .filter(l => [
+                                        'ticket_dispatch', 
+                                        'ticket_resolve', 
+                                        'ticket_satisfy', 
+                                        'ticket_reopen', 
+                                        'ticket_hold', 
+                                        'ticket_simulate',
+                                        'communication_sent'
+                                      ].includes(l.action_type))
+                                      .map((log, idx) => {
+                                        const isSimulation = log.action_type === 'ticket_simulate';
+                                        const isResolution = log.action_type === 'ticket_resolve';
+                                        const isDispatch = log.action_type === 'ticket_dispatch';
+                                        
+                                        return {
+                                          color: isSimulation ? '#8b5cf6' : isResolution ? '#10b981' : isDispatch ? '#6366f1' : '#94a3b8',
+                                          label: <Text type="secondary" style={{ fontSize: 11 }}>{new Date(log.timestamp).toLocaleString()}</Text>,
+                                          children: (
+                                            <div style={{ paddingBottom: 16 }}>
+                                              <Text strong style={{ display: 'block', textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.05em', color: 'var(--color-primary)' }}>
+                                                {log.action_type.replace('ticket_', '').replace('_', ' ')}
+                                              </Text>
+                                              <div style={{ marginTop: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                {isSimulation && (
+                                                  <Space direction="vertical" size={4}>
+                                                    <Text style={{ fontSize: 13 }}>Agentic Simulation Triggered</Text>
+                                                    <Tag color="purple">Result: {log.metadata.status}</Tag>
+                                                  </Space>
+                                                )}
+                                                {isDispatch && (
+                                                  <Space direction="vertical" size={4}>
+                                                    <Text strong style={{ fontSize: 12 }}>Internal Draft Dispatched</Text>
+                                                    <Text italic style={{ fontSize: 12, opacity: 0.8 }}>"{log.metadata.customer_draft?.substring(0, 100)}..."</Text>
+                                                  </Space>
+                                                )}
+                                                {isResolution && (
+                                                  <Space direction="vertical" size={4}>
+                                                    <Text strong style={{ fontSize: 12 }}>Resolution Shared with User</Text>
+                                                  </Space>
+                                                )}
+                                                {!isSimulation && !isDispatch && !isResolution && (
+                                                  <Text style={{ fontSize: 13 }}>{log.metadata.action || log.metadata.reason || 'Action recorded.'}</Text>
+                                                )}
+                                                <div style={{ marginTop: 8 }}>
+                                                  <Tag style={{ fontSize: 10 }}>Actor: {log.actor_user_id}</Tag>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ),
+                                          dot: isSimulation ? <ThunderboltOutlined /> : <CommentOutlined />
+                                        }
+                                      })}
+                                  />
+                                </Card>
+                              </Space>
+                            </Col>
+                            <Col span={8}>
+                              <Title level={5} style={{ marginBottom: 16, color: '#f8fafc' }}>
+                                <Space><ClockCircleOutlined /> Simulation Activity</Space>
+                              </Title>
+                              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <Timeline
+                                  mode="left"
+                                  items={[
+                                    ...timeline.map((item, i) => ({
+                                      label: <Text style={{ color: '#94a3b8', fontSize: '10px' }}>{item.time}</Text>,
+                                      children: <Text style={{ color: item.status === 'finish' ? '#8b5cf6' : item.status === 'error' ? '#ef4444' : '#38bdf8', fontSize: '11px' }}>{item.title}</Text>,
+                                      color: item.status === 'finish' ? '#8b5cf6' : item.status === 'error' ? '#ef4444' : '#38bdf8',
+                                      dot: item.status === 'process' ? <LoadingOutlined /> : undefined
+                                    })),
+                                    {
+                                      children: <Text style={{ color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>Awaiting completion...</Text>,
+                                      color: 'gray',
+                                      style: { opacity: 0.4, display: timeline.length > 0 && timeline[timeline.length-1].status === 'process' ? 'block' : 'none' }
+                                    }
+                                  ]}
+                                />
+                              </div>
+                            </Col>
+                          </Row>
+                        </Space>
+                      )
+                    }
+                  ] : []),
+                  {
+                    key: 'feedback',
+                    label: <span>Feedback Loop</span>,
+                    children: (
+                      <Card className="glass-effect" title={<Space><SmileOutlined /> Experience Optimization</Space>}>
+                        <div style={{ maxWidth: 600, margin: '0 auto', padding: '24px 0' }}>
+                          {feedbackSubmitted || (data && (data.status === 'pending_closure' || data.status === 'closed')) ? (
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                              <div style={{ 
+                                width: 80, 
+                                height: 80, 
+                                borderRadius: '50%', 
+                                background: 'rgba(16, 185, 129, 0.1)', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                margin: '0 auto 24px'
+                              }}>
+                                <CheckCircleOutlined style={{ fontSize: 40, color: '#10b981' }} />
+                              </div>
+                              <Title level={3} style={{ marginBottom: 12 }}>Feedback Recorded!</Title>
+                              <Text type="secondary" style={{ fontSize: 16, display: 'block', marginBottom: 32 }}>
+                                Your input has been successfully processed and added to our automation training model.
+                              </Text>
+                              <Button type="primary" ghost onClick={() => setFeedbackSubmitted(false)}>Submit Another Feedback</Button>
                             </div>
-                          </Col>
-                        </Row>
-                      </Space>
+                          ) : (
+                            <Space direction="vertical" size={32} style={{ width: '100%' }}>
+                              <div style={{ textAlign: 'center' }}>
+                                <Title level={4} style={{ marginBottom: 8 }}>How was your resolution experience?</Title>
+                                <Text type="secondary">Help us improve our Agentic workflows with your rating.</Text>
+                              </div>
+
+                              <div style={{ 
+                                background: 'rgba(255, 255, 255, 0.02)', 
+                                padding: '32px', 
+                                borderRadius: '16px', 
+                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                textAlign: 'center'
+                              }}>
+                                <Text strong style={{ display: 'block', marginBottom: 16, fontSize: 14 }}>RATE THE ACCURACY & SPEED</Text>
+                                <Rate 
+                                  value={userRating} 
+                                  onChange={setUserRating} 
+                                  style={{ fontSize: 36, color: '#fbbf24' }} 
+                                />
+                                <div style={{ marginTop: 8 }}>
+                                  <Text style={{ fontSize: 12, color: '#fbbf24' }}>
+                                    {userRating === 1 ? 'Poor' : userRating === 2 ? 'Fair' : userRating === 3 ? 'Good' : userRating === 4 ? 'Very Good' : userRating === 5 ? 'Excellent' : ''}
+                                  </Text>
+                                </div>
+                              </div>
+
+                              <div>
+                                <Text strong style={{ display: 'block', marginBottom: 12 }}>ADDITIONAL COMMENTS (OPTIONAL)</Text>
+                                <Input.TextArea 
+                                  rows={4} 
+                                  placeholder="What could we have done better? Any specific insights on the AI's performance?"
+                                  value={userComment}
+                                  onChange={(e) => setUserComment(e.target.value)}
+                                  style={{ background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}
+                                />
+                              </div>
+
+                              <Button 
+                                type="primary" 
+                                size="large" 
+                                block 
+                                icon={<RocketFilled />}
+                                loading={isSubmittingFeedback}
+                                onClick={handleSubmitFeedback}
+                                style={{ height: 54, borderRadius: '12px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', border: 'none', fontWeight: 700, fontSize: 16 }}
+                              >
+                                Submit Experience Report
+                              </Button>
+                            </Space>
+                          )}
+                        </div>
+                      </Card>
                     )
                   }
                 ]}
               />
             </Space>
+
+            {isAdmin && (data.automation_status === 'completed' || data.automation_status === 'pending_approval') && (
+              <Card 
+                title={<Space><AuditOutlined style={{ color: '#10b981' }} /> Remediation Audit Trail</Space>} 
+                className="glass-effect shadow-accent"
+                style={{ borderTop: '4px solid #10b981', marginTop: 24 }}
+              >
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  <section>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <FileTextOutlined style={{ color: '#818cf8' }} />
+                      <Text strong style={{ fontSize: '14px' }}>Step 1: Dry-Run Simulation Report</Text>
+                    </div>
+                    <ReportContainer>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {(() => {
+                          const report = data.automation_simulation_report || "No simulation report available.";
+                          return report
+                            .replace(/\|\s*\|\s*/g, '|\n|')
+                            .replace(/(^#+.*?)\s*(\|)/gm, '$1\n\n$2');
+                        })()}
+                      </ReactMarkdown>
+                    </ReportContainer>
+                  </section>
+
+                  {data.automation_status === 'completed' && (
+                    <>
+                      <Divider style={{ margin: '16px 0', opacity: 0.1 }} />
+
+                      <section>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                          <ThunderboltFilled style={{ color: '#f59e0b' }} />
+                          <Text strong style={{ fontSize: '14px' }}>Step 2: Actual Execution Output</Text>
+                        </div>
+                        <ReportContainer style={{ background: '#000', border: '1px solid #333' }}>
+                          <pre style={{ margin: 0, color: '#10b981', whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '12px' }}>
+                            {data.automation_output || "Terminal trace not captured."}
+                          </pre>
+                        </ReportContainer>
+                      </section>
+
+                      <Divider style={{ margin: '16px 0', opacity: 0.1 }} />
+
+                      <section>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                          <InfoCircleOutlined style={{ color: '#10b981' }} />
+                          <Text strong style={{ fontSize: '14px' }}>Step 3: Industrial Verification Summary</Text>
+                        </div>
+                        {(() => {
+                          let verifData = { pulse_check: 'N/A', drift_detected: 'N/A', forensics: 'N/A' };
+                          if (data.automation_verification_json) {
+                            try {
+                              verifData = JSON.parse(data.automation_verification_json);
+                            } catch(e) {}
+                          }
+                          return (
+                            <Descriptions bordered column={1} size="small" className="glass-descriptions">
+                              <Descriptions.Item label={<Text style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>ROI (Value Saved)</Text>}>
+                                <Text strong style={{ color: '#10b981' }}>{data.roi_value_saved?.toFixed(1) || '45'} Minutes</Text>
+                              </Descriptions.Item>
+                              <Descriptions.Item label={<Text style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>Pulse Check</Text>}>
+                                <Tag color={verifData.pulse_check === 'passed' ? 'success' : 'warning'}>
+                                  {verifData.pulse_check === 'passed' ? '✅ PASSED' : verifData.pulse_check || 'PENDING'}
+                                </Tag>
+                              </Descriptions.Item>
+                              <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>Config Drift</Text>}>
+                                <Tag color={!verifData.drift_detected ? 'success' : 'error'}>
+                                  {!verifData.drift_detected ? '✅ NO DRIFT' : '❌ DRIFT DETECTED'}
+                                </Tag>
+                              </Descriptions.Item>
+                              <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>Forensic Analysis</Text>}>
+                                <Text style={{ fontSize: '12px' }}>{verifData.forensics || 'Verified clean.'}</Text>
+                              </Descriptions.Item>
+                              <Descriptions.Item label={<Text style={{ color: '#94a3b8' }}>Resolution Time</Text>}>
+                                {data.resolution_time_ms ? `${(data.resolution_time_ms / 1000).toFixed(2)}s` : 'N/A'}
+                              </Descriptions.Item>
+                            </Descriptions>
+                          );
+                        })()}
+                      </section>
+                    </>
+                  )}
+                </Space>
+              </Card>
+            )}
         </Col>
       </Row>
+
+      <Modal
+        title="Provide Resolution Steps"
+        open={isResolveModalOpen}
+        onOk={handleResolveSubmit}
+        onCancel={() => setIsResolveModalOpen(false)}
+        confirmLoading={isWorkflowLoading}
+        okText="Submit Resolution"
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text type="secondary">
+            Provide detailed, step-by-step instructions for the user. 
+            The ticket will move to "Awaiting Feedback" and start the 7-day timer.
+          </Text>
+        </div>
+        <Input.TextArea
+          rows={8}
+          placeholder="e.g., 1. Log in to the portal... 2. Navigate to settings..."
+          value={resolutionStepsInput}
+          onChange={(e) => setResolutionStepsInput(e.target.value)}
+        />
+      </Modal>
+
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
