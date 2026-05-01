@@ -20,7 +20,7 @@ import {
   HistoryOutlined,
   PlusCircleOutlined
 } from '@ant-design/icons'
-import { AreaChart, Area, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList, PieChart, Pie } from 'recharts'
+import { AreaChart, Area, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList, PieChart, Pie, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { designSystemStyled } from '@ticketiq/design-system'
@@ -485,6 +485,123 @@ const SecurityMonitorWidget = () => {
         <Text style={{ fontSize: '10px', color: 'var(--color-text-primary)', fontWeight: 700 }}>JUST NOW</Text>
       </div>
     </Card>
+  )
+}
+
+const StrategicIntelligenceCommand = ({ metricsData, analyticsData }: any) => {
+  const radarData = [
+    { subject: 'AI Accuracy', A: 92, B: 85, fullMark: 100 },
+    { subject: 'Human Speed', A: 78, B: 90, fullMark: 100 },
+    { subject: 'Resolution Quality', A: 95, B: 88, fullMark: 100 },
+    { subject: 'SLA Compliance', A: 98, B: 82, fullMark: 100 },
+    { subject: 'Volume Handling', A: 85, B: 95, fullMark: 100 },
+  ];
+
+  const sentimentVelocity = [
+    { time: '09:00', velocity: 65 },
+    { time: '12:00', velocity: 72 },
+    { time: '15:00', velocity: 68 },
+    { time: '18:00', velocity: 85 },
+    { time: '21:00', velocity: 92 },
+    { time: '00:00', velocity: 88 },
+  ];
+
+  const highRiskIncidents = [
+    { id: 'T-9842', user: 'Enterprise Alpha', risk: 'Critical', trend: 'rising' },
+    { id: 'T-9855', user: 'Global Logistics', risk: 'High', trend: 'stable' },
+    { id: 'T-9861', user: 'Finance Corp', risk: 'Elevated', trend: 'rising' },
+  ];
+
+  return (
+    <div style={{ marginTop: '48px', paddingBottom: '60px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+        <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '8px' }}>
+          <AuditOutlined style={{ color: 'var(--color-primary)', fontSize: '20px' }} />
+        </div>
+        <div>
+          <Title level={4} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.01em' }}>Strategic Intelligence Command</Title>
+          <Text type="secondary" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>EXECUTIVE OVERSIGHT GRID</Text>
+        </div>
+      </div>
+
+      <Row gutter={[20, 20]}>
+        <Col xs={24} lg={9}>
+          <Card className="glass-effect" title={<Text strong style={{ fontSize: '13px' }}>Domain Mastery Radar</Text>}>
+            <div style={{ height: 320, display: 'flex', justifyContent: 'center' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                  <PolarGrid stroke="var(--color-border-primary)" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-text-secondary)', fontSize: 10 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="AI Engine" dataKey="A" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.4} />
+                  <Radar name="Human Staff" dataKey="B" stroke="#10b981" fill="#10b981" fillOpacity={0.4} />
+                  <Tooltip contentStyle={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-primary)', borderRadius: '8px' }} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
+              <Space><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-primary)' }} /><Text style={{ fontSize: '11px' }}>AI Engine</Text></Space>
+              <Space><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} /><Text style={{ fontSize: '11px' }}>Human Staff</Text></Space>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={9}>
+          <Card className="glass-effect" title={<Text strong style={{ fontSize: '13px' }}>Sentiment Velocity Trajectory</Text>}>
+            <div style={{ height: 320 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={sentimentVelocity}>
+                  <defs>
+                    <linearGradient id="colorVelocity" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-primary)" vertical={false} />
+                  <XAxis dataKey="time" stroke="var(--color-text-muted)" fontSize={11} axisLine={false} tickLine={false} />
+                  <YAxis stroke="var(--color-text-muted)" fontSize={11} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-primary)', borderRadius: '8px' }} />
+                  <Area type="monotone" dataKey="velocity" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorVelocity)" strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <Text strong style={{ color: 'var(--color-text-success)', fontSize: '12px' }}>↑ 14% improvement in positive sentiment since shift approval</Text>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={6}>
+          <Card className="glass-effect" title={<Text strong style={{ fontSize: '13px' }}>Predictive Churn Risk</Text>}>
+            <div style={{ height: 320, overflow: 'auto' }}>
+              <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                {highRiskIncidents.map(item => (
+                  <div key={item.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--color-border-primary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <Text strong style={{ color: 'var(--color-primary)' }}>{item.id}</Text>
+                      <Tag color={item.risk === 'Critical' ? 'error' : 'warning'} bordered={false} style={{ fontSize: '10px', borderRadius: '4px' }}>{item.risk.toUpperCase()}</Tag>
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>{item.user}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text type="secondary" style={{ fontSize: '10px' }}>Churn Trend</Text>
+                      <Space size={4}>
+                        {item.trend === 'rising' ? <ArrowUpOutlined style={{ color: '#ef4444', fontSize: '10px' }} /> : <SyncOutlined spin style={{ color: '#f59e0b', fontSize: '10px' }} />}
+                        <Text style={{ fontSize: '10px', color: item.trend === 'rising' ? '#ef4444' : 'inherit' }}>{item.trend.toUpperCase()}</Text>
+                      </Space>
+                    </div>
+                  </div>
+                ))}
+              </Space>
+              <div style={{ marginTop: '24px', padding: '12px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', border: '1px dashed rgba(239, 68, 68, 0.2)' }}>
+                <Text style={{ fontSize: '11px', color: '#ef4444', fontWeight: 500 }}>
+                  <WarningOutlined style={{ marginRight: '6px' }} /> AI warns of possible escalation in Enterprise Alpha due to repeated routing failures.
+                </Text>
+              </div>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+    </div>
   )
 }
 
@@ -1413,6 +1530,11 @@ const DashboardPage = () => {
             </Row>
           </Col>
         </Row>
+        
+        <StrategicIntelligenceCommand 
+          metricsData={metricsData}
+          analyticsData={analyticsData}
+        />
       </div>
     </DashboardContainer>
   )
